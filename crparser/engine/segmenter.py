@@ -57,6 +57,7 @@ class Segmenter:
         self._body = body_size
         self._spec: ExcludedSpec = profile.excluded_regions()
         self._warnings: List[str] = []
+        self._blank_gap: float = 1e9  # порог «пустой строки», считается на segment()
 
     # ---- публичный вход --------------------------------------------------
 
@@ -73,6 +74,7 @@ class Segmenter:
         self._warnings = warnings_list
 
         lines = self._collect_lines(pages, subtraction_map)
+        self._blank_gap = self._compute_blank_gap(lines)
         start = self._find_content_start(lines)
 
         front_lines = lines[:start]
@@ -495,6 +497,8 @@ class Segmenter:
                 if not t:
                     j += 1
                     continue
+                if ln.gap_before >= self._blank_gap:
+                    break  # пустая строка — конец заголовка
                 if self._spec.detect(t):
                     break
                 hj = self._classify(ln)
@@ -508,16 +512,40 @@ class Segmenter:
         return self._join_title(parts), consumed
 
     def _is_continuation(self, line: Line, open_heading: Dict) -> bool:
-        if open_heading["extra"] >= 5:
-            return False
-        text = line.text.strip()
-        # новый заголовок — не продолжение
-        h = self._classify(line)
-        if h and h.kind in (HeadingKind.NUMBERED, HeadingKind.NUMBER_ONLY):
+        # Главный признак конца заголовка — лексический (профиль видит, что строка
+        # уже не продолжение: началась с заглавной/нового предложения), плюс новый
+        # нумерованный/именованный заголовок. Прежний жёсткий лимит «5 строк» (из-за
+        # которого длинные/пословно-свёрстанные заголовки обрывались) заменён на:
+        #   * символьный предохранитель от разгона (тело не утянется целиком);
+        #   * КОНСЕРВАТИВНЫЙ разрыв «пустой строки» (срабатывает лишь на явно
+        #     большом интервале, чтобы не рубить заголовки с увеличенным лидингом).
+        if line.gap_before >= self._blank_gap:
             return False
         current_title = self._join_title(open_heading["title_parts"])
+        if len(current_title) > 320:
+            return False
+        # новый заголовок/номер — не продолжение
+        h = self._classify(line)
+        if h and h.kind in (HeadingKind.NUMBERED, HeadingKind.NUMBER_ONLY,
+                            HeadingKind.NAMED):
+            return False
         return self._profile.is_title_continuation(
             current_title, line, open_heading["heading"], self._body)
+
+    @staticmethod
+    def _compute_blank_gap(lines: List[Line]) -> float:
+        """
+        Порог «пустой строки» = 1.85× типичного межстрочного интервала документа.
+        Пустая строка добавляет ~целую высоту строки, т.е. интервал ≈2×; увеличенный
+        лидинг внутри заголовка (бывает ~1.7×) ниже порога и не рубит заголовок.
+        Медиана положительных разрывов базовых линий (без пословной вёрстки с нулевым
+        разрывом и скачков страниц). Нет данных — «бесконечность» (сигнал не нужен).
+        """
+        gaps = sorted(ln.gap_before for ln in lines if 2.0 < ln.gap_before < 60.0)
+        if len(gaps) < 5:
+            return 1e9
+        median = gaps[len(gaps) // 2]
+        return median * 1.85
 
     def _visual(self, line: Line) -> bool:
         return line.size >= self._body * 1.35 or line.bold

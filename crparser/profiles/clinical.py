@@ -285,7 +285,9 @@ class ClinicalRecommendationProfile(DocumentProfile):
         if current.endswith(("-", ",", "(", "/", " к", " и", " или", " по",
                              " при", " с", " в", " для")):
             return True
-        if current.count("(") > current.count(")"):
+        # незакрытая «(» — продолжаем ТОЛЬКО до строки, где скобка закрывается:
+        # иначе при потерянной OCR-ом «)» заголовок утягивает всё тело раздела
+        if current.count("(") > current.count(")") and ")" in text:
             return True
         if low.startswith(_CONTINUATION_PREFIXES):
             return True

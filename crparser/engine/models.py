@@ -35,11 +35,12 @@ class Line:
     bbox: BBox         # координаты строки на странице
     size: float        # максимальный кегль среди спанов строки
     bold: bool         # хотя бы один спан жирный
+    gap_before: float = 0.0  # разрыв базовых линий к предыдущей строке (y0-y0), для «пустых строк»
 
     def clone(self, text: str) -> "Line":
         """Копия строки с другим текстом (для инлайн-разбиения заголовков)."""
         return Line(page=self.page, text=text, bbox=self.bbox,
-                    size=self.size, bold=self.bold)
+                    size=self.size, bold=self.bold, gap_before=self.gap_before)
 
 
 @dataclass

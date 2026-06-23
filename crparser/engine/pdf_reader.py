@@ -113,6 +113,11 @@ class PdfReader:
                         bold=any(bolds),
                     ))
 
+            # разрыв базовых линий к предыдущей строке (для детекции «пустых строк»,
+            # которые в PDF выглядят как увеличенный вертикальный интервал)
+            for i in range(1, len(lines)):
+                lines[i].gap_before = lines[i].bbox[1] - lines[i - 1].bbox[1]
+
             pages.append(Page(
                 number=index + 1,
                 width=float(page.rect.width),
