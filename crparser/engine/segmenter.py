@@ -277,6 +277,8 @@ class Segmenter:
         last_number: Optional[str] = None
         seen_references = False           # встречали ли «Список литературы»
         max_top = 0                       # наибольший НОМЕР раздела верхнего уровня
+        seen_numbers: Dict[str, str] = {}  # номер -> первый заголовок (детект дублей)
+        collided: set = set()             # номера, по которым уже выдан warning
 
         # «висящий» номер (kind=NUMBER_ONLY) и накопитель открытого заголовка
         pending_number: Optional[Heading] = None
@@ -287,16 +289,30 @@ class Segmenter:
             if open_heading is None:
                 return
             heading: Heading = open_heading["heading"]
-            title = self._join_title(open_heading["title_parts"])
-            section = Section(
-                number=heading.number,
-                title=title or heading.title,
-                level=heading.level,
-                text="",
-            )
+            title = self._join_title(open_heading["title_parts"]) or heading.title
+            num = heading.number
+            if num:
+                norm_new = self._normalize(title).lower()
+                if num in seen_numbers:
+                    # НАСТОЯЩИЙ дубль: тот же номер И тот же/пустой заголовок —
+                    # гасим (фантомный повтор), как было раньше.
+                    if not norm_new or norm_new == self._normalize(seen_numbers[num]).lower():
+                        open_heading = None
+                        return
+                    # КОЛЛИЗИЯ: один номер с РАЗНЫМИ заголовками — это дефект
+                    # источника (напр. опечатка нумерации). Сохраняем ОБА узла,
+                    # но фиксируем предупреждение (молча не сливаем).
+                    if num not in collided:
+                        collided.add(num)
+                        self._warnings.append(
+                            "коллизия номера %s в источнике: «%s» и «%s» — "
+                            "сохранены оба раздела" % (num, seen_numbers[num], title))
+                else:
+                    seen_numbers[num] = title
+            section = Section(number=num, title=title, level=heading.level, text="")
             sections.append(section)
             current = section
-            last_number = heading.number or last_number
+            last_number = num or last_number
             open_heading = None
 
         def claim_top(h: Heading) -> None:
@@ -385,14 +401,20 @@ class Segmenter:
             # в части КР заголовки идут кеглем тела) ЛИБО больший номер, оформленный
             # как визуальный заголовок. Это отсекает фантомы-перекрёстные-ссылки
             # («…в разделе 6. Организация…» с пропуском 4–5), дубли и хвост ToC.
-            # Для подуровней (>=2) — обычная монотонность относительно last_number.
+            # Подуровни (>=2) принимаются без монотонности (см. ниже, баг 3).
             def order_ok(h: Heading) -> bool:
                 if h.level == 1:
                     top = _top_int(h.number)
                     if top == max_top + 1:
                         return True
                     return top > max_top and self._visual(line)
-                return self._profile.heading_order_valid(h.number, last_number)
+                # Подуровни (N.N, N.N.N…): принимаем ЛЮБОЙ корректно оформленный
+                # заголовок. НЕ отбрасываем по «номер меньше текущего» — номера
+                # законно откатываются на новой ветке (2.4.2.2.2 -> 2.4.3;
+                # 2.4.1.1 -> 2.4.2). Иерархию строит _build_hierarchy, разбирая сам
+                # пунктирный номер; реальные коллизии гасит/помечает flush_open.
+                # Это чинит каскадную потерю разделов (баг 3).
+                return True
 
             # --- 4. полноценный заголовок в одной строке ---
             if heading and heading.kind == HeadingKind.NUMBERED and heading.number:
@@ -404,14 +426,19 @@ class Segmenter:
                     i += 1
                     continue
 
-            # --- 5. заголовок одним номером («4.») ---
+            # --- 5. заголовок одним номером («4.», «2.5.2») ---
+            # Строка целиком — номер раздела (NUMBER_ONLY уже это гарантирует), а
+            # заголовок придёт следующей строкой. Не требуем жирный/крупный шрифт:
+            # в части КР номера подразделов набраны кеглем тела (иначе терялись,
+            # напр. «2.5.2 Подтверждение диагноза…»). Реальный фильтр — can_attach_title
+            # на следующей итерации: если за номером не идёт правдоподобный заголовок,
+            # «висящий» номер забывается без потери текста.
             if heading and heading.kind == HeadingKind.NUMBER_ONLY and heading.number:
                 if order_ok(heading):
-                    if heading.level == 1 or self._visual(line):
-                        flush_open()
-                        pending_number = heading
-                        i += 1
-                        continue
+                    flush_open()
+                    pending_number = heading
+                    i += 1
+                    continue
 
             # --- 6. именованный раздел (Критерии оценки качества и т.п.) ---
             if heading and heading.kind == HeadingKind.NAMED:
@@ -449,16 +476,35 @@ class Segmenter:
 
     @staticmethod
     def _build_hierarchy(flat: List[Section]) -> List[Section]:
+        """
+        Собрать дерево, ПОДВЕШИВАЯ узел к родителю по самому пунктирному номеру
+        (N.N.N -> родитель N.N), а не по сравнению уровней с текущей позицией.
+        Это устойчиво к откату номеров и к коллизиям: при повторе номера ребёнок
+        цепляется к ПОСЛЕДНЕМУ одноимённому родителю (2.4.2.2.1 -> к тому 2.4.2.2,
+        что идёт прямо перед ним). Для именованных/без-номерных разделов и узлов,
+        чей родитель в дереве отсутствует, — запасная привязка по уровню (стек).
+        """
         roots: List[Section] = []
-        stack: List[Section] = []
+        stack: List[Section] = []                 # запасная привязка по уровню
+        last_by_number: Dict[str, Section] = {}   # номер -> последний такой узел
         for section in flat:
             section.children = []
-            while stack and stack[-1].level >= section.level:
-                stack.pop()
-            if stack:
-                stack[-1].children.append(section)
+            parent: Optional[Section] = None
+            num = section.number
+            if num and "." in num:
+                parent = last_by_number.get(num.rsplit(".", 1)[0])
+            if parent is None:
+                while stack and stack[-1].level >= section.level:
+                    stack.pop()
+                parent = stack[-1] if stack else None
+            if parent is not None:
+                parent.children.append(section)
             else:
                 roots.append(section)
+            if num:
+                last_by_number[num] = section
+            while stack and stack[-1].level >= section.level:
+                stack.pop()
             stack.append(section)
         return roots
 
@@ -500,6 +546,11 @@ class Segmenter:
                 if ln.gap_before >= self._blank_gap:
                     break  # пустая строка — конец заголовка
                 if self._spec.detect(t):
+                    break
+                # баг 2: тело (маркер списка, «Рекомендуется…», код услуги) или
+                # завершённое предложение в накопленном заголовке — обрываем склейку,
+                # даже если строка визуально жирная (тело рекомендаций часто жирное)
+                if self._profile.heading_breaks_before(ln, self._join_title(parts)):
                     break
                 hj = self._classify(ln)
                 if hj and hj.kind in (HeadingKind.NUMBERED, HeadingKind.NUMBER_ONLY):
