@@ -226,17 +226,20 @@ def validate_doc(name: str, doc: dict, toc: Optional[Toc]) -> Report:
         if len(titles) > 1 and len(uniq) > 1:
             rep.warn("SOURCE_DEFECT", f"{num}: номер повторяется в оглавлении: {titles!r}")
 
-    # MISSING: каждый пункт оглавления должен быть представлен в выводе
+    # MISSING: каждый пункт оглавления должен быть представлен в выводе.
+    # ВАЖНО: точный сигнал «номер стоит вплотную к своему заголовку в теле»
+    # (body_has_numbered) имеет приоритет над НЕЧЁТКИМ «перенумерация» — иначе
+    # шаблонные заголовки КР («…заболевания или состояния…») похожи друг на друга
+    # и реальный пропуск (1.2 «Этиология…» ~ 1.3 «Эпидемиология…») маскируется.
     for num, title in exp:
         matched = any(s["number"] == num and titles_match(title, s.get("title") or "")
                       for s in numbered)
         if matched:
             continue
-        renumbered = any(titles_match(title, s.get("title") or "") for s in numbered)
-        if toc.body_has_numbered(num, title) and not renumbered:
-            # номер стоит рядом с заголовком в ТЕЛЕ, но раздела в выводе нет -> потеря
+        if toc.body_has_numbered(num, title):
+            # номер вплотную к своему заголовку в ТЕЛЕ, но раздела в выводе нет -> потеря
             rep.fail("MISSING", f"{num} {title!r} — есть в теле, но потерян в выводе")
-        elif renumbered:
+        elif any(titles_match(title, s.get("title") or "") for s in numbered):
             rep.warn("SOURCE_DEFECT",
                      f"{num} {title!r} — в выводе под другим номером (перенумерация источника)")
         elif not toc.body_has_title(title):
