@@ -49,8 +49,21 @@ _MAIN_SECTION_NUMBERS = {
 }
 _MAIN_HEADING_PREFIXES = tuple(_MAIN_SECTION_NUMBERS.keys())
 
-# С чего заголовок начинаться НЕ может (маркеры списков и т.п.).
-_FORBIDDEN_STARTS = ("+", "-", "•", "▪", "□", "✓", "*", "−", "–")
+# С чего заголовок начинаться НЕ может (маркеры списков и т.п.). U+F0B7 —
+# «приватный» буллет, которым свёрстаны рекомендации в большинстве КР.
+_BULLETS = "•·●◦‣⁃○▪□"
+_FORBIDDEN_STARTS = ("+", "-", "*", "−", "–", "—", "✓") + tuple(_BULLETS)
+
+# Признаки начала ТЕЛА раздела (а не продолжения заголовка): строку с такими
+# признаками нельзя приклеивать к заголовку — иначе тело утекает в title (баг 2).
+_RE_LIST_MARKER = re.compile(r"^[" + _BULLETS + r"*+–—-]\s?")
+_RE_RECO_WORD = re.compile(
+    r"^(не\s+)?рекоменд(уется|уются|овано|овани\w*|уем\w*)\b", re.IGNORECASE)
+_RE_SERVICE_WORD = re.compile(
+    r"^(комментари\w*|уровень\s+убедительности|уровень\s+достоверности)\b",
+    re.IGNORECASE)
+# код медуслуги/АТХ в скобках: «(A22.26.010)», «(B03.016.003)».
+_RE_SERVICE_CODE = re.compile(r"\([A-ZА-Я]\d{2}[.\d]+")
 
 # Именованные (без номера) разделы -> стабильный id.
 _NAMED_SECTIONS = (
@@ -265,12 +278,44 @@ class ClinicalRecommendationProfile(DocumentProfile):
     # 2. СКЛЕЙКА МНОГОСТРОЧНЫХ ЗАГОЛОВКОВ / ВИСЯЩИЙ НОМЕР
     # ======================================================================
 
+    @staticmethod
+    def _is_body_line(text: str) -> bool:
+        """
+        Строка — начало ТЕЛА раздела (пункт рекомендации), а не продолжение
+        заголовка. Используется, чтобы оборвать склейку заголовка (баг 2):
+          * маркер списка в начале (буллет, тире-маркер);
+          * служебные слова «Рекомендуется/Не рекомендуется/Комментарии/
+            Уровень убедительности/достоверности»;
+          * код медуслуги/АТХ в скобках «(A22.26.010)».
+        """
+        t = (text or "").strip()
+        if not t:
+            return False
+        return bool(_RE_LIST_MARKER.match(t) or _RE_RECO_WORD.match(t)
+                    or _RE_SERVICE_WORD.match(t) or _RE_SERVICE_CODE.search(t))
+
+    def heading_breaks_before(self, line: Line, current_title: str) -> bool:
+        text = _norm(line.text)
+        # тело (маркер/служебное слово/код) — склейку заголовка обрываем
+        if self._is_body_line(text):
+            return True
+        # строка-кандидат — завершённое предложение (несколько слов, конец на
+        # . ! ?): это тело раздела, а не свёрстанный по словам фрагмент названия
+        if re.search(r"[.!?]$", text) and len(text.split()) >= 3:
+            return True
+        # предыдущая принятая строка заголовка закончилась знаком конца
+        # предложения — дальше идёт тело, а не продолжение названия
+        prev = (current_title or "").rstrip()
+        return bool(prev) and prev[-1] in ".!?;:"
+
     def is_title_continuation(self, current_title: str, line: Line,
                               heading: Heading, body_size: float) -> bool:
         text = _norm(line.text)
         if not text or text.startswith(_FORBIDDEN_STARTS):
             return False
         if _RE_DOT_LEADER.search(text):
+            return False
+        if self.heading_breaks_before(line, current_title):   # баг 2: не тянуть тело
             return False
         if re.match(r"^(Таблица|Рисунок|Список литературы|Приложение|"
                     r"Ключевые слова|Список сокращений|Оглавление)\b", text, re.IGNORECASE):
@@ -307,6 +352,8 @@ class ClinicalRecommendationProfile(DocumentProfile):
             return False
         if re.match(r"^(Таблица|Рисунок|Список литературы|Приложение|Оглавление)\b",
                     text, re.IGNORECASE):
+            return False
+        if self._is_body_line(text):       # баг 2: тело — не заголовок висящего номера
             return False
         if self._looks_like_body_fragment(text):
             return False

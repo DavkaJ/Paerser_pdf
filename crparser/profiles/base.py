@@ -106,6 +106,14 @@ class DocumentProfile(ABC):
         """
         return bool(line.text.strip())
 
+    def heading_breaks_before(self, line: Line, current_title: str) -> bool:
+        """
+        Должна ли склейка заголовка ОБОРВАТЬСЯ перед этой строкой, потому что
+        она — начало тела (маркер списка, служебное слово «Рекомендуется…»,
+        код медуслуги и т.п.). По умолчанию — нет.
+        """
+        return False
+
     def split_inline_headings(self, line: Line) -> List[Line]:
         """
         Разрезать строку, если внутри неё спрятан новый заголовок
