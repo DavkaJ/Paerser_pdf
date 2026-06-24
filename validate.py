@@ -49,20 +49,17 @@ except Exception:
 from crparser.engine.parser import DocumentParser
 from crparser.engine.jsonio import JsonWriter
 from crparser.engine.pdf_reader import PdfReader
+from crparser.engine.toc import norm, titles_match, parse_entries, toc_bounds, TocIndex
 from crparser.profiles import create_profile
 
 # Порог покрытия: ниже COV_FAIL — потеря текста (FAIL); ниже COV_WARN — заметка.
 COV_FAIL = 99.0
 COV_WARN = 99.9
 
-# --- регулярки оглавления ---------------------------------------------------
-_LEADER = re.compile(r"\.{3,}|_{3,}")
+# Якорь оглавления (тот же, что у профиля КР). Парсинг оглавления — общий код в
+# crparser.engine.toc (его же использует парсер, чтобы отсеивать фантомы — баг 4).
 _TOC_ANCHOR = re.compile(r"^\s*(оглавление|содержание)\s*$", re.IGNORECASE)
-_NUM_HEAD = re.compile(r"^(\d+(?:\.\d+)*)\.?\s*(.*)$")
 _NUM_RE = re.compile(r"^\d+(\.\d+)*$")
-# строка оглавления начинает новый пункт: «1. …», «2.5.2 …» или оторванный
-# многосоставный номер на своей строке («2.4.2.2», затем заголовок на следующей).
-_TOC_ENTRY_START = re.compile(r"^\s*\d+(?:\.\d+)*\.?\s+\S|^\s*\d+(?:\.\d+)+\.?\s*$")
 
 # --- признаки утечки тела в заголовок (инварианты) --------------------------
 _TITLE_LIST_MARKER = re.compile(r"[•·●▪‣◦⁃]")
@@ -75,36 +72,7 @@ _TITLE_CODE = re.compile(r"\([A-ZА-Я]\d{2}[.\d]+")
 
 
 # ============================================================================
-# Нормализация и сравнение заголовков
-# ============================================================================
-
-def norm(text: str) -> str:
-    """Нормализация для сравнения: регистр, ё→е, только буквы/цифры/пробел."""
-    text = (text or "").lower().replace("ё", "е")
-    text = re.sub(r"[^0-9a-zа-я ]+", " ", text)
-    return re.sub(r"\s+", " ", text).strip()
-
-
-def titles_match(expected: str, actual: str) -> bool:
-    """Терпимо: регистр/пунктуация/перенос/обрезка/леттерспейсинг/частичное."""
-    e, a = norm(expected), norm(actual)
-    if not e or not a:
-        return True
-    if e == a or a.startswith(e) or e.startswith(a):
-        return True
-    # леттерспейсинг и переносы («п р и з ы в у», «г р у д н о г о») — сравниваем
-    # вовсе без пробелов, чтобы артефакт вёрстки PDF не выглядел как расхождение
-    ec, ac = e.replace(" ", ""), a.replace(" ", "")
-    if ec == ac or ac.startswith(ec) or ec.startswith(ac):
-        return True
-    ew, aw = set(e.split()), set(a.split())
-    if not ew or not aw:
-        return True
-    return len(ew & aw) / len(ew | aw) >= 0.6
-
-
-# ============================================================================
-# Извлечение и разбор оглавления
+# Извлечение и разбор оглавления (через общий crparser.engine.toc)
 # ============================================================================
 
 class Toc:
@@ -130,89 +98,23 @@ class Toc:
         return bool(words) and " ".join(words[:4]) in self.body_norm
 
 
-def _toc_bounds(lines: List[str]) -> Optional[Tuple[int, int]]:
-    """Границы [start, end] региона оглавления по кластеру точек-лидеров."""
-    leaders = [i for i, t in enumerate(lines) if _LEADER.search(t)]
-    if not leaders:
-        return None
-    anchor = next((i for i, t in enumerate(lines)
-                   if _TOC_ANCHOR.match(t.strip())), None)
-    if anchor is not None:
-        near = [i for i in leaders if 0 <= i - anchor <= 80]
-        start = anchor + 1
-    else:
-        near = [i for i in leaders if i <= 400]
-        start = near[0] if near else None
-    if len(near) < 4 or start is None:
-        return None
-    end = near[0]
-    for i in leaders:
-        if i < near[0]:
-            continue
-        if i - end <= 40:           # тот же кластер (учёт пословной вёрстки ToC)
-            end = i
-        else:
-            break
-    return start, end
-
-
 def parse_toc(pdf_path: str) -> Optional[Toc]:
-    """Разобрать оглавление; склеить перенос заголовка и оторванный номер."""
+    """Прочитать PDF, разобрать оглавление (общий код) и текст тела вне него."""
     reader = PdfReader(pdf_path)
     try:
         pages = reader.read()
     finally:
         reader.close()
     lines = [ln.text for page in pages for ln in page.lines]
-
-    bounds = _toc_bounds(lines)
-    if bounds is None:
+    entries = parse_entries(lines, _TOC_ANCHOR)
+    if entries is None:
         return None
-    start, end = bounds
-    toc_lines = lines[start:end + 1]
+    # текст тела (вне региона оглавления) — для проверки «номер стоит рядом со
+    # своим заголовком в теле» (отличает реальную потерю от перенумерации)
+    bounds = toc_bounds(lines, _TOC_ANCHOR)
+    start, end = bounds if bounds else (0, -1)
     body_norm = norm(" ".join(lines[:start] + lines[end + 1:]))
-
-    entries: List[Tuple[Optional[str], str]] = []
-    buf: List[str] = []
-
-    def flush() -> None:
-        full = re.sub(r"\s+", " ", " ".join(buf)).strip()
-        buf.clear()
-        if not full:
-            return
-        nm = _NUM_HEAD.match(full)
-        if nm and nm.group(1):
-            entries.append((nm.group(1), nm.group(2).strip()))
-        else:
-            entries.append((None, full))
-
-    for line in toc_lines:
-        text = line.strip()
-        if not text or _TOC_ANCHOR.match(text):
-            continue
-        if re.fullmatch(r"\d{1,4}", text):     # номер страницы на отдельной строке
-            flush()
-            continue
-        if buf and _TOC_ENTRY_START.match(text):  # начался новый пункт — закрыть прежний
-            flush()
-        clean, closed = _strip_tail(text)
-        if clean:
-            buf.append(clean)
-        if closed:                              # лидеры/страница в конце строки -> конец пункта
-            flush()
-    flush()
     return Toc(entries, body_norm)
-
-
-def _strip_tail(text: str) -> Tuple[str, bool]:
-    """Отрезать хвост строки оглавления (точки-лидеры и/или номер страницы)."""
-    s = re.sub(r"\s*\.{2,}\s*\d{0,4}\s*$", "", text)   # «....», «.... 46»
-    if s != text:
-        return s.strip(), True
-    s = re.sub(r"\s+\d{1,4}\s*$", "", text)            # « 13» без лидеров
-    if s != text and len(text) - len(s) <= 6:
-        return s.strip(), True
-    return text.strip(), False
 
 
 # ============================================================================
@@ -341,6 +243,22 @@ def validate_doc(name: str, doc: dict, toc: Optional[Toc]) -> Report:
             rep.warn("SOURCE_DEFECT", f"{num} {title!r} — нет в теле документа (дефект оглавления)")
         else:
             rep.warn("SOURCE_DEFECT", f"{num} {title!r} — в оглавлении, но без номера в теле")
+
+    # PHANTOM_SECTION: раздел вывода, который НЕ подтверждён оглавлением и при
+    # этом ДУБЛИРУЕТ номер другого раздела вывода, который оглавлением ПОДТВЕРЖДЁН
+    # → мнимый дубль (ложный заголовок из нумерованного списка в прозе).
+    # Отличаем от: (а) легитимной коллизии источника — там оба заголовка есть в
+    # оглавлении, оба confirmed; (б) простого расхождения заголовка единственного
+    # раздела (нет подтверждённого «двойника» того же номера) — это лишь WARN.
+    index = TocIndex(toc.entries)
+    confirmed_numbers = {s["number"] for s in numbered
+                         if index.confirmed(s["number"], s.get("title") or "")}
+    for s in numbered:
+        num, title = s["number"], s.get("title") or ""
+        if num in confirmed_numbers and not index.confirmed(num, title) \
+                and not index.title_anywhere(title):
+            rep.fail("PHANTOM_SECTION",
+                     f"{num} {title[:50]!r} — нет в оглавлении, дублирует подтверждённый раздел {num}")
 
     # EXTRA / TITLE_MISMATCH — информационно (WARN)
     for num in sorted(act_count, key=_num_key):

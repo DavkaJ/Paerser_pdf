@@ -28,6 +28,7 @@ from crparser.engine.models import (
     Page,
     Section,
 )
+from crparser.engine.toc import TocIndex
 
 if TYPE_CHECKING:  # импорт только для типов — без рантайм-зависимости от профилей
     from crparser.profiles.base import DocumentProfile
@@ -58,6 +59,7 @@ class Segmenter:
         self._spec: ExcludedSpec = profile.excluded_regions()
         self._warnings: List[str] = []
         self._blank_gap: float = 1e9  # порог «пустой строки», считается на segment()
+        self._toc: Optional[TocIndex] = None  # оглавление как арбитр заголовков (баг 4)
 
     # ---- публичный вход --------------------------------------------------
 
@@ -72,6 +74,12 @@ class Segmenter:
         `subtraction_map`: page_index(0-based) -> bbox таблиц для вычитания.
         """
         self._warnings = warnings_list
+
+        # Оглавление как арбитр приёма заголовков (баг 4): строим индекс из сырых
+        # строк документа (тот же код, что и в валидаторе). None — если оглавление
+        # не распарсилось (тогда отсева фантомов по TOC нет, работаем как раньше).
+        self._toc = TocIndex.from_lines(
+            [ln.text for page in pages for ln in page.lines], self._spec.toc)
 
         lines = self._collect_lines(pages, subtraction_map)
         self._blank_gap = self._compute_blank_gap(lines)
@@ -279,6 +287,7 @@ class Segmenter:
         max_top = 0                       # наибольший НОМЕР раздела верхнего уровня
         seen_numbers: Dict[str, str] = {}  # номер -> первый заголовок (детект дублей)
         collided: set = set()             # номера, по которым уже выдан warning
+        confirmed_seen: set = set()       # номера, принятые как ПОДТВЕРЖДЁННЫЕ TOC
 
         # «висящий» номер (kind=NUMBER_ONLY) и накопитель открытого заголовка
         pending_number: Optional[Heading] = None
@@ -313,6 +322,10 @@ class Segmenter:
             sections.append(section)
             current = section
             last_number = num or last_number
+            # запоминаем номера, чьи разделы ПОДТВЕРЖДЕНЫ оглавлением — по ним потом
+            # отсеиваем мнимые дубли (баг 4)
+            if num and self._toc is not None and self._toc.confirmed(num, title):
+                confirmed_seen.add(num)
             open_heading = None
 
         def claim_top(h: Heading) -> None:
@@ -321,6 +334,29 @@ class Segmenter:
             nonlocal max_top
             if h.level == 1 and h.number:
                 max_top = max(max_top, _top_int(h.number))
+
+        def toc_reject(number: Optional[str], title: str) -> bool:
+            """
+            Кандидат-заголовок — это ложный пункт нумерованного списка из прозы,
+            а не раздел документа? (баг 4) Арбитр — оглавление; работает только
+            для подуровней и только если оглавление распарсилось.
+
+            Принять (НЕ отклонять), если номер+заголовок подтверждён оглавлением
+            (в т.ч. легитимная коллизия источника — у номера несколько заголовков
+            в TOC). Отклонить, если НЕ подтверждён и при этом:
+              * верхний компонент номера не равен текущему открытому разделу
+                (раздел «1.1» встретился, когда мы уже в разделе 3 — или наоборот,
+                «2.1» до открытия раздела 2): по позиции это не наш подраздел;
+              * либо этот номер уже занят разделом, ПОДТВЕРЖДЁННЫМ оглавлением
+                (мнимый дубль настоящего).
+            """
+            if self._toc is None or not number or "." not in number:
+                return False
+            if self._toc.confirmed(number, title):
+                return False
+            if _top_int(number) != max_top:
+                return True
+            return number in confirmed_seen
 
         i = 0
         n = len(lines)
@@ -358,7 +394,8 @@ class Segmenter:
             if pending_number is not None:
                 title, consumed = self._assemble_pending_title(lines, i, pending_number)
                 probe = line.clone(title) if title else line
-                if title and self._profile.can_attach_title(probe, pending_number, self._body):
+                if title and self._profile.can_attach_title(probe, pending_number, self._body) \
+                        and not toc_reject(pending_number.number, title):
                     heading = Heading(
                         number=pending_number.number,
                         title=title,
@@ -418,7 +455,9 @@ class Segmenter:
 
             # --- 4. полноценный заголовок в одной строке ---
             if heading and heading.kind == HeadingKind.NUMBERED and heading.number:
-                if order_ok(heading):
+                # toc_reject: ложный пункт нумерованного списка из прозы (баг 4) —
+                # оставляем как тело текущего раздела
+                if order_ok(heading) and not toc_reject(heading.number, heading.title):
                     flush_open()
                     open_heading = {"heading": heading, "title_parts": [heading.title],
                                     "extra": 0}
