@@ -136,6 +136,7 @@ class Report:
         self.name = name
         self.fails: List[str] = []
         self.warns: List[str] = []
+        self.skipped: Optional[str] = None   # причина SKIPPED_SCAN (скан без текста)
 
     def fail(self, kind: str, msg: str) -> None:
         self.fails.append(f"{kind}: {msg}")
@@ -143,15 +144,29 @@ class Report:
     def warn(self, kind: str, msg: str) -> None:
         self.warns.append(f"{kind}: {msg}")
 
+    def skip(self, reason: str) -> None:
+        self.skipped = reason
+
     @property
     def ok(self) -> bool:
-        return not self.fails
+        return not self.fails and self.skipped is None
 
 
 def validate_doc(name: str, doc: dict, toc: Optional[Toc]) -> Report:
     rep = Report(name)
     sections = doc.get("sections", [])
     stats = doc.get("stats", {})
+
+    # ---- скан без текстового слоя -> SKIPPED_SCAN (не FAIL, без сверки с TOC) ----
+    # PDF-скан даёт пустой/почти пустой извлекаемый текст: total_chars ≈ 0 или
+    # coverage == 0 при отсутствии разделов. Такой файл — на OCR/ручную обработку.
+    total_chars = stats.get("total_chars", 0) or 0
+    cov = stats.get("coverage_percent", 0.0)
+    sec_found = stats.get("sections_found", 0)
+    if total_chars < 200 or (cov <= 0.0 and sec_found == 0):
+        rep.skip(f"текстовый слой пуст (total_chars={total_chars}, "
+                 f"coverage={cov}) — скан, на OCR/ручную обработку")
+        return rep
 
     nodes = [s for s, _ in walk(sections)]
     parent_of = {id(s): p for s, p in walk(sections)}
@@ -162,13 +177,17 @@ def validate_doc(name: str, doc: dict, toc: Optional[Toc]) -> Report:
         act_titles[s["number"]].append(s.get("title") or "")
 
     # ---- инвариант 1: покрытие ----
-    cov = stats.get("coverage_percent", 0.0)
     if cov <= 0.0:
         rep.warn("COVERAGE", "0% — вероятно скан без текстового слоя")
     elif cov < COV_FAIL:
         rep.fail("COVERAGE", f"{cov}% < {COV_FAIL} — потеря текста")
     elif cov < COV_WARN:
         rep.warn("COVERAGE", f"{cov}% < {COV_WARN}")
+
+    # ---- инвариант 1б: крупный документ без таблиц -> детектор мог отвалиться ----
+    tables_found = stats.get("tables_found", 0)
+    if sec_found >= 20 and tables_found == 0:
+        rep.warn("TABLES", f"{sec_found} разделов, но 0 таблиц — проверить детектор таблиц")
 
     # ---- инвариант 2: чистота заголовков (утечка тела) ----
     for s in nodes:
@@ -234,6 +253,11 @@ def validate_doc(name: str, doc: dict, toc: Optional[Toc]) -> Report:
     for num, title in exp:
         matched = any(s["number"] == num and titles_match(title, s.get("title") or "")
                       for s in numbered)
+        # номер ПРИСУТСТВУЕТ в выводе, но заголовок записан иначе (аббревиатура:
+        # «РМП» вместо «раком мочевого пузыря») — это не потеря, а TITLE_MISMATCH.
+        # Считаем раздел представленным, если первые 3 значимых слова совпали.
+        if not matched and num in act_count:
+            matched = any(_prefix_words_match(title, t) for t in act_titles[num])
         if matched:
             continue
         if toc.body_has_numbered(num, title):
@@ -258,6 +282,11 @@ def validate_doc(name: str, doc: dict, toc: Optional[Toc]) -> Report:
                          if index.confirmed(s["number"], s.get("title") or "")}
     for s in numbered:
         num, title = s["number"], s.get("title") or ""
+        # номер, который САМО оглавление перечисляет несколько раз (напр. «3.3
+        # Подраздел 1/2» при КР16_4), — это дефект нумерации источника, а не
+        # фантом из прозы: расхождение заголовка тут лишь WARN (TITLE_MISMATCH).
+        if exp_count.get(num, 0) > 1:
+            continue
         if num in confirmed_numbers and not index.confirmed(num, title) \
                 and not index.title_anywhere(title):
             rep.fail("PHANTOM_SECTION",
@@ -277,6 +306,14 @@ def validate_doc(name: str, doc: dict, toc: Optional[Toc]) -> Report:
 
 def _num_key(num: str):
     return tuple(int(p) for p in num.split(".") if p.isdigit())
+
+
+def _prefix_words_match(a: str, b: str, k: int = 3) -> bool:
+    """Первые k значимых слов заголовков совпадают (тот же раздел, иначе записан)."""
+    wa, wb = norm(a).split(), norm(b).split()
+    if len(wa) < k or len(wb) < k:
+        return False
+    return wa[:k] == wb[:k]
 
 
 # ============================================================================
@@ -344,18 +381,27 @@ def main(argv: Optional[List[str]] = None) -> int:
             rep.fail("CRASH", repr(exc))
         reports.append(rep)
 
-        print(f"\n[{'PASS' if rep.ok else 'FAIL'}] {name}")
+        status = "SKIP" if rep.skipped else ("PASS" if rep.ok else "FAIL")
+        print(f"\n[{status}] {name}")
+        if rep.skipped:
+            print(f"    ↷ SKIPPED_SCAN: {rep.skipped}")
         for f in rep.fails:
             print(f"    ✗ {f}")
         if not args.quiet:
             for w in rep.warns:
                 print(f"    · {w}")
 
-    npass = sum(1 for r in reports if r.ok)
+    skipped = [r for r in reports if r.skipped]
+    judged = [r for r in reports if not r.skipped]
+    npass = sum(1 for r in judged if r.ok)
     print("\n" + "=" * 70)
-    print(f"ИТОГ: {npass}/{len(reports)} файлов PASS")
+    print(f"ИТОГ: {npass}/{len(judged)} файлов PASS"
+          + (f"  (+{len(skipped)} SKIPPED_SCAN)" if skipped else ""))
+    if skipped:
+        print("СКАНЫ (на OCR/ручную обработку): "
+              + ", ".join(r.name for r in skipped))
     print("=" * 70)
-    return 0 if npass == len(reports) else 1
+    return 0 if npass == len(judged) else 1
 
 
 if __name__ == "__main__":
