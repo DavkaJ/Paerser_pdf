@@ -17,6 +17,7 @@
 from __future__ import annotations
 
 import re
+from collections import defaultdict
 from typing import Dict, List, Optional, TYPE_CHECKING
 
 from crparser.engine.models import (
@@ -34,8 +35,13 @@ if TYPE_CHECKING:  # импорт только для типов — без ра
     from crparser.profiles.base import DocumentProfile
 
 _RE_PAGE_NUMBER = re.compile(r"^\d{1,3}$")
-# лидеры оглавления: точки или подчёркивания («.....» / «_____»)
-_RE_LEADER = re.compile(r"\.{3,}|_{3,}")
+# лидеры оглавления: точки/подчёркивания/юникод-многоточие («.....» / «_____» / «…»)
+_RE_LEADER = re.compile(r"\.{3,}|_{3,}|…+|‥+|․{2,}")
+# Предел длины заголовка подраздела. Кандидат длиннее — это абзац прозы с номером
+# (нумерованный список «исходов»/«форм» в теле), а не раздел: отвергаем, если он не
+# подтверждён оглавлением. Канонические длинные названия КР короче (1.4 ≈ 188), а
+# фантомные абзацы заметно длиннее (≥230), поэтому 200 разделяет их без потерь.
+_MAX_SUB_TITLE = 200
 
 
 def _top_int(number: Optional[str]) -> int:
@@ -291,6 +297,7 @@ class Segmenter:
 
         # «висящий» номер (kind=NUMBER_ONLY) и накопитель открытого заголовка
         pending_number: Optional[Heading] = None
+        pending_idx: int = -1                # строка, где встретился висящий номер
         open_heading: Optional[Dict] = None  # {'heading': Heading, 'title_parts': [...], 'extra': int}
 
         def flush_open() -> None:
@@ -335,28 +342,41 @@ class Segmenter:
             if h.level == 1 and h.number:
                 max_top = max(max_top, _top_int(h.number))
 
-        def toc_reject(number: Optional[str], title: str) -> bool:
+        def toc_reject(number: Optional[str], title: str, idx: int = -1) -> bool:
             """
-            Кандидат-заголовок — это ложный пункт нумерованного списка из прозы,
-            а не раздел документа? (баг 4) Арбитр — оглавление; работает только
-            для подуровней и только если оглавление распарсилось.
+            Кандидат-подзаголовок — это ложный пункт нумерованного списка из прозы,
+            а не раздел документа? (баги 4 и 6б). Работает только для подуровней.
 
-            Принять (НЕ отклонять), если номер+заголовок подтверждён оглавлением
-            (в т.ч. легитимная коллизия источника — у номера несколько заголовков
-            в TOC). Отклонить, если НЕ подтверждён и при этом:
-              * верхний компонент номера не равен текущему открытому разделу
-                (раздел «1.1» встретился, когда мы уже в разделе 3 — или наоборот,
-                «2.1» до открытия раздела 2): по позиции это не наш подраздел;
-              * либо этот номер уже занят разделом, ПОДТВЕРЖДЁННЫМ оглавлением
-                (мнимый дубль настоящего).
+            Не отклоняем, если номер+заголовок ПОДТВЕРЖДЁН оглавлением (в т.ч.
+            легитимная коллизия источника — у номера несколько заголовков в TOC).
+            Иначе отклоняем по любому из признаков:
+              * длина заголовка > предела — это абзац прозы с номером, а не раздел
+                (фантомные «исходы»/«критерии» в КР16_4: 3.1/3.2/3.4/7.1);
+              * (есть оглавление) верхний компонент номера не равен текущему разделу
+                ИЛИ номер уже занят подтверждённым разделом (мнимый дубль) — баг 4;
+              * (НЕТ оглавления) предыдущая непустая строка кончилась двоеточием
+                (начался нумерованный список) ЛИБО номер уже встречался (локальный
+                сброс нумерации 1.1/1.2… в прозе) — баг 6б.
             """
-            if self._toc is None or not number or "." not in number:
+            if not number or "." not in number:
                 return False
-            if self._toc.confirmed(number, title):
+            confirmed = self._toc is not None and self._toc.confirmed(number, title)
+            if confirmed:
                 return False
-            if _top_int(number) != max_top:
+            # (1) длина — работает и с оглавлением, и без него
+            if len(title) > _MAX_SUB_TITLE:
                 return True
-            return number in confirmed_seen
+            # (2) арбитраж по оглавлению
+            if self._toc is not None:
+                if _top_int(number) != max_top:
+                    return True
+                return number in confirmed_seen
+            # (3) оглавление недоступно — структурные эвристики отсева перечислений
+            if idx > 0:
+                prev = self._prev_nonblank(lines, idx)
+                if prev is not None and prev.rstrip().endswith(":"):
+                    return True
+            return number in seen_numbers
 
         i = 0
         n = len(lines)
@@ -395,7 +415,7 @@ class Segmenter:
                 title, consumed = self._assemble_pending_title(lines, i, pending_number)
                 probe = line.clone(title) if title else line
                 if title and self._profile.can_attach_title(probe, pending_number, self._body) \
-                        and not toc_reject(pending_number.number, title):
+                        and not toc_reject(pending_number.number, title, pending_idx):
                     heading = Heading(
                         number=pending_number.number,
                         title=title,
@@ -457,7 +477,7 @@ class Segmenter:
             if heading and heading.kind == HeadingKind.NUMBERED and heading.number:
                 # toc_reject: ложный пункт нумерованного списка из прозы (баг 4) —
                 # оставляем как тело текущего раздела
-                if order_ok(heading) and not toc_reject(heading.number, heading.title):
+                if order_ok(heading) and not toc_reject(heading.number, heading.title, i):
                     flush_open()
                     open_heading = {"heading": heading, "title_parts": [heading.title],
                                     "extra": 0}
@@ -476,6 +496,7 @@ class Segmenter:
                 if order_ok(heading):
                     flush_open()
                     pending_number = heading
+                    pending_idx = i
                     i += 1
                     continue
 
@@ -516,23 +537,49 @@ class Segmenter:
     @staticmethod
     def _build_hierarchy(flat: List[Section]) -> List[Section]:
         """
-        Собрать дерево, ПОДВЕШИВАЯ узел к родителю по самому пунктирному номеру
-        (N.N.N -> родитель N.N), а не по сравнению уровней с текущей позицией.
-        Это устойчиво к откату номеров и к коллизиям: при повторе номера ребёнок
-        цепляется к ПОСЛЕДНЕМУ одноимённому родителю (2.4.2.2.1 -> к тому 2.4.2.2,
-        что идёт прямо перед ним). Для именованных/без-номерных разделов и узлов,
-        чей родитель в дереве отсутствует, — запасная привязка по уровню (стек).
+        Собрать дерево, определяя родителя РАЗБОРОМ пунктирного номера (баг 6).
+
+        Родитель узла N.N(.N…) — это номер без последнего компонента (7.1 -> 7;
+        2.4.2.2 -> 2.4.2). Ищем такой узел по ПОЛНОМУ индексу всех номеров, поэтому
+        родитель находится, даже если в потоке он идёт ПОЗЖЕ ребёнка (как §7 после
+        своего 7.1 в КР16_4). Если точного родителя нет — поднимаемся к ближайшему
+        существующему ПРЕДКУ (отбрасываем ещё компонент), а если и его нет — узел
+        становится корнем. К ЧУЖОМУ соседнему разделу (привязка «по последнему
+        открытому узлу») не цепляем НИКОГДА — это и был источник HIERARCHY_BROKEN.
+
+        Именованные / без-номерные разделы вешаем по уровню через стек.
+        При коллизии номера ребёнок берёт ближайшего по позиции одноимённого
+        родителя (предпочитая предшествующего) — так сохраняются реальные
+        коллизии источника (КР51_2 3.1.3 ×2 со своими подпунктами).
         """
+        idx_of: Dict[int, int] = {id(s): k for k, s in enumerate(flat)}
+        by_number: Dict[str, List[Section]] = defaultdict(list)
+        for s in flat:
+            s.children = []          # обнулить ДО линковки: ребёнок может прийти к
+            if s.number:             # родителю РАНЬШЕ его собственной итерации (7.1
+                by_number[s.number].append(s)   # до §7) — сброс внутри цикла стёр бы его
+
+        def nearest(cands: List[Section], child_idx: int) -> Optional[Section]:
+            before = [c for c in cands if idx_of[id(c)] < child_idx]
+            if before:
+                return before[-1]            # ближайший предшествующий одноимённый
+            after = [c for c in cands if idx_of[id(c)] > child_idx]
+            return after[0] if after else None
+
         roots: List[Section] = []
-        stack: List[Section] = []                 # запасная привязка по уровню
-        last_by_number: Dict[str, Section] = {}   # номер -> последний такой узел
-        for section in flat:
-            section.children = []
+        stack: List[Section] = []
+        for k, section in enumerate(flat):
             parent: Optional[Section] = None
             num = section.number
             if num and "." in num:
-                parent = last_by_number.get(num.rsplit(".", 1)[0])
-            if parent is None:
+                parts = num.split(".")
+                for cut in range(len(parts) - 1, 0, -1):   # родитель -> предок -> ...
+                    cand = nearest(by_number.get(".".join(parts[:cut]), []), k)
+                    if cand is not None and cand is not section:
+                        parent = cand
+                        break
+                # родитель/предок не найден -> корень (НЕ чужой сосед)
+            else:
                 while stack and stack[-1].level >= section.level:
                     stack.pop()
                 parent = stack[-1] if stack else None
@@ -540,8 +587,6 @@ class Segmenter:
                 parent.children.append(section)
             else:
                 roots.append(section)
-            if num:
-                last_by_number[num] = section
             while stack and stack[-1].level >= section.level:
                 stack.pop()
             stack.append(section)
@@ -641,6 +686,17 @@ class Segmenter:
         return line.size >= self._body * 1.35 or line.bold
 
     # ---- утилиты текста --------------------------------------------------
+
+    @staticmethod
+    def _prev_nonblank(lines: List[Line], idx: int) -> Optional[str]:
+        """Текст ближайшей непустой строки перед idx (для эвристик отсева списков)."""
+        j = idx - 1
+        while j >= 0:
+            t = lines[j].text.strip()
+            if t:
+                return t
+            j -= 1
+        return None
 
     @staticmethod
     def _join_title(parts: List[str]) -> str:

@@ -96,6 +96,10 @@ _RE_REFCITE = re.compile(r"\[\s*\d")
 _RE_EVID = re.compile(r"\(\s*\d+\s*[А-СA-Cа-сa-c]\s*\)")
 _RE_NUMBER_ONLY = re.compile(r"^(\d+(?:\s*\.\s*\d+){0,4})\s*\.?$")
 _RE_DATE_LIKE = re.compile(r"^\d{1,2}\.\d{1,2}\.\d{4}$")
+# OCR иногда ставит запятую вместо точки в номере раздела («4,2.2»). Чиним ТОЛЬКО
+# однозначно иерархический номер в начале строки — c >=2 разделителями (>=3 группы
+# цифр), чтобы не трогать десятичные в прозе («в 4,2 раза»).
+_RE_COMMA_NUMBER = re.compile(r"^\d+[.,]\d+[.,]\d+(?:[.,]\d+)*")
 _RE_CAPTION = re.compile(r"^(Таблица|Рисунок|Табл\.|Рис\.)\b", re.IGNORECASE)
 
 # Верхняя граница номера основного раздела КР (1..9: семь типовых разделов +
@@ -144,6 +148,10 @@ class ClinicalRecommendationProfile(DocumentProfile):
         text = _norm(line.text)
         if not text or text.startswith(_FORBIDDEN_STARTS):
             return None
+        # «4,2.2 Обезболивание…» -> «4.2.2 Обезболивание…» (OCR-запятая в номере)
+        m = _RE_COMMA_NUMBER.match(text)
+        if m and "," in m.group(0):
+            text = m.group(0).replace(",", ".") + text[m.end():]
         # строки оглавления (с точками-лидерами) заголовками не считаем
         if _RE_DOT_LEADER.search(text):
             return None
