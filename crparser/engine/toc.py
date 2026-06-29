@@ -18,7 +18,11 @@ import re
 from collections import defaultdict
 from typing import Dict, List, Optional, Pattern, Tuple
 
-_LEADER = re.compile(r"\.{3,}|_{3,}")
+# лидеры оглавления: ASCII-точки/подчёркивания ИЛИ юникод-многоточие «…» (U+2026),
+# «‥» (U+2025) и повторы «․» (U+2024) — часть КР верстает оглавление ими, а не «...».
+_LEADER = re.compile(r"\.{3,}|_{3,}|…+|‥+|․{2,}")
+# хвост строки оглавления: лидеры (любые) + опциональный номер страницы.
+_TAIL_LEADERS = r"(?:\.{2,}|[․‥…]+)"
 _NUM_HEAD = re.compile(r"^(\d+(?:\.\d+)*)\.?\s*(.*)$")
 _NUM_RE = re.compile(r"^\d+(\.\d+)*$")
 # строка оглавления начинает новый пункт: «1. …», «2.5.2 …» или оторванный
@@ -52,7 +56,8 @@ def titles_match(expected: str, actual: str) -> bool:
 
 def _strip_tail(text: str) -> Tuple[str, bool]:
     """Отрезать хвост строки оглавления (точки-лидеры и/или номер страницы)."""
-    s = re.sub(r"\s*\.{2,}\s*\d{0,4}\s*$", "", text)   # «....», «.... 46»
+    # лидеры (ASCII «....» ИЛИ юникод «…»/«‥»/«․») + опциональный номер: «… 46»
+    s = re.sub(r"\s*" + _TAIL_LEADERS + r"\s*\d{0,4}\s*$", "", text)
     if s != text:
         return s.strip(), True
     s = re.sub(r"\s+\d{1,4}\s*$", "", text)            # « 13» без лидеров
@@ -62,28 +67,98 @@ def _strip_tail(text: str) -> Tuple[str, bool]:
 
 
 def toc_bounds(lines: List[str], anchor: Pattern[str]) -> Optional[Tuple[int, int]]:
-    """Границы [start, end] региона оглавления по кластеру точек-лидеров."""
+    """
+    Границы [start, end] региона оглавления.
+
+    Сначала пытаемся по кластеру точек-лидеров (включая юникод-«…»). Если лидеров
+    нет (часть КР верстает оглавление вообще без точек — номера страниц на отдельных
+    строках), определяем регион от якоря «Оглавление/Содержание» по плотному
+    кластеру «сигналов страницы» (строка-номер или строка с номером в конце).
+    """
     leaders = [i for i, t in enumerate(lines) if _LEADER.search(t)]
-    if not leaders:
-        return None
     a = next((i for i, t in enumerate(lines) if anchor.match(t.strip())), None)
-    if a is not None:
-        near = [i for i in leaders if 0 <= i - a <= 80]
-        start = a + 1
-    else:
-        near = [i for i in leaders if i <= 400]
-        start = near[0] if near else None
-    if len(near) < 4 or start is None:
-        return None
-    end = near[0]
-    for i in leaders:
-        if i < near[0]:
-            continue
-        if i - end <= 40:          # тот же кластер (учёт пословной вёрстки ToC)
-            end = i
+    if leaders:
+        if a is not None:
+            near = [i for i in leaders if 0 <= i - a <= 80]
+            start: Optional[int] = a + 1
         else:
-            break
-    return start, end
+            near = [i for i in leaders if i <= 400]
+            start = near[0] if near else None
+        if len(near) >= 4 and start is not None:
+            end = near[0]
+            for i in leaders:
+                if i < near[0]:
+                    continue
+                if i - end <= 40:      # тот же кластер (учёт пословной вёрстки ToC)
+                    end = i
+                else:
+                    break
+            return start, end
+    # --- оглавление без лидеров: опора на якорь и сигналы страниц ---
+    if a is None:
+        return None
+    return _leaderless_bounds(lines, a)
+
+
+# Разделы, которыми ТЕЛО КР повторяет начало структуры из оглавления. Тот же
+# заголовок встречается дважды: первый раз — пунктом оглавления у якоря, второй —
+# реальным разделом в теле. Второе вхождение и есть граница оглавления.
+_BODY_MARKERS = (
+    re.compile(r"^\s*список\s+сокращ", re.IGNORECASE),
+    re.compile(r"^\s*термин\w*\s+и\s+определ", re.IGNORECASE),
+    re.compile(r"^\s*1\s*\.?\s+краткая\s+информ", re.IGNORECASE),
+)
+
+
+def _leaderless_bounds(lines: List[str], anchor_idx: int) -> Optional[Tuple[int, int]]:
+    """
+    Регион оглавления без точек-лидеров.
+
+    Способ 1 (если в оглавлении есть номера страниц): от якоря до конца плотного
+    кластера «сигналов страницы» (строка-номер либо пункт с номером страницы в
+    хвосте). В теле подряд таких сигналов нет — кластер кончается на переходе к
+    прозе. Точнее способа 2, когда раздел тела (напр. «Список сокращений») в теле
+    не опознан как заголовок и повторное вхождение «перелетело» бы через него.
+
+    Способ 2 (fallback для оглавления вовсе без номеров страниц): тело повторяет
+    структуру — «якорный» раздел («Список сокращений» / «Термины и определения» /
+    «1. Краткая информация») стоит и в оглавлении (у якоря), и в теле. Берём
+    САМОЕ РАННЕЕ повторное вхождение среди маркеров — это начало тела.
+    """
+    n = len(lines)
+    start = anchor_idx + 1
+
+    # --- способ 1: кластер сигналов страниц ---
+    def is_signal(text: str) -> bool:
+        t = text.strip()
+        if re.fullmatch(r"\d{1,4}", t):      # номер страницы на своей строке
+            return True
+        _, closed = _strip_tail(t)           # «… 46» / «Диетотерапия 74»
+        return closed
+
+    sig = [i for i in range(start, n) if is_signal(lines[i])]
+    if len(sig) >= 5 and sig[0] - start <= 30:
+        window = 12
+        end = sig[0]
+        for i in sig:
+            if i <= end:
+                continue
+            if i - end <= window:
+                end = i
+            else:
+                break
+        if sum(1 for i in sig if start <= i <= end) >= 5:
+            return start, end
+
+    # --- способ 2: самое раннее повторное вхождение якорного раздела ---
+    body_start: Optional[int] = None
+    for rx in _BODY_MARKERS:
+        occ = [i for i in range(start, n) if rx.match(lines[i])]
+        if len(occ) >= 2 and occ[0] - start <= 20 and occ[1] - occ[0] >= 5:
+            body_start = occ[1] if body_start is None else min(body_start, occ[1])
+    if body_start is not None:
+        return start, body_start - 1
+    return None
 
 
 def parse_entries(lines: List[str],
@@ -107,7 +182,14 @@ def parse_entries(lines: List[str],
             return
         nm = _NUM_HEAD.match(full)
         if nm and nm.group(1):
-            entries.append((nm.group(1), nm.group(2).strip()))
+            title = nm.group(2).strip()
+            # «3 О» и т.п. — артефакт извлечения (номер страницы + одиночный символ
+            # шапки/водяного знака), а не пункт оглавления: у раздела КР заголовок
+            # содержательный. Отбрасываем нумерованный «пункт» с пустым/обрубочным
+            # заголовком, чтобы не плодить ложные дубли номера в оглавлении.
+            if len(title) < 3:
+                return
+            entries.append((nm.group(1), title))
         else:
             entries.append((None, full))
 
