@@ -29,7 +29,7 @@ from crparser.engine.models import (
     Page,
     Section,
 )
-from crparser.engine.toc import TocIndex
+from crparser.engine.toc import TocIndex, norm
 
 if TYPE_CHECKING:  # импорт только для типов — без рантайм-зависимости от профилей
     from crparser.profiles.base import DocumentProfile
@@ -350,8 +350,9 @@ class Segmenter:
                 norm_new = self._normalize(title).lower()
                 if num in seen_numbers:
                     # НАСТОЯЩИЙ дубль: тот же номер И тот же/пустой заголовок —
-                    # гасим (фантомный повтор), как было раньше.
-                    if not norm_new or norm_new == self._normalize(seen_numbers[num]).lower():
+                    # гасим (фантомный повтор). Сравнение БЕЗ пунктуации: «ППИ.» и
+                    # «ППИ» — один раздел (различие только в OCR-точке), а не коллизия.
+                    if not norm_new or norm(title) == norm(seen_numbers[num]):
                         open_heading = None
                         return
                     # КОЛЛИЗИЯ: один номер с РАЗНЫМИ заголовками — это дефект
