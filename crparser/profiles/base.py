@@ -114,6 +114,16 @@ class DocumentProfile(ABC):
         """
         return False
 
+    def main_title_canonical(self, title: str, number: Optional[str]) -> bool:
+        """Заголовок верхнего уровня — канонический раздел шаблона? По умолчанию —
+        считаем любой допустимым (профиль уточняет; движок иначе требует TOC)."""
+        return True
+
+    def title_is_body_label(self, title: str) -> bool:
+        """Заголовок — на деле метка тела (рекомендация/служебный лейбл) с номером?
+        По умолчанию — нет (профиль уточняет)."""
+        return False
+
     def split_inline_headings(self, line: Line) -> List[Line]:
         """
         Разрезать строку, если внутри неё спрятан новый заголовок

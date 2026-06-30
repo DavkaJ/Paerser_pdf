@@ -402,6 +402,9 @@ class Segmenter:
             confirmed = self._toc is not None and self._toc.confirmed(number, title)
             if confirmed:
                 return False
+            # (0) метка тела с номером («Рекомендуется…», «Комментарии:») — не раздел
+            if self._profile.title_is_body_label(title):
+                return True
             # (1) длина — работает и с оглавлением, и без него
             if len(title) > _MAX_SUB_TITLE:
                 return True

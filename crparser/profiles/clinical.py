@@ -66,6 +66,10 @@ _RE_RECO_ANY = re.compile(
 _RE_SERVICE_WORD = re.compile(
     r"^(комментари\w*|уровень\s+убедительности|уровень\s+достоверности)\b",
     re.IGNORECASE)
+# ГЛАГОЛЬНАЯ форма рекомендации где угодно в строке — признак, что «заголовок» на
+# деле рекомендация-предложение из тела (не прилагательное «рекомендуемые»).
+_RE_RECO_VERB = re.compile(
+    r"\b(не\s+)?рекоменд(уется|уются|овано|овани\w*)\b", re.IGNORECASE)
 # код медуслуги/АТХ в скобках: «(A22.26.010)», «(B03.016.003)».
 _RE_SERVICE_CODE = re.compile(r"\([A-ZА-Я]\d{2}[.\d]+")
 
@@ -281,6 +285,18 @@ class ClinicalRecommendationProfile(DocumentProfile):
             if low.startswith(prefix) or prefix.startswith(low + " "):
                 return number_top is None or number_top in numbers
         return False
+
+    def title_is_body_label(self, title: str) -> bool:
+        """
+        Заголовок — на самом деле метка ТЕЛА раздела с приклеенным номером, а не
+        название раздела: рекомендация-предложение («Рекомендуется…», «…не
+        рекомендовано») или служебный лейбл («Комментарии:», «Уровень
+        убедительности/достоверности»). Берём ГЛАГОЛЬНЫЕ формы рекомендации (не
+        прилагательное «рекомендуемые», легитимное в названии). Движок отвергает
+        такой заголовок только если он НЕ подтверждён оглавлением.
+        """
+        t = _norm(title)
+        return bool(_RE_RECO_VERB.search(t) or _RE_SERVICE_WORD.match(t))
 
     def main_title_canonical(self, title: str, number: Optional[str]) -> bool:
         """Публичная обёртка: заголовок level-1 — канонический раздел КР по шаблону?

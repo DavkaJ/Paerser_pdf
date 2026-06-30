@@ -63,8 +63,10 @@ _NUM_RE = re.compile(r"^\d+(\.\d+)*$")
 
 # --- признаки утечки тела в заголовок (инварианты) --------------------------
 _TITLE_LIST_MARKER = re.compile(r"[•·●▪‣◦⁃]")
+# только ГЛАГОЛЬНЫЕ формы (рекомендуется/рекомендовано) — признак утёкшего тела;
+# прилагательное «рекомендуемые (препараты)» легитимно в названии раздела.
 _TITLE_RECO = re.compile(
-    r"\b(не\s+)?рекоменд(уется|уются|овано|овани\w*|уем\w*)\b", re.IGNORECASE)
+    r"\b(не\s+)?рекоменд(уется|уются|овано|овани\w*)\b", re.IGNORECASE)
 _TITLE_SERVICE = re.compile(
     r"\b(комментари\w*|уровень\s+убедительности|уровень\s+достоверности)\b",
     re.IGNORECASE)
@@ -189,10 +191,19 @@ def validate_doc(name: str, doc: dict, toc: Optional[Toc]) -> Report:
     if sec_found >= 20 and tables_found == 0:
         rep.warn("TABLES", f"{sec_found} разделов, но 0 таблиц — проверить детектор таблиц")
 
+    # индекс оглавления (для проверок «подтверждён ли раздел оглавлением»)
+    tindex = TocIndex(toc.entries) if toc else None
+
     # ---- инвариант 2: чистота заголовков (утечка тела) ----
+    # Заголовок, ПОДТВЕРЖДЁННЫЙ оглавлением, — это настоящее название раздела:
+    # код МКБ «(F10.0)», слово «Рекомендуемые», скобки в нём легитимны, а не утечка
+    # тела. Признаки утечки проверяем только у НЕподтверждённых заголовков.
     for s in nodes:
         title = (s.get("title") or "").strip()
-        tag = s.get("number") or ("«" + title[:30] + "…»")
+        num = s.get("number")
+        if num and tindex is not None and tindex.confirmed(num, title):
+            continue
+        tag = num or ("«" + title[:30] + "…»")
         if _TITLE_LIST_MARKER.search(title):
             rep.fail("TITLE_BLEED", f"{tag}: маркер списка в заголовке -> {title[:70]!r}")
         elif _TITLE_RECO.search(title):
