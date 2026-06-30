@@ -60,6 +60,10 @@ COV_WARN = 99.9
 # crparser.engine.toc (его же использует парсер, чтобы отсеивать фантомы — баг 4).
 _TOC_ANCHOR = re.compile(r"^\s*(оглавление|содержание)\s*$", re.IGNORECASE)
 _NUM_RE = re.compile(r"^\d+(\.\d+)*$")
+# разделы-регионы (список литературы/приложения/критерии), которым источник дал
+# номер: парсер держит их в excluded, а не как нумерованный раздел — не «потеря».
+_TOC_REF_APP = re.compile(
+    r"^\s*(список\s+литератур|приложени|критери\w*\s+оценки\s+качеств)", re.IGNORECASE)
 
 # --- признаки утечки тела в заголовок (инварианты) --------------------------
 _TITLE_LIST_MARKER = re.compile(r"[•·●▪‣◦⁃]")
@@ -270,6 +274,13 @@ def validate_doc(name: str, doc: dict, toc: Optional[Toc]) -> Report:
         if not matched and num in act_count:
             matched = any(_prefix_words_match(title, t) for t in act_titles[num])
         if matched:
+            continue
+        # «Список литературы»/«Приложение…»/«Критерии оценки качества», которым
+        # источник дал номер раздела, парсер сохраняет как регион-исключение
+        # (references/appendices), а не как нумерованный раздел — это не потеря.
+        if _TOC_REF_APP.match(title):
+            rep.warn("SOURCE_DEFECT",
+                     f"{num} {title!r} — нумерованные ссылки/приложение, сохранены как регион-исключение")
             continue
         if toc.body_has_numbered(num, title):
             # номер вплотную к своему заголовку в ТЕЛЕ, но раздела в выводе нет -> потеря
