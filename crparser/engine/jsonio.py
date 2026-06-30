@@ -45,10 +45,15 @@ class JsonWriter:
 
     @staticmethod
     def _table(table: Table) -> Dict[str, Any]:
-        return {
+        out = {
             "page": table.page,
             "number": table.number,
             "caption": table.caption,
             "raw_text": table.raw_text,
             "bbox": list(table.bbox),
         }
+        # Поле выводим только для безрамочных таблиц с неуверенным разбором,
+        # чтобы JSON обычных (рамочных) таблиц остался байт-в-байт прежним.
+        if table.low_confidence:
+            out["low_confidence"] = True
+        return out

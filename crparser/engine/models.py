@@ -84,6 +84,10 @@ class Table:
     caption: Optional[str]
     raw_text: str              # текстовый дамп области таблицы
     bbox: BBox
+    # True — таблица найдена fallback-детектором безрамочных таблиц и надёжно
+    # разбить её на ячейки не удалось (текст сохранён блоком). В JSON поле
+    # выводится только когда True, чтобы не менять схему обычных таблиц.
+    low_confidence: bool = False
 
 
 @dataclass
