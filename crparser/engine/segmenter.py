@@ -103,9 +103,48 @@ class Segmenter:
         self._split_front_matter(front_lines, excluded)
 
         sections = self._run_state_machine(split_body, excluded)
+        sections = self._drop_phantom_duplicates(sections)
         tree = self._build_hierarchy(sections)
 
         return {"sections": tree, "excluded": excluded}
+
+    def _drop_phantom_duplicates(self, sections: List[Section]) -> List[Section]:
+        """
+        Снять мнимый дубль номера: когда ОДИН узел с номером N.N подтверждён
+        оглавлением, а другой с тем же номером — нет (и его заголовка нигде в
+        оглавлении нет), второй — это одноимённый пункт-классификация из прозы
+        («2.1 Нечастая ГБН» при реальном «2.1 Жалобы»). Убираем его, а текст
+        (заголовок + тело) подклеиваем к предыдущему уцелевшему разделу, чтобы не
+        терять покрытие. Реальные коллизии источника целы: там оба заголовка есть
+        в оглавлении, оба confirmed — ни один не снимается. Без оглавления — no-op.
+        """
+        if self._toc is None:
+            return sections
+        groups: Dict[str, List[Section]] = defaultdict(list)
+        for s in sections:
+            if s.number:
+                groups[s.number].append(s)
+        drop: set = set()
+        for num, group in groups.items():
+            if len(group) < 2:
+                continue
+            confirmed = [s for s in group if self._toc.confirmed(num, s.title)]
+            if not confirmed:
+                continue
+            for s in group:
+                if s not in confirmed and not self._toc.title_anywhere(s.title):
+                    drop.add(id(s))
+        if not drop:
+            return sections
+        out: List[Section] = []
+        for s in sections:
+            if id(s) in drop:
+                if out:
+                    tail = (" " + s.title + " " + s.text).rstrip()
+                    out[-1].text = (out[-1].text + tail).strip()
+            else:
+                out.append(s)
+        return out
 
     # ---- подготовка строк ------------------------------------------------
 
