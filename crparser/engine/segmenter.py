@@ -415,13 +415,15 @@ class Segmenter:
                 title, consumed = self._assemble_pending_title(lines, i, pending_number)
                 probe = line.clone(title) if title else line
                 if title and self._profile.can_attach_title(probe, pending_number, self._body) \
-                        and not toc_reject(pending_number.number, title, pending_idx):
+                        and not toc_reject(pending_number.number, title, pending_idx) \
+                        and self._top_accept(pending_number.number, title, pending_number.level):
                     heading = Heading(
                         number=pending_number.number,
                         title=title,
                         level=pending_number.level,
                         kind=HeadingKind.NUMBERED,
                         visual=self._visual(line),
+                        canonical=self._profile.main_title_canonical(title, pending_number.number),
                         page=line.page,
                         bbox=line.bbox,
                     )
@@ -476,8 +478,11 @@ class Segmenter:
             # --- 4. полноценный заголовок в одной строке ---
             if heading and heading.kind == HeadingKind.NUMBERED and heading.number:
                 # toc_reject: ложный пункт нумерованного списка из прозы (баг 4) —
-                # оставляем как тело текущего раздела
-                if order_ok(heading) and not toc_reject(heading.number, heading.title, i):
+                # оставляем как тело текущего раздела; _top_accept: неканонический
+                # раздел верхнего уровня принимаем только при подтверждении TOC
+                if order_ok(heading) and not toc_reject(heading.number, heading.title, i) \
+                        and self._top_accept(heading.number, heading.title, heading.level,
+                                             heading.canonical):
                     flush_open()
                     open_heading = {"heading": heading, "title_parts": [heading.title],
                                     "extra": 0}
@@ -596,6 +601,23 @@ class Segmenter:
 
     def _classify(self, line: Line) -> Optional[Heading]:
         return self._profile.classify_heading(line, self._body)
+
+    def _top_accept(self, number: Optional[str], title: str, level: int,
+                    canonical: Optional[bool] = None) -> bool:
+        """
+        Допустим ли раздел ВЕРХНЕГО уровня? Подуровни — всегда (их фильтрует
+        toc_reject). Level-1: канонический раздел шаблона (название+номер) — да;
+        иначе (нестандартное имя или сдвиг номера) — только если ПОДТВЕРЖДЁН
+        оглавлением. Для файлов без оглавления неканонический level-1 не
+        принимается (поведение как раньше — без регрессий).
+        """
+        if level != 1:
+            return True
+        if canonical is None:
+            canonical = self._profile.main_title_canonical(title, number)
+        if canonical:
+            return True
+        return self._toc is not None and self._toc.confirmed(number, title)
 
     def _assemble_pending_title(self, lines: List[Line], start: int,
                                 pending: Heading) -> "tuple[Optional[str], int]":

@@ -190,11 +190,17 @@ class ClinicalRecommendationProfile(DocumentProfile):
             return None
         level = number.count(".") + 1
 
+        canonical = True
         if level == 1:
-            # верхний уровень: только канонический раздел КР с совпадающим номером
             if len(title) > 500:
                 return None
-            if not self._valid_main_title(title, int(number.split(".")[0])):
+            # канонический раздел КР (название+номер шаблона) — быстрый путь.
+            canonical = self._valid_main_title(title, int(number.split(".")[0]))
+            # неканонический/со сдвигом номера верхний раздел (нестандартная КР,
+            # доп. разделы «Рецидив»/«Осложнения», реабилитация под №6 и т.п.):
+            # принимаем как КАНДИДАТА — движок подтвердит его оглавлением. Требуем
+            # правдоподобности заголовка (заглавная буква), не фрагмент тела.
+            if not canonical and not (title[:1].isupper() or title[:1] == "«"):
                 return None
         else:
             if len(title) > 300:
@@ -207,7 +213,7 @@ class ClinicalRecommendationProfile(DocumentProfile):
             if not (visual or title[:1].isupper()):
                 return None
         return Heading(number=number, title=title, level=level,
-                       kind=HeadingKind.NUMBERED, visual=visual)
+                       kind=HeadingKind.NUMBERED, visual=visual, canonical=canonical)
 
     def _parse_number_only(self, text: str) -> Optional[Heading]:
         """Висящий номер «4.» (заголовок придёт следующей строкой)."""
@@ -275,6 +281,15 @@ class ClinicalRecommendationProfile(DocumentProfile):
             if low.startswith(prefix) or prefix.startswith(low + " "):
                 return number_top is None or number_top in numbers
         return False
+
+    def main_title_canonical(self, title: str, number: Optional[str]) -> bool:
+        """Публичная обёртка: заголовок level-1 — канонический раздел КР по шаблону?
+        Движок этим решает, нужно ли подтверждать неканонический раздел оглавлением."""
+        top = None
+        if number:
+            head = number.split(".")[0]
+            top = int(head) if head.isdigit() else None
+        return self._valid_main_title(title, top)
 
     @staticmethod
     def _is_visual(line: Line, body_size: float) -> bool:
@@ -389,7 +404,10 @@ class ClinicalRecommendationProfile(DocumentProfile):
             return False
         if pending.level == 1:
             number_top = int(pending.number.split(".")[0]) if pending.number else None
-            return self._valid_main_title(text, number_top)
+            if self._valid_main_title(text, number_top):
+                return True
+            # неканонический верхний раздел — кандидат, движок подтвердит TOC
+            return bool(text[:1].isupper()) and len(text) <= 300
         if len(text) > 300:
             return False
         return self._is_visual(line, body_size) or text[:1].isupper()
