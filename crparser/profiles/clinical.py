@@ -106,6 +106,41 @@ _RE_DATE_LIKE = re.compile(r"^\d{1,2}\.\d{1,2}\.\d{4}$")
 _RE_COMMA_NUMBER = re.compile(r"^\d+[.,]\d+[.,]\d+(?:[.,]\d+)*")
 _RE_CAPTION = re.compile(r"^(Таблица|Рисунок|Табл\.|Рис\.)\b", re.IGNORECASE)
 
+# Глава верхнего уровня, пронумерованная РИМСКОЙ цифрой: «I. Краткая информация»,
+# «V. Краткая…», «VII. Лечение…». Номер главы берём НЕ из римской цифры (часть КР
+# нумерует главы с V/VI/…), а из канонического названия раздела шаблона (Краткая→1,
+# Диагностика→2 …). Римскую цифру принимаем ТОЛЬКО как визуальный заголовок с
+# каноническим названием — так отсекаются инлайновые «I»/«Тип I»/римские в
+# классификациях («I. Плоскоклеточный … рак», набранные кеглем тела). Движок
+# дополнительно отключает римские главы для файлов с одиночно-арабскими
+# подразделами (там номера столкнулись бы) — см. Segmenter._roman_ok.
+_RE_ROMAN_HEAD = re.compile(r"^([IVXL]{1,6})\s*[.)]\s+([A-Za-zА-Яа-яЁё«].*)$")
+# висящий римский номер главы отдельной строкой: «IV.» (название — следующей
+# строкой, как у арабского висящего «4.»).
+_RE_ROMAN_ONLY = re.compile(r"^([IVXL]{1,6})\s*[.)]\s*$")
+_ROMAN_VALS = {"I": 1, "V": 5, "X": 10, "L": 50}
+
+
+def _roman_to_int(s: str) -> int:
+    """Римское число -> int с проверкой канонической формы (иначе 0)."""
+    total, prev = 0, 0
+    for ch in reversed(s):
+        v = _ROMAN_VALS.get(ch, 0)
+        if v == 0:
+            return 0
+        total += -v if v < prev else v
+        prev = max(prev, v)
+    return total if 1 <= total <= 39 and _int_to_roman(total) == s else 0
+
+
+def _int_to_roman(n: int) -> str:
+    out, table = "", ((10, "X"), (9, "IX"), (5, "V"), (4, "IV"), (1, "I"))
+    for val, sym in table:
+        while n >= val:
+            out += sym
+            n -= val
+    return out
+
 # Верхняя граница номера основного раздела КР (1..9: семь типовых разделов +
 # «Критерии оценки качества» как 8/9; заодно отсекает даты и номера приказов).
 _MAX_TOP_LEVEL = 9
@@ -169,6 +204,14 @@ class ClinicalRecommendationProfile(DocumentProfile):
         if numbered is not None:
             return self._attach_pos(numbered, line)
 
+        roman = self._parse_roman_chapter(text, visual)
+        if roman is not None:
+            return self._attach_pos(roman, line)
+
+        roman_only = self._parse_roman_only(text, visual)
+        if roman_only is not None:
+            return self._attach_pos(roman_only, line)
+
         number_only = self._parse_number_only(text)
         if number_only is not None:
             return self._attach_pos(number_only, line)
@@ -218,6 +261,61 @@ class ClinicalRecommendationProfile(DocumentProfile):
                 return None
         return Heading(number=number, title=title, level=level,
                        kind=HeadingKind.NUMBERED, visual=visual, canonical=canonical)
+
+    def _parse_roman_chapter(self, text: str, visual: bool) -> Optional[Heading]:
+        """Глава верхнего уровня с РИМСКИМ номером «I./V./VII. <канон. название>».
+
+        Принимаем только ВИЗУАЛЬНЫЙ заголовок с каноническим названием раздела КР;
+        номер берём из названия (Краткая→1 … Дополнительная→7). Это отсекает
+        римские в прозе/классификациях.
+        """
+        if not visual:
+            return None
+        m = _RE_ROMAN_HEAD.match(text)
+        if not m:
+            return None
+        if _roman_to_int(m.group(1)) == 0:      # не каноничная римская цифра
+            return None
+        title = _norm(m.group(2))
+        if not title or self._looks_like_body_fragment(title):
+            return None
+        num = self._canonical_chapter_number(title)
+        if num is None:
+            return None
+        return Heading(number=str(num), title=title, level=1,
+                       kind=HeadingKind.NUMBERED, visual=True, canonical=True,
+                       roman=True)
+
+    def _parse_roman_only(self, text: str, visual: bool) -> Optional[Heading]:
+        """Висящий римский номер главы «IV.» отдельной строкой (название придёт
+        следующей строкой). Номер — по значению римской цифры (1..9); реальный
+        фильтр — каноничность названия при доклейке (can_attach_title)."""
+        if not visual:
+            return None
+        m = _RE_ROMAN_ONLY.match(text)
+        if not m:
+            return None
+        val = _roman_to_int(m.group(1))
+        if val < 1 or val > _MAX_TOP_LEVEL:
+            return None
+        return Heading(number=str(val), title="", level=1,
+                       kind=HeadingKind.NUMBER_ONLY, visual=True, roman=True)
+
+    @staticmethod
+    def _canonical_chapter_number(title: str) -> Optional[int]:
+        """Номер 1..7 для канонического названия ОДНОЙ главы шаблона КР (или None).
+
+        Только названия с ОДНОЗНАЧНЫМ номером 1..7; «Критерии оценки качества»
+        ({7,8,9}) сюда не попадают — их ловит именованный раздел.
+        """
+        low = _norm(title).lower()
+        for prefix, numbers in _MAIN_SECTION_NUMBERS.items():
+            if (low.startswith(prefix) or prefix.startswith(low + " ")) \
+                    and len(numbers) == 1:
+                num = next(iter(numbers))
+                if 1 <= num <= 7:
+                    return num
+        return None
 
     def _parse_number_only(self, text: str) -> Optional[Heading]:
         """Висящий номер «4.» (заголовок придёт следующей строкой)."""

@@ -66,6 +66,10 @@ class Segmenter:
         self._warnings: List[str] = []
         self._blank_gap: float = 1e9  # порог «пустой строки», считается на segment()
         self._toc: Optional[TocIndex] = None  # оглавление как арбитр заголовков (баг 4)
+        # включать ли главы с римским номером: только для документов с пунктирными
+        # подразделами (в файлах с одиночно-арабскими подразделами римские главы
+        # столкнулись бы номерами — там их целиком отключаем, поведение как раньше)
+        self._roman_ok: bool = True
 
     # ---- публичный вход --------------------------------------------------
 
@@ -88,6 +92,7 @@ class Segmenter:
             [ln.text for page in pages for ln in page.lines], self._spec.toc)
 
         lines = self._collect_lines(pages, subtraction_map)
+        self._roman_ok = self._roman_chapters_safe(lines)
         self._blank_gap = self._compute_blank_gap(lines)
         start = self._find_content_start(lines)
 
@@ -643,7 +648,41 @@ class Segmenter:
     # ---- тонкие обёртки над профилем -------------------------------------
 
     def _classify(self, line: Line) -> Optional[Heading]:
-        return self._profile.classify_heading(line, self._body)
+        h = self._profile.classify_heading(line, self._body)
+        # римские главы включены только для «безопасных» документов (пунктирные
+        # подразделы). Иначе игнорируем — строка станет прозой, как раньше.
+        if h is not None and getattr(h, "roman", False) and not self._roman_ok:
+            return None
+        return h
+
+    def _roman_chapters_safe(self, lines: List[Line]) -> bool:
+        """Можно ли включать главы с римским номером для ЭТОГО документа.
+
+        Опасность — файлы, где подразделы нумерованы ОДИНОЧНОЙ арабской цифрой
+        («1. Определение», «2. Этиология», перезапуск в каждой главе): там номер
+        римской главы (Краткая→1) столкнулся бы с номером подраздела «1». Признак:
+        сразу за римской главой идёт одиночно-арабский (без точки) под-заголовок.
+        Если хоть у одной римской главы так — отключаем римские главы целиком
+        (документ парсится как раньше, без регрессий). Если подразделы пунктирные
+        (N.M) — включаем.
+        """
+        cls = [self._profile.classify_heading(ln, self._body) for ln in lines]
+        romans = [i for i, h in enumerate(cls)
+                  if h is not None and getattr(h, "roman", False)]
+        if not romans:
+            return True
+        for i in romans:
+            for j in range(i + 1, min(i + 20, len(cls))):
+                h = cls[j]
+                if h is None or h.kind == HeadingKind.NAMED:
+                    continue
+                if getattr(h, "roman", False):
+                    break            # следующая римская глава — подраздела между нет
+                if h.number:
+                    if "." not in h.number:
+                        return False  # одиночно-арабский подраздел -> опасно
+                    break             # пунктирный подраздел -> для этой главы ок
+        return True
 
     def _top_accept(self, number: Optional[str], title: str, level: int,
                     canonical: Optional[bool] = None) -> bool:
