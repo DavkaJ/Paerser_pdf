@@ -25,6 +25,21 @@ _LEADER = re.compile(r"\.{3,}|_{3,}|…+|‥+|․{2,}")
 _TAIL_LEADERS = r"(?:\.{2,}|[․‥…]+)"
 _NUM_HEAD = re.compile(r"^(\d+(?:\.\d+)*)\.?\s*(.*)$")
 _NUM_RE = re.compile(r"^\d+(\.\d+)*$")
+# пробелы ВНУТРИ точечного номера в начале строки: «3. 5», «3 . 2», «1 . 1».
+# Часть КР верстает оглавление так, и без склейки номер «3.5» распадается на
+# «3» + «5 Диетотерапия» -> ложный MISSING. Склеиваем «N . M» -> «N.M» ТОЛЬКО
+# для ведущего многосоставного номера; одиночный «3» (глава) и обычные «3.5»
+# не затрагиваются.
+_RE_NUM_SPACED = re.compile(r"^\s*\d+(?:\s*\.\s*\d+)+")
+
+
+def _join_number_spaces(text: str) -> str:
+    """«3. 5 Диетотерапия» / «1 . 1 Определение» -> «3.5 …» / «1.1 …»."""
+    m = _RE_NUM_SPACED.match(text)
+    if not m or "." not in m.group(0):
+        return text
+    joined = re.sub(r"\s*\.\s*", ".", m.group(0)).lstrip()
+    return joined + text[m.end():]
 # строка оглавления начинает новый пункт: «1. …», «2.5.2 …» или оторванный
 # многосоставный номер на своей строке («2.4.2.2», заголовок — на следующей).
 _ENTRY_START = re.compile(r"^\s*\d+(?:\.\d+)*\.?\s+\S|^\s*\d+(?:\.\d+)+\.?\s*$")
@@ -180,6 +195,7 @@ def parse_entries(lines: List[str],
         buf.clear()
         if not full:
             return
+        full = _join_number_spaces(full)       # «3. 5 …» -> «3.5 …»
         nm = _NUM_HEAD.match(full)
         if nm and nm.group(1):
             title = nm.group(2).strip()
