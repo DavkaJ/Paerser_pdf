@@ -26,6 +26,7 @@ from crparser.engine.pdf_reader import PdfReader
 from crparser.engine.segmenter import Segmenter
 from crparser.engine.stats import StatsCalculator
 from crparser.engine.tables import TableExtractor
+from crparser.engine.textnorm import pseudo_ascii_glyph_tokens
 from crparser.profiles.base import DocumentProfile
 
 
@@ -86,11 +87,17 @@ class DocumentParser:
         # счётчики порчи текста: разрядка/удвоение (починены) + глиф-токены
         # (обнаружены, на OCR) — валидатор по ним поднимает статус CORRUPTION.
         glyph_regions = getattr(extractor, "corrupt_count", 0)
+        # «обратная» глифовая порча (кириллица->ASCII): засчитываем токены на OCR
+        # только при ТОТАЛЬНОЙ порче по документу (плотностной порог), иначе 0 —
+        # единичные лаб-токены (>50%, p<0.05) в здоровом файле не считаются.
+        pseudo_ascii = pseudo_ascii_glyph_tokens(
+            norm_stats.get("sig", 0), norm_stats.get("pseudo", 0))
         stats["corruption"] = {
             "spacing_fixed": norm_stats.get("spacing", 0),
             "doubling_fixed": norm_stats.get("doubling", 0),
             "glyph_tokens": norm_stats.get("glyph", 0),
             "glyph_regions": glyph_regions,
+            "pseudo_ascii_tokens": pseudo_ascii,
         }
         if stats["coverage_percent"] < 50:
             warnings_list.append(

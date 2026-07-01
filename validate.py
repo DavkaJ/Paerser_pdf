@@ -197,6 +197,16 @@ def validate_doc(name: str, doc: dict, toc: Optional[Toc]) -> Report:
                  f"coverage={cov}) — скан, на OCR/ручную обработку")
         return rep
 
+    # ---- тотальная «обратная» глифовая порча (кириллица->ASCII) -> REVIEW ----
+    # Плотностной детектор пометил документ как тотально битый (текстовый слой
+    # НЕ пуст, но это ASCII-каша из битого cmap). Структурную сверку с TOC не
+    # ведём: нулевые разделы и MISSING — СЛЕДСТВИЕ порчи, а не самостоятельный
+    # дефект. Файл уходит на OCR: REVIEW, не FAIL (аналог SKIPPED_SCAN, но текст
+    # есть). Порог pseudo_ascii_tokens>0 срабатывает только на тотальной порче.
+    if int((stats.get("corruption", {}) or {}).get("pseudo_ascii_tokens", 0)) > 0:
+        _corruption_review(rep, stats)
+        return rep
+
     nodes = [s for s, _ in walk(sections)]
     parent_of = {id(s): p for s, p in walk(sections)}
     numbered = [s for s in nodes if s.get("number") and _NUM_RE.match(s["number"])]
@@ -379,17 +389,23 @@ def _corruption_review(rep: "Report", stats: dict) -> None:
     db = int(cor.get("doubling_fixed", 0))
     gt = int(cor.get("glyph_tokens", 0))
     gr = int(cor.get("glyph_regions", 0))
+    # «обратная» глифовая порча (кириллица->ASCII); уже плотностно-отфильтрована
+    # парсером (0, если порча не тотальная), поэтому здесь просто добавляем на OCR.
+    pa = int(cor.get("pseudo_ascii_tokens", 0))
     rep.corruption = {"fixable_spacing": sp, "fixable_doubling": db,
-                      "needs_ocr": gt + gr}
+                      "needs_ocr": gt + gr + pa}
     if sp >= _COR_SPACING:
         rep.review("CORRUPTION",
                    f"fixable_spacing: разрядка текста, склеено {sp} серий")
     if db >= _COR_DOUBLING:
         rep.review("CORRUPTION",
                    f"fixable_doubling: удвоение букв, схлопнуто {db} токенов")
-    if gr >= 1 or gt >= _COR_GLYPH_TOK:
+    if gr >= 1 or gt >= _COR_GLYPH_TOK or pa >= _COR_GLYPH_TOK:
+        detail = f"{gt} токенов, {gr} таблиц-регионов"
+        if pa:
+            detail += f", {pa} псевдо-ASCII токенов (кириллица->ASCII)"
         rep.review("CORRUPTION",
-                   f"needs_ocr: глифовая подмена ({gt} токенов, {gr} таблиц-регионов) — на OCR")
+                   f"needs_ocr: глифовая подмена ({detail}) — на OCR")
 
 
 def _num_key(num: str):

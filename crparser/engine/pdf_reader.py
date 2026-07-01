@@ -18,7 +18,8 @@ import fitz  # PyMuPDF
 
 from crparser.engine.models import BBox, Line, Page
 from crparser.engine.textnorm import (
-    glyph_suspect_count, looks_glyph_corrupted, normalize_line)
+    glyph_suspect_count, looks_glyph_corrupted, normalize_line,
+    pseudo_ascii_counts)
 
 # Бит 4 (16) в span["flags"] PyMuPDF — признак жирного начертания.
 _FLAG_BOLD = 1 << 4
@@ -71,7 +72,11 @@ class PdfReader:
         self._path = path
         self._doc = fitz.open(path)
         #: счётчики починенной/обнаруженной порчи текста (для валидатора)
-        self.norm_stats: Dict[str, int] = {"spacing": 0, "doubling": 0, "glyph": 0}
+        self.norm_stats: Dict[str, int] = {
+            "spacing": 0, "doubling": 0, "glyph": 0,
+            # «обратная» глифовая порча (кириллица->ASCII): накапливаем сырые
+            # счётчики по документу, решение — по совокупной доле в parser.
+            "pseudo": 0, "sig": 0}
 
     @property
     def page_count(self) -> int:
@@ -108,6 +113,13 @@ class PdfReader:
                     text = _clean_line("".join(parts))
                     if not text:
                         continue
+
+                    # «обратная» глифовая порча (кириллица->ASCII) — считаем по
+                    # СЫРОМУ тексту строки (до нормализации), доля агрегируется
+                    # по документу; решение принимает parser (плотностной порог).
+                    sig_here, pseudo_here = pseudo_ascii_counts(text)
+                    self.norm_stats["sig"] += sig_here
+                    self.norm_stats["pseudo"] += pseudo_here
 
                     # нормализация порчи (доменно-нейтрально): разрядку/удвоение
                     # чиним, глифовую подмену — НЕ трогаем (только считаем), чтобы
