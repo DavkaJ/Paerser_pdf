@@ -142,6 +142,8 @@ class Report:
         self.name = name
         self.fails: List[str] = []
         self.warns: List[str] = []
+        self.reviews: List[str] = []          # порча текста -> статус REVIEW
+        self.corruption: Dict[str, int] = {}  # разбивка по типам порчи
         self.skipped: Optional[str] = None   # причина SKIPPED_SCAN (скан без текста)
 
     def fail(self, kind: str, msg: str) -> None:
@@ -150,12 +152,25 @@ class Report:
     def warn(self, kind: str, msg: str) -> None:
         self.warns.append(f"{kind}: {msg}")
 
+    def review(self, kind: str, msg: str) -> None:
+        self.reviews.append(f"{kind}: {msg}")
+
     def skip(self, reason: str) -> None:
         self.skipped = reason
 
     @property
     def ok(self) -> bool:
         return not self.fails and self.skipped is None
+
+    @property
+    def status(self) -> str:
+        if self.skipped:
+            return "SKIP"
+        if self.fails:
+            return "FAIL"
+        if self.reviews:
+            return "REVIEW"
+        return "PASS"
 
 
 def validate_doc(name: str, doc: dict, toc: Optional[Toc]) -> Report:
@@ -194,6 +209,12 @@ def validate_doc(name: str, doc: dict, toc: Optional[Toc]) -> Report:
     tables_found = stats.get("tables_found", 0)
     if sec_found >= 20 and tables_found == 0:
         rep.warn("TABLES", f"{sec_found} разделов, но 0 таблиц — проверить детектор таблиц")
+
+    # ---- инвариант 1в: порча извлечённого текста -> статус REVIEW ----
+    # Разрядка/удвоение парсер уже починил (счётчики в stats), глифовую подмену
+    # только обнаружил (на OCR). Если порчи выше порога — файл НЕ должен молча
+    # проходить как PASS: поднимаем REVIEW с разбивкой по типам.
+    _corruption_review(rep, stats)
 
     # индекс оглавления (для проверок «подтверждён ли раздел оглавлением»)
     tindex = TocIndex(toc.entries) if toc else None
@@ -326,6 +347,33 @@ def validate_doc(name: str, doc: dict, toc: Optional[Toc]) -> Report:
     return rep
 
 
+# Пороги порчи для REVIEW. Разрядка/удвоение — редкие события в чистом тексте
+# (сильный сигнал), но держим запас, чтобы единичный ложный случай не поднимал
+# REVIEW на чистом файле. Глифовая подмена — на OCR при любом заметном объёме.
+_COR_SPACING = 5
+_COR_DOUBLING = 3
+_COR_GLYPH_TOK = 4
+
+
+def _corruption_review(rep: "Report", stats: dict) -> None:
+    cor = stats.get("corruption", {}) or {}
+    sp = int(cor.get("spacing_fixed", 0))
+    db = int(cor.get("doubling_fixed", 0))
+    gt = int(cor.get("glyph_tokens", 0))
+    gr = int(cor.get("glyph_regions", 0))
+    rep.corruption = {"fixable_spacing": sp, "fixable_doubling": db,
+                      "needs_ocr": gt + gr}
+    if sp >= _COR_SPACING:
+        rep.review("CORRUPTION",
+                   f"fixable_spacing: разрядка текста, склеено {sp} серий")
+    if db >= _COR_DOUBLING:
+        rep.review("CORRUPTION",
+                   f"fixable_doubling: удвоение букв, схлопнуто {db} токенов")
+    if gr >= 1 or gt >= _COR_GLYPH_TOK:
+        rep.review("CORRUPTION",
+                   f"needs_ocr: глифовая подмена ({gt} токенов, {gr} таблиц-регионов) — на OCR")
+
+
 def _num_key(num: str):
     return tuple(int(p) for p in num.split(".") if p.isdigit())
 
@@ -403,12 +451,13 @@ def main(argv: Optional[List[str]] = None) -> int:
             rep.fail("CRASH", repr(exc))
         reports.append(rep)
 
-        status = "SKIP" if rep.skipped else ("PASS" if rep.ok else "FAIL")
-        print(f"\n[{status}] {name}")
+        print(f"\n[{rep.status}] {name}")
         if rep.skipped:
             print(f"    ↷ SKIPPED_SCAN: {rep.skipped}")
         for f in rep.fails:
             print(f"    ✗ {f}")
+        for r in rep.reviews:
+            print(f"    ⚑ {r}")
         if not args.quiet:
             for w in rep.warns:
                 print(f"    · {w}")
@@ -416,8 +465,10 @@ def main(argv: Optional[List[str]] = None) -> int:
     skipped = [r for r in reports if r.skipped]
     judged = [r for r in reports if not r.skipped]
     npass = sum(1 for r in judged if r.ok)
+    review = [r for r in judged if r.status == "REVIEW"]
     print("\n" + "=" * 70)
     print(f"ИТОГ: {npass}/{len(judged)} файлов PASS"
+          + (f"  ({len(review)} REVIEW)" if review else "")
           + (f"  (+{len(skipped)} SKIPPED_SCAN)" if skipped else ""))
     if skipped:
         print("СКАНЫ (на OCR/ручную обработку): "
