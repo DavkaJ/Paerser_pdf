@@ -65,8 +65,9 @@ def work(pdf_path):
         w = JsonWriter()
         d = w.to_dict(res)
         out = os.path.join(OUT, os.path.splitext(base)[0] + ".json")
-        with open(out, "w", encoding="utf-8") as fh:
-            json.dump(d, fh, ensure_ascii=False, indent=2)
+        # атомарная запись: на диске всегда либо полный старый, либо полный новый
+        # файл — прерывание батча не оставляет оборванный/NUL-паддинговый JSON
+        w._atomic_dump(d, out)
         md, st = d["metadata"], d["stats"]
         flat = list(_flatten(d["sections"]))
         warns = d.get("warnings", [])
@@ -177,6 +178,21 @@ def main():
     with open("_stage2_results.json", "w", encoding="utf-8") as fh:
         json.dump(results, fh, ensure_ascii=False, indent=1)
 
+    # финальная проверка целостности: каждый out/*.json обязан читаться json.load
+    broken = []
+    for jf in sorted(glob.glob(os.path.join(OUT, "*.json"))):
+        try:
+            with open(jf, encoding="utf-8") as fh:
+                json.load(fh)
+        except Exception as exc:  # noqa: BLE001
+            broken.append("%s (%s)" % (os.path.basename(jf), type(exc).__name__))
+    total = len(glob.glob(os.path.join(OUT, "*.json")))
+    if broken:
+        print("\n  БИТЫЕ JSON (%d из %d): %s" % (len(broken), total, broken))
+        return 1
+    print("\n  целостность: все %d JSON валидны" % total)
+    return 0
+
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main() or 0)
