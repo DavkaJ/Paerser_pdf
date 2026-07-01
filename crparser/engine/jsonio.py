@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import json
+import os
 from typing import Any, Dict, List
 
 from crparser.engine.models import ParseResult, Section, Table
@@ -29,8 +30,32 @@ class JsonWriter:
         }
 
     def write(self, result: ParseResult, out_path: str) -> None:
-        with open(out_path, "w", encoding="utf-8") as fh:
-            json.dump(self.to_dict(result), fh, ensure_ascii=False, indent=2)
+        """Атомарно записать JSON: пишем во временный файл рядом, fsync, затем
+        os.replace на целевой. На диске всегда либо полный старый, либо полный
+        новый файл — обрывов/торн-состояний при прерывании батча не бывает.
+
+        Содержимое и форматирование не меняются (ensure_ascii=False, indent=2),
+        поэтому для незатронутых файлов вывод остаётся байт-в-байт прежним.
+        """
+        self._atomic_dump(self.to_dict(result), out_path)
+
+    @staticmethod
+    def _atomic_dump(obj: Any, out_path: str) -> None:
+        tmp = "%s.tmp.%d" % (out_path, os.getpid())
+        try:
+            with open(tmp, "w", encoding="utf-8") as fh:
+                json.dump(obj, fh, ensure_ascii=False, indent=2)
+                fh.flush()
+                os.fsync(fh.fileno())
+            os.replace(tmp, out_path)          # атомарная замена (в т.ч. на Windows)
+        except BaseException:
+            # при любой ошибке — целевой файл не трогаем, временный убираем
+            try:
+                if os.path.exists(tmp):
+                    os.remove(tmp)
+            except OSError:
+                pass
+            raise
 
     # ---- датакласс -> словарь --------------------------------------------
 
