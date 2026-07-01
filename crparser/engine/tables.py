@@ -35,11 +35,16 @@ warnings.filterwarnings("ignore")
 # Подпись таблицы. Принимаем и обычный номер («3», «3.1»), и приложенческий
 # префикс («П1», «П2»), включая OCR-вариант «ПЗ» (кир. З вместо цифры 3).
 _RE_TABLE_CAPTION = re.compile(
-    r"^\s*Таблица\s+(П?[\dЗз]+(?:[.,][\dЗз]+)*)\.?\s*(.*)$", re.IGNORECASE)
+    r"^\s*Таблица\s+(П?[\dЗз]+(?:[.,][\dЗз]+)*(?:\s+[\dЗз]\b)*)\.?\s*(.*)$",
+    re.IGNORECASE)
 
 
 def _norm_table_number(num: str) -> str:
-    """«ПЗ» → «П3» (OCR кир. З → цифра 3); запятые в номере → точки."""
+    """«ПЗ» → «П3» (OCR кир. З → цифра 3); запятые → точки; разрядку ВНУТРИ
+    номера схлопываем («1 0» → «10»): пробел между цифрами номера — это
+    letterspacing, а не разделитель. Пробелы трогаем только в самой группе
+    номера (её уже выделил регэксп), не по всей строке."""
+    num = re.sub(r"\s+", "", num)
     return num.replace("З", "3").replace("з", "3").replace(",", ".")
 
 
@@ -48,6 +53,88 @@ def _collapse_ws(text: str) -> str:
     text = "\n".join(lines)
     text = re.sub(r"\n{3,}", "\n\n", text)
     return text.strip()
+
+
+# --- пересборка визуальных строк подписи (разрядка дробит строку в PyMuPDF) ---
+# Порог «та же базовая линия»: АБСОЛЮТНЫЙ, в pt (как ytol в _group_rows).
+# Фрагменты разряженной строки делят почти один y0 (доли pt); разные строки
+# отстоят на кегль (~13pt) и выше. Порог НЕ привязан к высоте фрагмента: у
+# повёрнутых ячеек-заголовков таблиц высота огромна (h~110pt), и доля высоты
+# затянула бы в «строку» подпись с соседними ячейками (регрессия КР687_3).
+_ROW_Y_TOL = 4.0
+# Перенос заголовка подписи: макс. вертикальный зазор (доля высоты строки) и
+# порог «многоколоночности» — большой внутренний горизонтальный разрыв выдаёт
+# строку ТЕЛА таблицы (колонки), а не перенос сплошного заголовка.
+_WRAP_MAX_VGAP_FRAC = 0.9
+_WRAP_MAX_COL_GAP = 30.0
+_WRAP_MAX_LINES = 3
+# нумерованный заголовок раздела («3.1 Название») — не тянем в подпись как перенос
+_RE_NUM_HEAD = re.compile(r"^\d{1,2}(?:\.\d{1,3}){0,4}\.?\s+\S")
+
+
+def _visual_rows(lines) -> List[Dict]:
+    """Сгруппировать Line страницы в ВИЗУАЛЬНЫЕ строки (одна базовая линия).
+
+    Разрядка заставляет PyMuPDF дробить строку на несколько Line с почти
+    одинаковым y — собираем их обратно. Возвращает список dict, отсортированный
+    по y0: text (фрагменты, склеенные по x одним пробелом), bbox, nfrag (сколько
+    Line собрано), y0/y1, maxgap (макс. горизонтальный разрыв между соседними
+    фрагментами — отличает сплошной текст от колонок таблицы)."""
+    groups: List[Dict] = []
+    for ln in sorted(lines, key=lambda l: (l.bbox[1], l.bbox[0])):
+        y0, y1 = ln.bbox[1], ln.bbox[3]
+        row = None
+        for r in groups:
+            if abs(r["y0"] - y0) <= _ROW_Y_TOL:
+                row = r
+                break
+        if row is None:
+            groups.append({"y0": y0, "y1": y1, "frags": [ln]})
+        else:
+            row["frags"].append(ln)
+            row["y0"] = min(row["y0"], y0)
+            row["y1"] = max(row["y1"], y1)
+    out: List[Dict] = []
+    for r in groups:
+        frags = sorted(r["frags"], key=lambda l: l.bbox[0])
+        text = re.sub(
+            r"\s+", " ",
+            " ".join(f.text.strip() for f in frags if f.text.strip())).strip()
+        gaps = [frags[k + 1].bbox[0] - frags[k].bbox[2]
+                for k in range(len(frags) - 1)]
+        out.append({
+            "text": text,
+            "bbox": (min(f.bbox[0] for f in frags), r["y0"],
+                     max(f.bbox[2] for f in frags), r["y1"]),
+            "nfrag": len(frags),
+            "y0": r["y0"], "y1": r["y1"],
+            "maxgap": max(gaps) if gaps else 0.0,
+        })
+    out.sort(key=lambda x: x["y0"])
+    return out
+
+
+def _glue_caption_wrap(caption: str, rows: List[Dict], i: int) -> str:
+    """Подклеить к подписи её «оторванный» перенос заголовка из следующих строк.
+
+    Клеим строку ТОЛЬКО когда она примыкает по вертикали (малый зазор), НЕ
+    является новой подписью/номером страницы/нумерованным заголовком и НЕ
+    многоколоночная (большой внутренний разрыв = строка тела таблицы)."""
+    cap_row = rows[i]
+    lh = max(1.0, cap_row["y1"] - cap_row["y0"])
+    prev = cap_row
+    for j in range(i + 1, min(len(rows), i + 1 + _WRAP_MAX_LINES)):
+        nxt = rows[j]
+        vgap = nxt["y0"] - prev["y1"]
+        if vgap < 0 or vgap > _WRAP_MAX_VGAP_FRAC * lh:
+            break
+        t = nxt["text"]
+        if (not t or _RE_TABLE_CAPTION.match(t) or t.isdigit()
+                or _RE_NUM_HEAD.match(t) or nxt["maxgap"] > _WRAP_MAX_COL_GAP):
+            break
+        caption = (caption + " " + t).strip()
+        prev = nxt
+    return caption
 
 
 class TableExtractor:
@@ -189,18 +276,42 @@ class TableExtractor:
 
     @staticmethod
     def _collect_captions(pages: List[Page]) -> Dict[int, List[Dict]]:
-        """Найти строки-подписи «Таблица N ...» на каждой странице."""
+        """Найти строки-подписи «Таблица N ...» на каждой странице.
+
+        При сплошной разрядке PyMuPDF дробит строку подписи на несколько Line с
+        одной базовой линией — сначала пересобираем визуальные строки (склейка
+        фрагментов по y), затем матчим подпись по СОБРАННОЙ строке. Если подпись
+        сама пришла разбитой (>1 фрагмента) и её заголовок «оторван» в следующую
+        визуальную строку — аккуратно подклеиваем перенос."""
         out: Dict[int, List[Dict]] = {}
         for page in pages:
+            rows = _visual_rows(page.lines)
             caps = []
-            for line in page.lines:
-                m = _RE_TABLE_CAPTION.match(line.text)
-                if m:
-                    caps.append({
-                        "number": _norm_table_number(m.group(1)),
-                        "caption": line.text.strip(),
-                        "bbox": line.bbox,
-                    })
+            for i, row in enumerate(rows):
+                text = row["text"]
+                m = _RE_TABLE_CAPTION.match(text)
+                if not m:
+                    # подпись могла оказаться не в начале строки (слева —
+                    # колонтитул/номер страницы на той же базовой линии):
+                    # пробуем от фрагмента «Таблица…».
+                    idx = text.lower().find("таблица")
+                    if idx <= 0:
+                        continue
+                    text = text[idx:]
+                    m = _RE_TABLE_CAPTION.match(text)
+                    if not m:
+                        continue
+                caption = text.strip()
+                # заголовок подписи мог «оторваться» в следующие строки ТОЛЬКО
+                # когда сама подпись пришла разбитой разрядкой (>1 фрагмента);
+                # чистую однострочную подпись не трогаем — поведение как раньше.
+                if row["nfrag"] > 1:
+                    caption = _glue_caption_wrap(caption, rows, i)
+                caps.append({
+                    "number": _norm_table_number(m.group(1)),
+                    "caption": caption,
+                    "bbox": row["bbox"],
+                })
             if caps:
                 out[page.number] = caps
         return out
