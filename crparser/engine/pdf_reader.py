@@ -17,6 +17,8 @@ from typing import Dict, List
 import fitz  # PyMuPDF
 
 from crparser.engine.models import BBox, Line, Page
+from crparser.engine.textnorm import (
+    glyph_suspect_count, looks_glyph_corrupted, normalize_line)
 
 # Бит 4 (16) в span["flags"] PyMuPDF — признак жирного начертания.
 _FLAG_BOLD = 1 << 4
@@ -68,6 +70,8 @@ class PdfReader:
     def __init__(self, path: str) -> None:
         self._path = path
         self._doc = fitz.open(path)
+        #: счётчики починенной/обнаруженной порчи текста (для валидатора)
+        self.norm_stats: Dict[str, int] = {"spacing": 0, "doubling": 0, "glyph": 0}
 
     @property
     def page_count(self) -> int:
@@ -104,6 +108,19 @@ class PdfReader:
                     text = _clean_line("".join(parts))
                     if not text:
                         continue
+
+                    # нормализация порчи (доменно-нейтрально): разрядку/удвоение
+                    # чиним, глифовую подмену — НЕ трогаем (только считаем), чтобы
+                    # не искажать регион, который всё равно уйдёт на OCR.
+                    glyph_here = glyph_suspect_count(text)
+                    if glyph_here:
+                        self.norm_stats["glyph"] += glyph_here
+                    elif looks_glyph_corrupted(text):
+                        pass  # смешение скриптов без «плохих» биграмм — не чиним
+                    else:
+                        text, nsp, ndb = normalize_line(text)
+                        self.norm_stats["spacing"] += nsp
+                        self.norm_stats["doubling"] += ndb
 
                     lines.append(Line(
                         page=index + 1,
