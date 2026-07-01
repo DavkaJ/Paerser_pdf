@@ -107,6 +107,12 @@ _RE_NUMBERED = re.compile(
 _RE_REFCITE = re.compile(r"\[\s*\d")
 _RE_EVID = re.compile(r"\(\s*\d+\s*[А-СA-Cа-сa-c]\s*\)")
 _RE_NUMBER_ONLY = re.compile(r"^(\d+%s)\s*\.?$" % _NUM_TAIL)
+# Артефакт извлечения: РОВНО ОДИН ведущий непробельный символ + ОБЯЗАТЕЛЬНЫЙ пробел
+# перед ТОЧЕЧНЫМ номером подраздела («I 3.1. Консервативное лечение» — осколок
+# колонтитула/номера перед номером раздела). Терпим только к ДОТ-номерам (после
+# префикса сразу «цифра . цифра»): целочисленный level-1 «X 3 Лечение» под это НЕ
+# подпадает. Группа 1 — остаток строки, начинающийся с самого номера.
+_RE_LEADING_GLYPH = re.compile(r"^\S\s+(\d+\s*\.\s*\d.*)$")
 _RE_DATE_LIKE = re.compile(r"^\d{1,2}\.\d{1,2}\.\d{4}$")
 # OCR иногда ставит запятую вместо точки в номере раздела («4,2.2»). Чиним ТОЛЬКО
 # однозначно иерархический номер в начале строки — c >=2 разделителями (>=3 группы
@@ -227,6 +233,19 @@ class ClinicalRecommendationProfile(DocumentProfile):
         named = self._parse_named(text, visual)
         if named is not None:
             return self._attach_pos(named, line)
+
+        # Последняя попытка: снять РОВНО один ведущий мусорный глиф + пробел перед
+        # ТОЧЕЧНЫМ номером («I 3.1. …») и повторить разбор. Все прочие проверки
+        # (валидность номера, заглавная/визуальность, не-фрагмент-тела) остаются в
+        # силе — префикс лишь «съедается» до разбора. Терпимость строго к дот-
+        # номерам: принимаем результат только если он level>=2 (есть точка).
+        gm = _RE_LEADING_GLYPH.match(text)
+        if gm is not None:
+            rest = gm.group(1)
+            deglyph = self._parse_numbered(rest, visual) \
+                or self._parse_number_only(rest)
+            if deglyph is not None and deglyph.number.count(".") >= 1:
+                return self._attach_pos(deglyph, line)
 
         return None
 
