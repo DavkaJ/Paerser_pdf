@@ -27,6 +27,7 @@ from typing import Dict, List, Optional, Tuple
 import pdfplumber
 
 from crparser.engine.models import BBox, Page, Table
+from crparser.engine.textnorm import looks_glyph_corrupted, normalize_line
 
 # pdfminer (под капотом pdfplumber) шумит на «грязных» PDF — глушим.
 warnings.filterwarnings("ignore")
@@ -281,14 +282,14 @@ class TableExtractor:
         caption_text = " ".join(_row_text(rows[i]) for i in caption_rows).strip()
         body_text = " ".join(_row_text(r) for r in body_rows)
 
-        # шрифтовая порча: латиница, отрендеренная битым cmap как кириллица.
-        # Такой регион НЕ структурируем — помечаем на OCR.
-        if _looks_font_corrupted(body_text):
+        # глифовая порча: латиница, отрендеренная битым cmap как кириллица.
+        # Такой регион НЕ структурируем и НЕ схлопываем — помечаем на OCR.
+        if looks_glyph_corrupted(body_text) or looks_glyph_corrupted(caption_text):
             self.corrupt_count += 1
+            sect = f"«{caption_text[:60]}»" if caption_text else f"№{number}"
             warnings_list.append(
-                f"таблица «{caption_text[:60]}» (стр. {pno + 1}): подозрение на "
-                f"шрифтовую порчу (латиница в кириллице) — регион не "
-                f"структурирован, на OCR")
+                f"font_corruption: подозрение на глифовую порчу — на OCR "
+                f"(таблица {sect}, стр. {pno + 1})")
             return None
 
         raw_text, low_conf = _build_grid_text(body_rows, cuts)
@@ -317,11 +318,6 @@ _MIN_COL_GAP = 13.0
 _PAD = 1.5
 # минимальная ширина устойчивой реки, pt (уже отсекает случайные щели)
 _MIN_RIVER = 6.0
-
-_RE_MIXED = re.compile(r"[A-Za-z][А-Яа-яЁё]|[А-Яа-яЁё][A-Za-z]")
-# биграммы, характерные для латиницы, отрендеренной кириллическими глифами
-# (n→п, d→б, r→г, w→у/ш, ...). В нормальном русском встречаются крайне редко.
-_CORRUPT_BIGRAMS = ("пб", "гб", "бг", "уо", "шуо", "апб", "агб", "пбаг", "оаг")
 
 
 def _row_text(row) -> str:
@@ -521,6 +517,13 @@ def _column_cuts(body_rows, strict: bool = True) -> Tuple[List[float], int]:
     return cuts, support
 
 
+def _cell_text(words: List[str]) -> str:
+    """Текст ячейки: чиним разрядку/удвоение (глифовую порчу сюда не пускаем —
+    такой регион отсекается раньше)."""
+    text, _, _ = normalize_line(" ".join(words))
+    return text
+
+
 def _assign_columns(row, cuts) -> Dict[int, List[str]]:
     """Разложить слова строки по колонкам относительно границ cuts."""
     cells: Dict[int, List[str]] = {}
@@ -561,13 +564,13 @@ def _build_grid_text(body_rows, cuts) -> Tuple[str, bool]:
         if (prev_cells is not None and len(cells) == 1
                 and 0 not in cells and out_lines):
             col = next(iter(cells))
-            frag = " ".join(cells[col])
+            frag = _cell_text(cells[col])
             out_lines[-1] = _append_frag(out_lines[-1], frag, col, ncol)
             continue
 
         parts = []
         for col in range(ncol):
-            parts.append(" ".join(cells.get(col, [])))
+            parts.append(_cell_text(cells.get(col, [])))
         out_lines.append("\t".join(parts).rstrip())
         prev_cells = cells
 
