@@ -590,6 +590,7 @@ class ClinicalRecommendationProfile(DocumentProfile):
             "document_type": self.document_type,
             "title": None,
             "id": None,
+            "url": None,
             "year": None,
             "end_year": None,
             "age_group": None,
@@ -621,6 +622,13 @@ class ClinicalRecommendationProfile(DocumentProfile):
             warnings.append("название КР не извлечено")
         if not meta["mkb_codes"]:
             warnings.append("коды МКБ не извлечены")
+
+        # публичная ссылка на карточку КР. Строим из финального id (стем имени
+        # файла = ключ реестра, напр. «9_3»); при пустом/невалидном id — None,
+        # чтобы не отдавать битую ссылку.
+        cr_final_id = meta.get("id")
+        meta["url"] = (f"https://cr.minzdrav.gov.ru/view-cr/{cr_final_id}"
+                       if cr_final_id else None)
 
         meta["_warnings"] = warnings
         return meta
