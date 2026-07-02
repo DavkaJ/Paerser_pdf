@@ -32,19 +32,35 @@ from crparser.engine.textnorm import looks_glyph_corrupted, normalize_line
 # pdfminer (под капотом pdfplumber) шумит на «грязных» PDF — глушим.
 warnings.filterwarnings("ignore")
 
-# Подпись таблицы. Принимаем и обычный номер («3», «3.1»), и приложенческий
-# префикс («П1», «П2»), включая OCR-вариант «ПЗ» (кир. З вместо цифры 3).
+# Подпись таблицы. Номер — ЗАКРЫТОЕ множество форм (не «любое слово после Таблица»):
+#   • обычный «3», «3.1» (запятая как точка), приложенческий «П1», OCR «ПЗ»→«П3»;
+#   • приложенческий БУКВЕННЫЙ префикс «ПА3-1», «ПГ-2»: П + 1-2 ЗАГЛАВНЫЕ кир.
+#     буквы + опц. цифра + дефис + ОБЯЗАТЕЛЬНОЕ число (без числа не матчим);
+#   • слэш-суффикс приложения «1/А2»: номер + «/» + заглавная кир. буква + цифры,
+#     захватывается ЦЕЛИКОМ (иначе «/А2» уезжал в заголовок, а number обрезался).
+# `(?-i:…)` держит буквы приложения строго заглавными даже под IGNORECASE (само
+# слово «Таблица» остаётся регистронезависимым). Разрядку внутри дефисной/слэш-
+# формы схлопывает _norm_table_number (её якорит дефис/слэш, а не пробел).
 _RE_TABLE_CAPTION = re.compile(
-    r"^\s*Таблица\s+(П?[\dЗз]+(?:[.,][\dЗз]+)*(?:\s+[\dЗз]\b)*)\.?\s*(.*)$",
+    r"^\s*Таблица\s+("
+    r"П(?-i:[А-ЯЁ]){1,2}\d?\s*-\s*\d+"            # ПА3-1, ПГ-2
+    r"|\d+\s*/\s*(?-i:[А-ЯЁ])\d*"                  # 1/А2
+    r"|П?[\dЗз]+(?:[.,][\dЗз]+)*(?:\s+[\dЗз]\b)*"  # N, N.N, ПN (+ разрядка «1 0»)
+    r")\.?\s*(.*)$",
     re.IGNORECASE)
 
 
 def _norm_table_number(num: str) -> str:
     """«ПЗ» → «П3» (OCR кир. З → цифра 3); запятые → точки; разрядку ВНУТРИ
-    номера схлопываем («1 0» → «10»): пробел между цифрами номера — это
-    letterspacing, а не разделитель. Пробелы трогаем только в самой группе
-    номера (её уже выделил регэксп), не по всей строке."""
+    номера схлопываем («1 0» → «10», «ПА3 - 1» → «ПА3-1»): пробел внутри уже
+    выделенной группы номера — это letterspacing, а не разделитель. Пробелы
+    трогаем только в самой группе номера, не по всей строке.
+
+    З→3 применяем ТОЛЬКО к простому цифровому/«ПN»-номеру: в буквенной (ПА3-1) и
+    слэш-форме (1/А2) буквы — часть номера приложения и цифрой не подменяются."""
     num = re.sub(r"\s+", "", num)
+    if "-" in num or "/" in num:
+        return num.replace(",", ".")
     return num.replace("З", "3").replace("з", "3").replace(",", ".")
 
 
@@ -70,6 +86,23 @@ _WRAP_MAX_COL_GAP = 30.0
 _WRAP_MAX_LINES = 3
 # нумерованный заголовок раздела («3.1 Название») — не тянем в подпись как перенос
 _RE_NUM_HEAD = re.compile(r"^\d{1,2}(?:\.\d{1,3}){0,4}\.?\s+\S")
+
+# --- привязка подписи к таблице -------------------------------------------
+# Основное окно «подпись над таблицей» (низ подписи не ниже верха таблицы + люфт,
+# зазор до неё в пределах). НЕ менять — это поведение по умолчанию.
+_CAP_ABOVE_GAP = 120.0
+_CAP_ABOVE_SLACK = 10.0
+# (2а) подпись ВНУТРИ слитого bbox таблицы у её верха: верх подписи в пределах
+# этого окна от верха таблицы (берём самую верхнюю). Ловит подпись, «зашитую»
+# в одну детекцию на всю страницу (проза+подпись+тело).
+_CAP_INSIDE_WINDOW = 130.0
+# (2в) спасение «small»-детекции ТОЛЬКО под подписью ВПЛОТНУЮ сверху.
+_CAP_RESCUE_GAP = 30.0
+# (2б) перенос подписи через границу страницы: целевая таблица — самая верхняя
+# на след. странице и её верх близок к верху страницы; подпись — в нижней части
+# своей страницы и под ней на её странице таблиц нет.
+_CARRY_TARGET_TOP_MAX = 150.0
+_CARRY_CAPTION_MIN_FRAC = 0.5
 
 
 def _visual_rows(lines) -> List[Dict]:
@@ -176,37 +209,81 @@ class TableExtractor:
         captions_by_page = self._collect_captions(pages)
 
         with pdf:
+            # перенос несматченной подписи снизу предыдущей страницы (2б)
+            carry: Optional[Dict] = None
             for pno, page in enumerate(pdf.pages):
                 ph = float(page.height or 0.0)
                 pw = float(page.width or 0.0)
+                caps = captions_by_page.get(pno + 1, [])
                 try:
                     found = page.find_tables()
                 except Exception as exc:  # noqa: BLE001
                     warnings_list.append(f"find_tables упал на стр. {pno + 1}: {exc}")
+                    carry = None
                     continue
 
+                # 1) вердикт по каждой детекции, сверху вниз (детерминированно)
+                dets = []
                 for tbl in found:
                     bbox = self._norm(tbl.bbox)
                     grid = self._safe_extract(tbl)
-                    verdict = self._validate(bbox, grid, pw, ph)
-                    if verdict != "ok":
-                        if verdict == "junk":
-                            self.junk_count += 1
-                        else:
-                            self.small_count += 1
+                    dets.append((bbox, grid, self._validate(bbox, grid, pw, ph)))
+                dets.sort(key=lambda d: d[0][1])
+
+                # 2) привязка подписи: сначала ОСНОВНОЙ путь (подпись сверху) —
+                #    без изменений; затем новые пути (внутри bbox / спасение small)
+                page_tables: List[Dict] = []
+                used: set = set()
+                for bbox, grid, verdict in dets:
+                    if verdict == "junk":
+                        self.junk_count += 1
                         continue
+                    low_conf = False
+                    if verdict == "small":
+                        # (2в) спасаем ТОЛЬКО под подписью вплотную сверху
+                        cap = self._pick_above(bbox, caps, _CAP_RESCUE_GAP, used)
+                        if cap is None or not self._rescue_shape(grid):
+                            self.small_count += 1
+                            continue
+                        low_conf = True
+                    else:
+                        cap = self._pick_above(bbox, caps, _CAP_ABOVE_GAP, None)
+                        if cap is None:
+                            cap = self._pick_inside(bbox, caps, used)  # (2а)
+                    if cap is not None:
+                        used.add(id(cap))
+                    page_tables.append({
+                        "bbox": bbox,
+                        "number": cap["number"] if cap else None,
+                        "caption": cap["caption"] if cap else None,
+                        "low_conf": low_conf,
+                    })
 
-                    raw_text = self._dump_text(page, bbox, pw, ph, warnings_list, pno)
-                    number, caption = self._match_caption(bbox, captions_by_page.get(pno + 1, []))
+                # 3) (2б) перенос подписи с прошлой страницы — к САМОЙ ВЕРХНЕЙ
+                #    таблице этой страницы, если та без подписи и стоит у верха
+                if carry is not None and page_tables:
+                    top = min(page_tables, key=lambda t: t["bbox"][1])
+                    if top["number"] is None \
+                            and top["bbox"][1] <= _CARRY_TARGET_TOP_MAX:
+                        top["number"] = carry["number"]
+                        top["caption"] = carry["caption"]
 
+                # 4) эмиссия
+                for t in page_tables:
+                    raw_text = self._dump_text(page, t["bbox"], pw, ph,
+                                               warnings_list, pno)
                     tables.append(Table(
                         page=pno + 1,
-                        number=number,
-                        caption=caption,
+                        number=t["number"],
+                        caption=t["caption"],
                         raw_text=_collapse_ws(raw_text),
-                        bbox=tuple(round(v, 1) for v in bbox),  # type: ignore[arg-type]
+                        bbox=tuple(round(v, 1) for v in t["bbox"]),  # type: ignore[arg-type]
+                        low_confidence=t["low_conf"],
                     ))
-                    self.subtraction_map.setdefault(pno, []).append(bbox)
+                    self.subtraction_map.setdefault(pno, []).append(t["bbox"])
+
+                # 5) вычислить перенос для следующей страницы
+                carry = self._carry_out(caps, used, page_tables, ph)
 
             # Fallback: ТОЛЬКО если рамочный детектор не нашёл ничего во всём
             # документе — тогда ищем безрамочные таблицы по подписи + колонкам.
@@ -292,9 +369,10 @@ class TableExtractor:
                 m = _RE_TABLE_CAPTION.match(text)
                 if not m:
                     # подпись могла оказаться не в начале строки (слева —
-                    # колонтитул/номер страницы на той же базовой линии):
-                    # пробуем от фрагмента «Таблица…».
-                    idx = text.lower().find("таблица")
+                    # колонтитул/номер страницы на той же базовой линии): пробуем
+                    # от фрагмента «Таблица…». Ищем ЗАГЛАВНОЕ «Таблица» — прозаичные
+                    # ссылки «в таблице/таблицы N» (строчные) подписью не считаем.
+                    idx = text.find("Таблица")
                     if idx <= 0:
                         continue
                     text = text[idx:]
@@ -317,16 +395,70 @@ class TableExtractor:
         return out
 
     @staticmethod
-    def _match_caption(table_bbox: BBox, captions: List[Dict]
-                       ) -> Tuple[Optional[str], Optional[str]]:
-        """Подпись обычно стоит чуть выше таблицы — берём ближайшую сверху."""
-        tx0, ty0, tx1, ty1 = table_bbox
-        candidates = [c for c in captions
-                      if c["bbox"][3] <= ty0 + 10 and ty0 - c["bbox"][3] <= 120]
-        if not candidates:
-            return None, None
-        best = min(candidates, key=lambda c: abs(ty0 - c["bbox"][3]))
-        return best["number"], best["caption"]
+    def _pick_above(table_bbox: BBox, captions: List[Dict], max_gap: float,
+                    used: Optional[set]) -> Optional[Dict]:
+        """Подпись СВЕРХУ таблицы — ближайшая, низ не ниже верха таблицы (+люфт),
+        зазор в пределах max_gap. Это исходное поведение привязки (не менять).
+        `used` (если задан) исключает уже занятые подписи — только для новых
+        путей (спасение small); основной путь передаёт used=None."""
+        ty0 = table_bbox[1]
+        cand = [c for c in captions
+                if (used is None or id(c) not in used)
+                and c["bbox"][3] <= ty0 + _CAP_ABOVE_SLACK
+                and ty0 - c["bbox"][3] <= max_gap]
+        if not cand:
+            return None
+        return min(cand, key=lambda c: abs(ty0 - c["bbox"][3]))
+
+    @staticmethod
+    def _pick_inside(table_bbox: BBox, captions: List[Dict],
+                     used: set) -> Optional[Dict]:
+        """(2а) Подпись ВНУТРИ bbox таблицы у её верха — когда над таблицей
+        кандидатов нет (слитая детекция на всю страницу: проза+подпись+тело).
+        Верх подписи в окне от верха таблицы, сама подпись в пределах таблицы;
+        берём САМУЮ ВЕРХНЮЮ. Подпись глубоко внутри (вторая на странице) не в
+        окне — остаётся в raw_text."""
+        ty0, ty1 = table_bbox[1], table_bbox[3]
+        cand = [c for c in captions
+                if id(c) not in used
+                and ty0 - _CAP_ABOVE_SLACK <= c["bbox"][1] <= ty0 + _CAP_INSIDE_WINDOW
+                and c["bbox"][3] <= ty1]
+        if not cand:
+            return None
+        return min(cand, key=lambda c: c["bbox"][1])
+
+    @staticmethod
+    def _rescue_shape(grid: List[List]) -> bool:
+        """(2в) Разрешить спасение «small»-детекции: >=2 строк, >=1 колонки,
+        >=2 непустых ячейки. Ослабление ncols действует ТОЛЬКО под якорем-подписью
+        вплотную сверху (см. вызов), без подписи фильтры не трогаем."""
+        nrows = len(grid)
+        ncols = max((len(r) for r in grid), default=0)
+        nonempty = sum(1 for r in grid for c in r if c and str(c).strip())
+        return nrows >= 2 and ncols >= 1 and nonempty >= 2
+
+    @staticmethod
+    def _carry_out(captions: List[Dict], used: set, page_tables: List[Dict],
+                   ph: float) -> Optional[Dict]:
+        """(2б) Несматченная подпись в НИЖНЕЙ части страницы, под которой на этой
+        странице таблиц нет и которая не лежит ВНУТРИ какой-либо таблицы, —
+        кандидат на перенос к самой верхней таблице следующей страницы. Берём
+        самую нижнюю такую подпись (ближе всех к границе страницы)."""
+        cand = []
+        for c in captions:
+            if id(c) in used:
+                continue
+            ctop, cbot = c["bbox"][1], c["bbox"][3]
+            if ctop < _CARRY_CAPTION_MIN_FRAC * ph:
+                continue
+            inside = any(t["bbox"][1] <= ctop <= t["bbox"][3] for t in page_tables)
+            below = any(t["bbox"][1] >= cbot - _CAP_ABOVE_SLACK for t in page_tables)
+            if inside or below:
+                continue
+            cand.append(c)
+        if not cand:
+            return None
+        return max(cand, key=lambda c: c["bbox"][1])
 
     # ---- fallback: безрамочные (whitespace-выровненные) таблицы -----------
 
