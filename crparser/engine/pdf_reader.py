@@ -77,10 +77,18 @@ class PdfReader:
             # «обратная» глифовая порча (кириллица->ASCII): накапливаем сырые
             # счётчики по документу, решение — по совокупной доле в parser.
             "pseudo": 0, "sig": 0}
+        #: диагностика OCR-пути (для логов); в вывод документа НЕ попадает, чтобы
+        #: отсутствие/сбой Tesseract не меняли JSON — файл парсится как без OCR
+        self.ocr_warnings: List[str] = []
 
     @property
     def page_count(self) -> int:
         return self._doc.page_count
+
+    @property
+    def doc(self):
+        """Открытый fitz-документ (для полного OCR до close())."""
+        return self._doc
 
     def first_page_text(self) -> str:
         """Сырой текст первой страницы (для fallback-метаданных по титулу)."""
@@ -154,7 +162,47 @@ class PdfReader:
                 lines=lines,
                 text="\n".join(ln.text for ln in lines),
             ))
+
+        # ГИБРИД-OCR восстановление битого латинского слоя (изолировано в ocr.py).
+        # Вызывается, ПОКА self._doc открыт, после сборки всех строк. Гейт —
+        # плотностной §-порог по документу; для ЧИСТЫХ файлов (нет «§») работа
+        # ноль: не рендерим, не зовём Tesseract, вывод байт-в-байт прежний.
+        self._maybe_hybrid_ocr(pages)
         return pages
+
+    def _maybe_hybrid_ocr(self, pages: List[Page]) -> None:
+        """Если документ — кандидат на кирилло-латинскую §-порчу И доступен
+        Tesseract, восстановить битые латинские токены по месту (Line.text).
+        Любой сбой OCR не роняет чтение: пишем предупреждение, оставляем как есть."""
+        full = "\n".join(page.text for page in pages)
+        # локальный импорт: OCR-зависимости не грузятся для чистых файлов/при отказе
+        from crparser.engine.ocr import OcrRecoverer, is_hybrid_candidate
+        if not is_hybrid_candidate(full):
+            return
+        try:
+            recoverer = OcrRecoverer()
+            if not recoverer.available():
+                return          # OCR не настроен — тихо, вывод как без OCR
+            fixed = recoverer.hybrid_recover(self._doc, pages)
+            if fixed:
+                self.norm_stats["ocr_hybrid_lines"] = fixed
+                self._recount_corruption(pages)
+        except Exception as exc:  # noqa: BLE001
+            self.ocr_warnings.append(f"гибрид-OCR не выполнен ({exc!r})")
+
+    def _recount_corruption(self, pages: List[Page]) -> None:
+        """Пересчитать глифовые счётчики порчи на ВОССТАНОВЛЕННОМ тексте, чтобы
+        stats/валидатор видели чистый результат (а не исходные битые токены)."""
+        glyph = sig = pseudo = 0
+        for page in pages:
+            for line in page.lines:
+                glyph += glyph_suspect_count(line.text)
+                s_here, p_here = pseudo_ascii_counts(line.text)
+                sig += s_here
+                pseudo += p_here
+        self.norm_stats["glyph"] = glyph
+        self.norm_stats["sig"] = sig
+        self.norm_stats["pseudo"] = pseudo
 
     @staticmethod
     def body_size(pages: List[Page]) -> float:

@@ -114,9 +114,14 @@ def main() -> int:
 
     if len(sys.argv) > 1:                       # явный список (регресс-подвыборка)
         bases = [os.path.splitext(os.path.basename(a))[0] for a in sys.argv[1:]]
-    else:                                       # весь корпус, кроме сканов без текста
+    else:
+        # Весь корпус. SKIPPED_SCAN включаем ОТДЕЛЬНОЙ веткой: при доступном
+        # Tesseract парсер восстановит их ПОЛНЫМ OCR (непустые sections); без
+        # Tesseract они как и раньше дают пустой текст -> статус SKIP (быстро,
+        # поведение прежнее). Так полный OCR охватывает и сканы, а чистые файлы
+        # остаются нетронутыми.
         bases = sorted(b for b, c in classmap.items()
-                       if c in ("OK", "LOW_TEXT_REVIEW"))
+                       if c in ("OK", "LOW_TEXT_REVIEW", "SKIPPED_SCAN"))
     print("К обработке: %d файлов -> %s/" % (len(bases), OUTOUT))
 
     t0 = time.time()
