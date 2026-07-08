@@ -50,6 +50,7 @@ from crparser.engine.parser import DocumentParser
 from crparser.engine.jsonio import JsonWriter
 from crparser.engine.pdf_reader import PdfReader
 from crparser.engine.toc import norm, titles_match, parse_entries, toc_bounds, TocIndex
+from crparser.engine.textnorm import section_sign_counts, section_sign_glyph_tokens
 from crparser.profiles import create_profile
 
 # Порог покрытия: ниже COV_FAIL — потеря текста (FAIL); ниже COV_WARN — заметка.
@@ -187,14 +188,40 @@ def validate_doc(name: str, doc: dict, toc: Optional[Toc]) -> Report:
     stats = doc.get("stats", {})
 
     # ---- скан без текстового слоя -> SKIPPED_SCAN (не FAIL, без сверки с TOC) ----
-    # PDF-скан даёт пустой/почти пустой извлекаемый текст: total_chars ≈ 0 или
-    # coverage == 0 при отсутствии разделов. Такой файл — на OCR/ручную обработку.
+    # PDF-скан даёт пустой/почти пустой извлекаемый текст (total_chars ≈ 0): файл
+    # на OCR/ручную обработку. Случай «текст есть, но в разделы не попал» — это уже
+    # не скан, а честный REVIEW (см. проверку пустого вывода ниже).
     total_chars = stats.get("total_chars", 0) or 0
     cov = stats.get("coverage_percent", 0.0)
     sec_found = stats.get("sections_found", 0)
-    if total_chars < 200 or (cov <= 0.0 and sec_found == 0):
+    included_chars = stats.get("included_chars", 0) or 0
+    # весь извлечённый текст документа (разделы + excluded, где лежат references) —
+    # для честного статуса ниже и для §-глиф-детекции ПО ВСЕМУ тексту (порча может
+    # сидеть только в библиографии, как у КР263_2, — по одному телу не поймать).
+    all_text = _all_text(doc)
+
+    # SKIPPED_SCAN — ТОЛЬКО при реально пустом текстовом слое (total_chars<200).
+    # Раньше сюда же попадала ветка «cov<=0 и sec_found==0», но она поглощена
+    # проверкой пустого вывода ниже (sec_found==0 => included_chars==0 => REVIEW):
+    # файл с текстом, но без разделов — это не скан на OCR, а честный REVIEW.
+    if total_chars < 200:
         rep.skip(f"текстовый слой пуст (total_chars={total_chars}, "
                  f"coverage={cov}) — скан, на OCR/ручную обработку")
+        return rep
+
+    # ---- пустой/бестекстовый вывод: текст ЕСТЬ, но в разделы не попал -> REVIEW ----
+    # total_chars>=200 (не скан), но sections_found==0 ИЛИ included_chars==0: в
+    # дерево разделов не попало НИЧЕГО (excluded/таблицы могли дать фиктивное
+    # покрытие). Такой файл НЕ должен молча пройти как PASS. Поднимаем REVIEW и
+    # НЕ ведём сверку с оглавлением — нулевые разделы дали бы лавину MISSING/FAIL,
+    # а причина одна: вывод пуст. Аналог SKIPPED_SCAN, но текстовый слой не пуст.
+    if sec_found == 0 or included_chars == 0:
+        kind = "NO_SECTIONS" if sec_found == 0 else "EMPTY_OUTPUT"
+        rep.review(kind,
+                   f"в разделы не попало содержимое (sections_found={sec_found}, "
+                   f"included_chars={included_chars}, total_chars={total_chars}) — "
+                   f"вывод пуст, требуется ручная проверка")
+        _corruption_review(rep, stats, all_text)   # порча могла сопутствовать
         return rep
 
     # ---- тотальная «обратная» глифовая порча (кириллица->ASCII) -> REVIEW ----
@@ -204,7 +231,7 @@ def validate_doc(name: str, doc: dict, toc: Optional[Toc]) -> Report:
     # дефект. Файл уходит на OCR: REVIEW, не FAIL (аналог SKIPPED_SCAN, но текст
     # есть). Порог pseudo_ascii_tokens>0 срабатывает только на тотальной порче.
     if int((stats.get("corruption", {}) or {}).get("pseudo_ascii_tokens", 0)) > 0:
-        _corruption_review(rep, stats)
+        _corruption_review(rep, stats, all_text)
         return rep
 
     nodes = [s for s, _ in walk(sections)]
@@ -232,7 +259,7 @@ def validate_doc(name: str, doc: dict, toc: Optional[Toc]) -> Report:
     # Разрядка/удвоение парсер уже починил (счётчики в stats), глифовую подмену
     # только обнаружил (на OCR). Если порчи выше порога — файл НЕ должен молча
     # проходить как PASS: поднимаем REVIEW с разбивкой по типам.
-    _corruption_review(rep, stats)
+    _corruption_review(rep, stats, all_text)
 
     # индекс оглавления (для проверок «подтверждён ли раздел оглавлением»)
     tindex = TocIndex(toc.entries) if toc else None
@@ -383,7 +410,23 @@ _COR_DOUBLING = 3
 _COR_GLYPH_TOK = 4
 
 
-def _corruption_review(rep: "Report", stats: dict) -> None:
+def _all_text(doc: dict) -> str:
+    """Весь извлечённый текст документа: заголовки+тело всех разделов И все
+    регионы-исключения (references/appendices). §-глиф-порча оригинала часто
+    сидит ТОЛЬКО в библиографии (КР263_2) — по одному телу разделов её не поймать,
+    поэтому знаменатель/числитель плотности считаем по ВСЕМУ тексту."""
+    parts: List[str] = []
+    for s, _ in walk(doc.get("sections", [])):
+        parts.append(s.get("title") or "")
+        parts.append(s.get("text") or "")
+    for bucket in (doc.get("excluded", {}) or {}).values():
+        for item in bucket:
+            parts.append(item.get("title", ""))
+            parts.append(item.get("text", ""))
+    return " ".join(parts)
+
+
+def _corruption_review(rep: "Report", stats: dict, all_text: str = "") -> None:
     cor = stats.get("corruption", {}) or {}
     sp = int(cor.get("spacing_fixed", 0))
     db = int(cor.get("doubling_fixed", 0))
@@ -392,8 +435,13 @@ def _corruption_review(rep: "Report", stats: dict) -> None:
     # «обратная» глифовая порча (кириллица->ASCII); уже плотностно-отфильтрована
     # парсером (0, если порча не тотальная), поэтому здесь просто добавляем на OCR.
     pa = int(cor.get("pseudo_ascii_tokens", 0))
+    # кирилло-латинская глиф-мешанина с впаянным «§» (BCLC->ВСЬС, HBsAg->НВзА§):
+    # парсер её НЕ считает — детектируем здесь плотностно по ВСЕМУ тексту документа
+    # (включая references). Единичные легит-§ (фамилии/сноски) порог отсекает.
+    sig, ss_raw = section_sign_counts(all_text)
+    ss = section_sign_glyph_tokens(sig, ss_raw)
     rep.corruption = {"fixable_spacing": sp, "fixable_doubling": db,
-                      "needs_ocr": gt + gr + pa}
+                      "needs_ocr": gt + gr + pa + ss}
     if sp >= _COR_SPACING:
         rep.review("CORRUPTION",
                    f"fixable_spacing: разрядка текста, склеено {sp} серий")
@@ -406,6 +454,11 @@ def _corruption_review(rep: "Report", stats: dict) -> None:
             detail += f", {pa} псевдо-ASCII токенов (кириллица->ASCII)"
         rep.review("CORRUPTION",
                    f"needs_ocr: глифовая подмена ({detail}) — на OCR")
+    if ss:
+        rep.review("CORRUPTION",
+                   f"needs_ocr: кирилло-латинская глиф-порча с впаянным «§» "
+                   f"({ss} токенов из {sig} значимых, "
+                   f"{ss / sig * 1000:.1f} на 1000) — на OCR")
 
 
 def _num_key(num: str):

@@ -41,7 +41,14 @@ class StatsCalculator:
         accounted_raw = included_chars + excluded_chars + table_chars
         # дубли подписей/таблиц не должны давать >100%
         accounted_chars = min(accounted_raw, total_chars)
-        coverage = round(accounted_chars / total_chars * 100, 2) if total_chars else 0.0
+        # Вырожденный случай: в разделы не попало НИЧЕГО (included_chars==0), но
+        # excluded/таблицы добирают accounted до ~100% -> фиктивное «покрытие».
+        # Такой файл покрытым не считаем: coverage=0. Для нормальных файлов
+        # (included_chars>0) формула прежняя — вывод байт-в-байт не меняется.
+        if total_chars and included_chars:
+            coverage = round(accounted_chars / total_chars * 100, 2)
+        else:
+            coverage = 0.0
 
         return {
             "total_chars": total_chars,
