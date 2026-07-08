@@ -350,6 +350,7 @@ class Segmenter:
                 return
             heading: Heading = open_heading["heading"]
             title = self._join_title(open_heading["title_parts"]) or heading.title
+            title = self._close_dangling_paren(title)
             num = heading.number
             if num:
                 norm_new = self._normalize(title).lower()
@@ -812,6 +813,16 @@ class Segmenter:
         title = re.sub(r"-\s+", "-", title)          # «ВИЧ- инфекция» -> «ВИЧ-инфекция»
         title = re.sub(r"\s+([,.;:])", r"\1", title)  # пробел перед пунктуацией
         return re.sub(r"\s+", " ", title).strip()
+
+    @staticmethod
+    def _close_dangling_paren(title: str) -> str:
+        """Закрыть «висящую» открытую скобку заголовка, чей закрывающий глиф испорчен
+        OCR/битым cmap («…(группы заболеваний или состояний!» -> «…состояний)»).
+        Срабатывает ТОЛЬКО когда в заголовке есть НЕЗАКРЫТАЯ «(» и он кончается таким
+        глифом — легитимные заголовки (скобки сбалансированы) не трогаются."""
+        if title.count("(") > title.count(")") and title[-1:] in "!’'`":
+            return title[:-1] + ")"
+        return title
 
     @staticmethod
     def _normalize(text: str) -> str:
