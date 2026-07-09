@@ -137,7 +137,8 @@ class DocumentParser:
             recoverer = OcrRecoverer()
             if not recoverer.available():
                 return []      # OCR не настроен — тихо, поведение как без OCR
-            pages = recoverer.full_ocr(reader.doc)
+            doc_id = os.path.splitext(os.path.basename(reader._path))[0]
+            pages = recoverer.full_ocr(reader.doc, doc_id=doc_id)
         except Exception as exc:  # noqa: BLE001
             warnings_list.append(f"полный OCR не выполнен ({exc!r})")
             return []

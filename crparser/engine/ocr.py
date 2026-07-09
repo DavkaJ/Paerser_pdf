@@ -39,6 +39,8 @@ Tesseract (нет бинаря / нет rus / ошибка запуска) НЕ 
 
 from __future__ import annotations
 
+import io
+import json
 import os
 import re
 import shutil
@@ -49,6 +51,7 @@ from typing import Dict, List, Optional, Tuple
 
 import fitz  # PyMuPDF (уже зависимость движка)
 
+from crparser.engine.jsonio import JsonWriter
 from crparser.engine.models import Line, Page
 from crparser.engine.textnorm import (
     _RE_MIXED,
@@ -57,10 +60,23 @@ from crparser.engine.textnorm import (
     section_sign_glyph_tokens,
 )
 
-# Рендер: DPI (>=300 по ТЗ), паддинг клипа строки (в пунктах PDF), таймаут вызова.
-_DEFAULT_DPI = 300
+# Рендер DPI. Поднят с 300 до 400: плотный курсивный глоссарий («Список
+# сокращений»/«Термины и определения») на 300 dpi читался Tesseract-ом мусорно.
+# Порог env OCR_DPI ниже 300 не опускается. Ключ дискового кэша OCR включает DPI и
+# версию препроцессинга — их смена автоматически инвалидирует кэш.
+_DEFAULT_DPI = 400
+# Версия растрового препроцессинга (grayscale + autocontrast + unsharp + опц.
+# апскейл). Инкрементировать при ЛЮБОЙ правке `_prep_png`/`_render`, иначе кэш
+# отдаст растр, снятый старым препроцессингом.
+_PREPROC_VERSION = 1
 _CLIP_PAD_PT = 3.0
 _TESS_TIMEOUT = 120
+
+# Дисковый кэш сырого результата Tesseract (TSV) по (id+страница+dpi+langs+psm+
+# версия препроцессинга). Каталог рабочий — в .gitignore. Радикально ускоряет
+# повторные прогоны на тех же файлах (прошлый полный прогон шёл ~2 часа).
+_OCR_CACHE_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "ocr_cache")
 
 # Стандартные места установки Tesseract на Windows/Unix (fallback к env/PATH —
 # это НЕ хардкод конкретного файла, а типовые каталоги пакета).
@@ -84,6 +100,10 @@ _LEAD = re.compile(r"\.{3,}|_{3,}")
 # нумерованный раздел (те же структурные маркеры, что у toc._BODY_MARKERS).
 _ABBR_ANCHOR = re.compile(r"^\s*список\s+сокращ", re.IGNORECASE)
 _TERM_ANCHOR = re.compile(r"^\s*(термин\w*\s+и\s+определ|\d)", re.IGNORECASE)
+# Якорь начала библиографии: с него и до конца документа (references + приложения)
+# — ВНЕ ФОКУСА (тело/глоссарий). Двойники оттуда НЕ учим (многоязычная библиография
+# даёт мусорные пары), чтобы не засорять карту/базу и не «дочищать» библиографию.
+_REFS_ANCHOR = re.compile(r"^\s*список\s+литератур", re.IGNORECASE)
 # Запись словаря «КЛЮЧ - определение»/«КЛЮЧ — определение».
 _DASH = re.compile(r"\s[-–—]\s")
 _TOK_PUNCT = ".,;:()[]«»\"'`-—%<>±*"
@@ -92,6 +112,21 @@ _TOK_PUNCT = ".,;:()[]«»\"'`-—%<>±*"
 _CLEAN_LATIN = re.compile(r"[A-Za-z][A-Za-z0-9./-]*$")
 # Минимум наблюдений «кривое->чистое», чтобы принять двойник из статистики тела.
 _MIN_DOUBLE_HITS = 2
+
+# Одиночные кириллические буквы-двойники латиницы: в «Hepatitis С virus» буква «С»
+# кириллическая, а по смыслу — латинская «C». Меняем ТОЛЬКО в зоне-замене (OCR
+# прочитал позицию латиницей) и ТОЛЬКО когда OCR дал ровно этот латинский аналог, И
+# в зоне есть латинский контекст (многобуквенный лат. токен). Русские предлоги
+# «в/с/о/к/у» читаются кириллицей -> зона equal -> не затрагиваются. Строчную «в»
+# в карту НЕ включаем (частый предлог, слабое сходство глифа).
+_CYR2LAT = {
+    "А": "A", "В": "B", "С": "C", "Е": "E", "Н": "H", "К": "K", "М": "M",
+    "О": "O", "Р": "P", "Т": "T", "У": "Y", "Х": "X",
+    "а": "a", "е": "e", "о": "o", "р": "p", "с": "c", "у": "y", "х": "x",
+}
+# Только прописные двойники — для контекстной латинизации зажатой буквы (см.
+# `_latinize_flanked`): строчные предлоги в/с/о/к/у из неё исключены.
+_CYR2LAT_UP = {k: v for k, v in _CYR2LAT.items() if k.isupper()}
 
 
 # ============================================================================
@@ -137,6 +172,28 @@ def _is_clean_latin(s: str) -> bool:
     return bool(_CLEAN_LATIN.match(s))
 
 
+def _latinize_flanked(text: str) -> str:
+    """Одиночная ПРОПИСНАЯ кириллица-двойник латиницы, зажатая между двумя чистыми
+    многобуквенными латинскими токенами («Hepatitis В virus» -> «Hepatitis B virus»),
+    латинизируется. OCR сам читает такую «В/С» кириллицей (в мед-тексте «гепатит В»
+    двусмыслен), поэтому чиним пост-проходом по КОНТЕКСТУ. Только ПРОПИСНЫЕ двойники
+    (_CYR2LAT_UP) и только с ЛАТ. соседями с ОБЕИХ сторон — строчные предлоги
+    (в/с/о/к/у) и одиночные буквы среди кириллицы не затрагиваются."""
+    toks = text.split()
+    if len(toks) < 3:
+        return text
+    changed = False
+    for i in range(1, len(toks) - 1):
+        core = _tok_core(toks[i])
+        if len(core) == 1 and core in _CYR2LAT_UP:
+            prev, nxt = _tok_core(toks[i - 1]), _tok_core(toks[i + 1])
+            if (len(prev) >= 2 and _is_clean_latin(prev)
+                    and len(nxt) >= 2 and _is_clean_latin(nxt)):
+                toks[i] = _sub(toks[i], _CYR2LAT_UP[core])
+                changed = True
+    return " ".join(toks) if changed else text
+
+
 def _is_broken_token(tok: str) -> bool:
     """Битый токен: впаянный «§» ИЛИ смешение кириллицы и латиницы в слове."""
     return _is_section_sign_glyph_token(tok) or bool(_RE_MIXED.search(tok))
@@ -161,13 +218,16 @@ def _glyph_signal(key_core: str, value: str, has_upper: bool) -> bool:
     """Структурный признак: кириллический токен — это латинский глиф-двойник, а не
     русское слово. Слэш-совмещённые (КТ/МРТ) — русские сокращения, не двойники;
     с цифрой внутри — двойник при >=2 кир. буквах ИЛИ числовом значении (Ю0->100);
-    без цифры — прописной токен длиной >=4 (ВСЬС/Ыуег/Нерабб). Короткие строчные
-    служебные слова (по/на/для) и строчные длинные отсекаются (нет has_upper)."""
+    без цифры — ПРОПИСНОЙ токен длиной >=3 (ВСЬС/Ыуег/СЫЫ->Child/Риф->Pugh).
+    Порог длины опущен с 4 до 3, чтобы ловить короткие прописные двойники (СЫЫ/Риф);
+    это безопасно, потому что реальные рус. сокращения (ГЦР/ДНК/УЗИ) OCR читает
+    кириллицей -> eq>0 -> отсекаются выше по стеку, а в latc вообще не попадают
+    (нет чистой латиницы в паре). Короткие СТРОЧНЫЕ служебные слова — нет has_upper."""
     if "/" in key_core and not _has_digit(key_core):
         return False
     if _has_digit(key_core):
         return _cyr_letters(key_core) >= 2 or _numberish(value)
-    return len(key_core) >= 4 and has_upper
+    return len(key_core) >= 3 and has_upper
 
 
 def is_hybrid_candidate(text: str, base: Optional[dict] = None) -> bool:
@@ -273,9 +333,28 @@ def _resolve_line(orig: str, ocr: str, doc_map: Dict[str, str]) -> str:
     return _pre_resolve(" ".join(out), doc_map)
 
 
+def _hyphen_resolve(tok: str, doc_map: Dict[str, str]) -> str:
+    """Двойник, слипшийся с кириллицей через дефис (source-дефект «апб-НСУ-
+    определение» = «anti-HCV-определение»): заменяем МАКСИМАЛЬНЫЙ лидирующий ПРОБЕГ
+    дефис-компонентов, чья кир-норма — ПОЛНЫЙ ключ карты, сохраняя хвост. Это
+    замена по дефис-ГРАНИЦЕ (компонент целиком), а не произвольная подстрока: ключ
+    карты (eq==0 глиф-двойник) не совпадёт с началом настоящего рус. слова."""
+    core = _tok_core(tok)
+    parts = core.split("-")
+    if len(parts) < 2:
+        return tok
+    for k in range(len(parts), 1, -1):
+        join = _cyr_norm("".join(parts[:k]))
+        if join and join in doc_map:
+            rest = "-".join(parts[k:])
+            return _sub(tok, doc_map[join] + (("-" + rest) if rest else ""))
+    return tok
+
+
 def _pre_resolve(text: str, doc_map: Dict[str, str]) -> str:
-    """Пред-разрешение: заменить в тексте ТОЛЬКО подтверждённые глиф-двойники из
-    doc_map (кириллический токен без латиницы). Нативную кириллицу не трогает."""
+    """Пред-разрешение (ФИНАЛЬНЫЙ полный проход по границе токена): заменить в тексте
+    подтверждённые глиф-двойники из doc_map (кириллический токен без латиницы), в т.ч.
+    слипшиеся через дефис (`_hyphen_resolve`). Нативную кириллицу не трогает."""
     if not doc_map:
         return text
     out: List[str] = []
@@ -283,6 +362,8 @@ def _pre_resolve(text: str, doc_map: Dict[str, str]) -> str:
         low = _cyr_norm(tok)
         if low and low in doc_map and _has_cyr(tok) and not _has_lat(tok):
             out.append(_sub(tok, doc_map[low]))
+        elif "-" in tok and _has_cyr(tok) and not _has_lat(tok):
+            out.append(_hyphen_resolve(tok, doc_map))
         else:
             out.append(tok)
     return " ".join(out)
@@ -312,6 +393,17 @@ def _abbr_region_ids(flat: List[Line]) -> set:
                if i > ai and _TERM_ANCHOR.search(ln.text) and not _LEAD.search(ln.text)),
               min(ai + 60, len(flat)))
     return {id(flat[i]) for i in range(ai, ti)}
+
+
+def _out_of_scope_ids(flat: List[Line]) -> set:
+    """id строк ВНЕ фокуса (библиография + приложения): от якоря «Список литературы»
+    до конца документа. Учим двойники только в теле+глоссарии; из этих строк —
+    не учим (мусор многоязычной библиографии) и не пополняем базу."""
+    ri = next((i for i, ln in enumerate(flat)
+               if _REFS_ANCHOR.search(ln.text) and not _LEAD.search(ln.text)), None)
+    if ri is None:
+        return set()
+    return {id(flat[i]) for i in range(ri, len(flat))}
 
 
 def _abbrev_langs(flat: List[Line], region_ids: set,
@@ -347,46 +439,116 @@ def _abbrev_langs(flat: List[Line], region_ids: set,
     return pairs, rus
 
 
+def _record_double(oo: str, cc: str, latc: Dict[str, Counter], kup: Dict[str, bool],
+                   glossc: set, in_gloss: bool) -> None:
+    """Записать кандидат-двойник «кириллический токен слоя oo -> чистая латиница OCR
+    cc» в статистику latc (кириллический токен без латиницы, латиница — чистая
+    форма-восстановление, ядро >=2)."""
+    core = _tok_core(oo)
+    if not (_has_cyr(oo) and not _has_lat(oo) and len(core) >= 2):
+        return
+    ccc = _tok_core(cc)
+    if not _is_clean_latin(ccc):
+        return
+    low = _cyr_norm(oo)
+    latc[low][ccc] += 1
+    kup[low] = kup.get(low, False) or bool(_UPCYR.search(core))
+    if in_gloss:
+        glossc.add(low)
+
+
+def _dominant(cc: Counter) -> Optional[str]:
+    """Доминирующее значение двойника, если оно явно преобладает (>=60% наблюдений).
+    Неоднозначные (of/or 47/5 -> ок; 6/5 -> нет) отсекаем: риск ложной замены."""
+    if not cc:
+        return None
+    (value, hits), total = cc.most_common(1)[0], sum(cc.values())
+    return value if hits * 5 >= total * 3 else None
+
+
+def _base_value_set(base: Dict[str, str]) -> set:
+    """Множество чистых форм базы + их компоненты (Child-Pugh -> Child, Pugh) —
+    для корроборации одиночных двойников (сыш->Child, ридь->Pugh)."""
+    vals: set = set()
+    for v in base.values():
+        vals.add(v)
+        for part in re.split(r"[-/ ]", v):
+            if len(part) >= 3:
+                vals.add(part)
+    return vals
+
+
 def _build_doc_map(flat: List[Line], line_ocr: Dict[int, str], region_ids: set,
                    base: Dict[str, str]) -> Tuple[Dict[str, str], Dict[str, str]]:
     """Карта документа {кривое->чистое} и НОВЫЕ (не из базы) записи для шарда.
 
-    Источники (по возрастанию доверия): статистика двойников тела (никогда не
-    совпал с кириллицей OCR = never-trusted, структурный глиф-сигнал, >=2 набл.,
-    не защищённое рус.-сокращение) -> словарь сокращений (латинское определение)
-    -> база пинов. Русские слова/фамилии (OCR читает их кириллицей хоть раз) и
-    защищённые рус.-сокращения в карту не попадают — нулевая деградация кириллицы."""
+    Двойник принимается, если он: (1) НЕ защищённое рус.-сокращение; (2) never-
+    trusted (OCR ни разу не прочитал токен кириллицей, eq==0); (3) прошёл
+    структурный глиф-сигнал; (4) значение — чистая латиница И явно доминирует; и
+    хотя бы одно из: наблюдался >=2 раз В ТЕЛЕ ДОКУМЕНТА, ИЛИ встретился в регионе
+    глоссария (там определения английские — одного вхождения достаточно), ИЛИ его
+    чистая форма подтверждена базой/другими двойниками того же документа
+    (value_support). Так дочищаются одиночные глоссарные (Аззосгабоп->Association) и
+    «рваные» телесные (нвзад->HBsAg, апбнсу->anti-HCV) двойники, пропущенные раньше.
+
+    Русские слова/фамилии (eq>0) и защищённые сокращения в карту не попадают —
+    деградация кириллицы близка к нулю (сильнейший гейт — eq==0)."""
+    oos_ids = _out_of_scope_ids(flat)          # библиография+приложения — вне фокуса
     eq = Counter()
     latc: Dict[str, Counter] = defaultdict(Counter)
     kup: Dict[str, bool] = {}
+    glossc: set = set()
     for ln in flat:
         ocr = line_ocr.get(id(ln), "")
         if not ocr or _LEAD.search(ln.text):
             continue
+        in_gloss = id(ln) in region_ids
+        out_of_scope = id(ln) in oos_ids
         o, c, ops = _align_ops(ln.text, ocr)
         for tag, i1, i2, j1, j2 in ops:
-            if tag == "equal":
+            if tag == "equal":                              # eq (защита) — по ВСЕМ строкам
                 for t in o[i1:i2]:
                     if _has_cyr(t) and not _has_lat(t):
                         eq[_cyr_norm(t)] += 1
-            elif (i2 - i1) == (j2 - j1):
+            elif out_of_scope:                              # библиографию не учим
+                continue
+            elif (i2 - i1) == (j2 - j1):                    # позиционное сопоставление
                 for oo, cc in zip(o[i1:i2], c[j1:j2]):
-                    core = _tok_core(oo); low = _cyr_norm(oo); ccc = _tok_core(cc)
-                    if _has_cyr(oo) and not _has_lat(oo) and _is_clean_latin(ccc) and len(core) >= 2:
-                        latc[low][ccc] += 1
-                        kup[low] = kup.get(low, False) or bool(_UPCYR.search(core))
+                    _record_double(oo, cc, latc, kup, glossc, in_gloss)
+            else:                                           # разной длины: латиница по порядку
+                lat = [x for x in c[j1:j2] if _is_clean_latin(_tok_core(x))]
+                li = 0
+                for oo in o[i1:i2]:
+                    if li >= len(lat):
+                        break
+                    if _has_cyr(oo) and not _has_lat(oo) and len(_tok_core(oo)) >= 2:
+                        _record_double(oo, lat[li], latc, kup, glossc, in_gloss)
+                        li += 1
     abbr_pairs, abbr_rus = _abbrev_langs(flat, region_ids, line_ocr)
 
     def protected(low: str) -> bool:
         return low in abbr_rus or any(_cyr_norm(p) in abbr_rus for p in low.split("/"))
 
+    # кандидаты, прошедшие базовые гейты (eq==0, не защита, глиф-сигнал, доминантное
+    # значение), — и суммарная поддержка каждой ЧИСТОЙ формы по всем ключам документа
+    cand: Dict[str, str] = {}
+    value_support: Counter = Counter()
+    for low, cc in latc.items():
+        if protected(low) or eq.get(low, 0) > 0:
+            continue
+        value = _dominant(cc)
+        if value and _glyph_signal(low, value, kup.get(low, False)):
+            cand[low] = value
+            value_support[value] += sum(cc.values())
+
+    base_values = _base_value_set(base)
     doc_map: Dict[str, str] = {}
     new_map: Dict[str, str] = {}
-    for low, cc in latc.items():
-        if protected(low) or eq.get(low, 0) > 0:      # русское слово/сокращение -> защита
-            continue
-        value = cc.most_common(1)[0][0]
-        if _glyph_signal(low, value, kup.get(low, False)) and sum(cc.values()) >= _MIN_DOUBLE_HITS:
+    for low, value in cand.items():
+        if (sum(latc[low].values()) >= _MIN_DOUBLE_HITS      # >=2 набл. в теле
+                or low in glossc                             # регион глоссария
+                or value in base_values                      # форма известна базе
+                or value_support[value] >= _MIN_DOUBLE_HITS):  # форму дают >=2 двойника
             doc_map[low] = value
             if low not in base:
                 new_map[low] = value
@@ -414,6 +576,9 @@ class OcrRecoverer:
         self._checked = False
         self._available = False
         self._tessdata = os.environ.get("TESSDATA_PREFIX") or None
+        #: идентификатор документа для ключа дискового кэша OCR (ставится в
+        #: hybrid_recover/full_ocr); None -> кэш не используется, только рендер.
+        self._doc_id: Optional[str] = None
         self.warnings: List[str] = []
 
     # ---- доступность --------------------------------------------------------
@@ -475,21 +640,115 @@ class OcrRecoverer:
             return ""
         return (res.stdout or b"").decode("utf-8", "replace")
 
-    def _render(self, page: "fitz.Page", clip: Optional["fitz.Rect"]) -> bytes:
-        """Растр области (или всей страницы) в PNG-байтах при заданном DPI."""
-        mat = fitz.Matrix(self._dpi / 72.0, self._dpi / 72.0)
-        pix = page.get_pixmap(matrix=mat, clip=clip)
-        return pix.tobytes("png")
+    def _render(self, page: "fitz.Page", clip: Optional["fitz.Rect"],
+                scale: float = 1.0) -> bytes:
+        """Растр области (или всей страницы) в PNG-байтах при заданном DPI, с
+        лёгким препроцессингом для Tesseract (`_prep_png`). `scale` (>1) даёт
+        дополнительный апскейл — для мелкого/плотного кегля (клипы глоссария)."""
+        z = self._dpi / 72.0 * scale
+        pix = page.get_pixmap(matrix=fitz.Matrix(z, z), clip=clip)
+        return self._prep_png(pix)
 
-    def _page_words(self, fpage: "fitz.Page") -> list:
-        """OCR всей страницы (`--psm 6 tsv`) -> список слов (cy, x0, x1, текст) в
-        пунктах PDF. Пусто при сбое рендера/OCR."""
+    @staticmethod
+    def _prep_png(pix: "fitz.Pixmap") -> bytes:
+        """Препроцессинг растра под OCR: оттенки серого + автоконтраст + лёгкий
+        unsharp. Чинит плотный курсивный глоссарий. Через PIL; если PIL нет —
+        возвращаем сырой PNG (graceful fallback, поведение как раньше)."""
+        raw = pix.tobytes("png")
         try:
-            png = self._render(fpage, None)
+            from PIL import Image, ImageFilter, ImageOps
+            img = Image.open(io.BytesIO(raw)).convert("L")
+            img = ImageOps.autocontrast(img)
+            img = img.filter(ImageFilter.UnsharpMask(radius=1.2, percent=150, threshold=2))
+            buf = io.BytesIO()
+            img.save(buf, format="PNG")
+            return buf.getvalue()
+        except Exception:  # noqa: BLE001 — PIL необязателен
+            return raw
+
+    # ---- дисковый кэш сырого TSV -------------------------------------------
+
+    def _cache_path(self, page_no: int, psm: int) -> Optional[str]:
+        """Путь к кэш-файлу TSV для (документ, страница, dpi, langs, psm, версия
+        препроцессинга). None -> кэшировать нечем (нет doc_id)."""
+        if not self._doc_id:
+            return None
+        langs = self._langs.replace("+", "-")
+        name = "%s_p%d_d%d_%s_v%d_psm%d.json" % (
+            self._doc_id, page_no, self._dpi, langs, _PREPROC_VERSION, psm)
+        safe = re.sub(r"[^0-9A-Za-zА-Яа-яЁё_.-]", "_", name)
+        return os.path.join(_OCR_CACHE_DIR, safe)
+
+    def _cached_tsv(self, fpage: "fitz.Page", page_no: int, psm: int) -> str:
+        """TSV страницы: из кэша при попадании (без рендера/Tesseract), иначе
+        рендер+OCR и атомарная запись в кэш. Рендер может бросить — обрабатывает
+        вызывающий (как раньше). Пустой TSV не кэшируем (мог быть транзиентный сбой)."""
+        path = self._cache_path(page_no, psm)
+        if path:
+            try:
+                if os.path.isfile(path):
+                    with open(path, encoding="utf-8") as fh:
+                        return json.load(fh).get("tsv", "")
+            except Exception:  # noqa: BLE001 — кэш необязателен
+                pass
+        png = self._render(fpage, None)
+        tsv = self._run(png, psm=psm, tsv=True)
+        if path and tsv:
+            try:
+                os.makedirs(_OCR_CACHE_DIR, exist_ok=True)
+                JsonWriter._atomic_dump(
+                    {"tsv": tsv, "dpi": self._dpi, "preproc": _PREPROC_VERSION}, path)
+            except Exception:  # noqa: BLE001
+                pass
+        return tsv
+
+    def _clip_text(self, fpage: "fitz.Page", page_no: int, bbox,
+                   psm: int = 7, scale: float = 1.5) -> str:
+        """Построчный OCR клипа строки (`--psm 7`, апскейл) с дисковым кэшем по bbox.
+        Для плотного/курсивного глоссария page-`--psm 6` читает мусорно (ТNМ->ТММ),
+        клип-`--psm 7` — чисто (ТNМ->TNM). «» при сбое/недоступном PIL/рендере."""
+        x0, y0, x1, y1 = bbox
+        if x1 <= x0 or y1 <= y0:
+            return ""
+        path = None
+        if self._doc_id:
+            key = "%s_clip_p%d_%d_%d_%d_%d_d%d_s%s_v%d_psm%d.json" % (
+                self._doc_id, page_no, round(x0), round(y0), round(x1), round(y1),
+                self._dpi, str(scale).replace(".", "-"), _PREPROC_VERSION, psm)
+            path = os.path.join(
+                _OCR_CACHE_DIR, re.sub(r"[^0-9A-Za-zА-Яа-яЁё_.-]", "_", key))
+            try:
+                if os.path.isfile(path):
+                    with open(path, encoding="utf-8") as fh:
+                        return json.load(fh).get("text", "")
+            except Exception:  # noqa: BLE001 — кэш необязателен
+                pass
+        clip = fitz.Rect(x0 - _CLIP_PAD_PT, y0 - _CLIP_PAD_PT,
+                         x1 + _CLIP_PAD_PT, y1 + _CLIP_PAD_PT)
+        try:
+            png = self._render(fpage, clip, scale=scale)
+        except Exception as exc:  # noqa: BLE001
+            self.warnings.append(f"OCR: рендер клипа не удался ({exc!r})")
+            return ""
+        text = " ".join(self._run(png, psm=psm).split())
+        if path and text:
+            try:
+                os.makedirs(_OCR_CACHE_DIR, exist_ok=True)
+                JsonWriter._atomic_dump(
+                    {"text": text, "dpi": self._dpi, "scale": scale,
+                     "preproc": _PREPROC_VERSION}, path)
+            except Exception:  # noqa: BLE001
+                pass
+        return text
+
+    def _page_words(self, fpage: "fitz.Page", page_no: int) -> list:
+        """OCR всей страницы (`--psm 6 tsv`) -> список слов (cy, x0, x1, текст) в
+        пунктах PDF. Пусто при сбое рендера/OCR. Результат TSV кэшируется на диск."""
+        try:
+            tsv = self._cached_tsv(fpage, page_no, psm=6)
         except Exception as exc:  # noqa: BLE001
             self.warnings.append(f"OCR: рендер страницы не удался ({exc!r})")
             return []
-        tsv = self._run(png, psm=6, tsv=True)
         scale = 72.0 / self._dpi
         words = []
         for row in tsv.splitlines():
@@ -509,7 +768,8 @@ class OcrRecoverer:
     # ---- ГИБРИД -------------------------------------------------------------
 
     def hybrid_recover(self, doc: "fitz.Document", pages: List[Page],
-                       base: Optional[Dict[str, str]] = None) -> Tuple[int, Dict[str, str]]:
+                       base: Optional[Dict[str, str]] = None,
+                       doc_id: Optional[str] = None) -> Tuple[int, Dict[str, str]]:
         """Восстановить кирилло-латинскую глиф-порчу по всему документу-кандидату.
 
         OCR-ит ВСЕ страницы (полнота важнее скорости), строит карту двойников из
@@ -519,15 +779,24 @@ class OcrRecoverer:
         для шарда). При недоступном OCR — (0, {}) без изменений."""
         if not self.available():
             return 0, {}
+        self._doc_id = doc_id
         base = base or {}
         flat = [ln for page in pages for ln in page.lines]
+        region_ids = _abbr_region_ids(flat)          # регион глоссария (по якорям)
         line_ocr: Dict[int, str] = {}
         for page in pages:
             fpage = doc[page.number - 1]
-            words = self._page_words(fpage)
+            words = self._page_words(fpage, page.number)
             for ln in page.lines:
-                line_ocr[id(ln)] = _band_text(ln.bbox, words) if words else ""
-        region_ids = _abbr_region_ids(flat)
+                band = _band_text(ln.bbox, words) if words else ""
+                # ГЛОССАРИЙ (Список сокращений/Термины): строки региона переснимаем
+                # построчным клипом (psm 7 + апскейл) — плотные аббревиатуры-ключи
+                # (ТNМ->TNM) и курсивные определения page-psm6 читает мусорно.
+                if id(ln) in region_ids:
+                    clip = self._clip_text(fpage, page.number, ln.bbox)
+                    if clip:
+                        band = clip
+                line_ocr[id(ln)] = band
         doc_map, new_map = _build_doc_map(flat, line_ocr, region_ids, base)
         fixed = 0
         for page in pages:
@@ -538,6 +807,7 @@ class OcrRecoverer:
                     after = _pre_resolve(before, doc_map)
                 else:
                     after = _resolve_line(before, line_ocr.get(id(ln), ""), doc_map)
+                    after = _latinize_flanked(after)  # «Hepatitis В virus»->«...B...»
                 if after and after != before:
                     ln.text = after
                     fixed += 1
@@ -563,22 +833,23 @@ class OcrRecoverer:
 
     # ---- ПОЛНЫЙ -------------------------------------------------------------
 
-    def full_ocr(self, doc: "fitz.Document") -> List[Page]:
+    def full_ocr(self, doc: "fitz.Document",
+                 doc_id: Optional[str] = None) -> List[Page]:
         """Собрать страницы из ПОЛНОГО OCR (скан/тотальная порча). При недоступном
         OCR — пустой список (вызывающий сохраняет прежнее поведение)."""
         if not self.available():
             return []
+        self._doc_id = doc_id
         pages: List[Page] = []
         for index in range(doc.page_count):
             fpage = doc[index]
             try:
-                png = self._render(fpage, None)
+                tsv = self._cached_tsv(fpage, index + 1, psm=6)
             except Exception as exc:  # noqa: BLE001
                 self.warnings.append(f"OCR: рендер страницы {index + 1} не удался ({exc!r})")
                 pages.append(Page(number=index + 1, width=float(fpage.rect.width),
                                   height=float(fpage.rect.height), lines=[], text=""))
                 continue
-            tsv = self._run(png, psm=6, tsv=True)
             lines = self._lines_from_tsv(tsv, index + 1)
             for i in range(1, len(lines)):
                 lines[i].gap_before = lines[i].bbox[1] - lines[i - 1].bbox[1]

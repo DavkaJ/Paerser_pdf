@@ -186,12 +186,13 @@ class PdfReader:
             recoverer = OcrRecoverer()
             if not recoverer.available():
                 return          # OCR не настроен — тихо, вывод как без OCR
-            fixed, new_map = recoverer.hybrid_recover(self._doc, pages, base)
+            doc_id = os.path.splitext(os.path.basename(self._path))[0]
+            fixed, new_map = recoverer.hybrid_recover(
+                self._doc, pages, base, doc_id=doc_id)
             if fixed:
                 self.norm_stats["ocr_hybrid_lines"] = fixed
                 self._recount_corruption(pages)
             if new_map:
-                doc_id = os.path.splitext(os.path.basename(self._path))[0]
                 ocr_pins.write_shard(doc_id, new_map)
         except Exception as exc:  # noqa: BLE001
             self.ocr_warnings.append(f"гибрид-OCR не выполнен ({exc!r})")

@@ -8,6 +8,8 @@ out*/
 !crparser/data/
 !crparser/data/ocr_pins.json
 crparser/data/pins/
+# рабочий дисковый кэш сырого OCR (TSV) — не для репозитория
+crparser/data/ocr_cache/
 
 # временные/отладочные скрипты (имена с ведущим подчёркиванием) и бэкапы
 _*.py
