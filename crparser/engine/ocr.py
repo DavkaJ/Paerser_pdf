@@ -113,6 +113,16 @@ _CLEAN_LATIN = re.compile(r"[A-Za-z][A-Za-z0-9./-]*$")
 # Минимум наблюдений «кривое->чистое», чтобы принять двойник из статистики тела.
 _MIN_DOUBLE_HITS = 2
 
+# Сид доверенных ЧИСТЫХ форм тела (аналог base_values): двойник, чью доминантную
+# чистую форму OCR дал в теле/глоссарии И она входит в сид, принимаем даже при
+# ОДНОМ вхождении (закрывает hapax-термины тела: 8ТКШЕ->STRIDE, УЕСР->VEGF,
+# УЕСРК->VEGFR, РЭ-Ы->PD-L1). glyph_signal при этом сохраняется (не разблокируем
+# короткие/строчные — те чиним только пином).
+_SEED_CLEAN = frozenset({
+    "PD-L1", "PD-1", "PD1", "VEGF", "VEGFR", "CTLA4", "HBsAg", "HBs", "TNM",
+    "BCLC", "ECOG", "RECIST", "mRECIST", "vs", "mTOR", "STRIDE", "IMbrave150",
+})
+
 # Одиночные кириллические буквы-двойники латиницы: в «Hepatitis С virus» буква «С»
 # кириллическая, а по смыслу — латинская «C». Меняем ТОЛЬКО в зоне-замене (OCR
 # прочитал позицию латиницей) и ТОЛЬКО когда OCR дал ровно этот латинский аналог, И
@@ -170,6 +180,11 @@ def _cyr_letters(s: str) -> int:
 
 def _is_clean_latin(s: str) -> bool:
     return bool(_CLEAN_LATIN.match(s))
+
+
+def _is_compound(tok: str) -> bool:
+    """Токен склеен из компонентов через дефис/тире (Child—Pugh, анти-СТЬА4)."""
+    return any(ch in _tok_core(tok) for ch in "-—–")
 
 
 def _latinize_flanked(text: str) -> str:
@@ -334,21 +349,29 @@ def _resolve_line(orig: str, ocr: str, doc_map: Dict[str, str]) -> str:
 
 
 def _hyphen_resolve(tok: str, doc_map: Dict[str, str]) -> str:
-    """Двойник, слипшийся с кириллицей через дефис (source-дефект «апб-НСУ-
-    определение» = «anti-HCV-определение»): заменяем МАКСИМАЛЬНЫЙ лидирующий ПРОБЕГ
-    дефис-компонентов, чья кир-норма — ПОЛНЫЙ ключ карты, сохраняя хвост. Это
-    замена по дефис-ГРАНИЦЕ (компонент целиком), а не произвольная подстрока: ключ
-    карты (eq==0 глиф-двойник) не совпадёт с началом настоящего рус. слова."""
+    """Двойник, склеенный с рус. морфемами через дефис в ЛЮБОЙ позиции (начало,
+    середина, хвост): «анти-СТЬА4»->«анти-CTLA4», «РБ-Ы-ингибитора»->
+    «PD-L1-ингибитора», «апб-НСУ-определение»->«anti-HCV-определение». Идём слева
+    направо, на каждой позиции берём МАКСИМАЛЬНЫЙ ПРОБЕГ дефис-компонентов, чья
+    кир-норма — ПОЛНЫЙ ключ карты, заменяем его чистой формой, русские компоненты
+    оставляем как есть. Замена по дефис-ГРАНИЦЕ (компонент целиком), не произвольная
+    подстрока: ключ карты (eq==0 глиф-двойник) не совпадёт с рус. морфемой."""
     core = _tok_core(tok)
     parts = core.split("-")
     if len(parts) < 2:
         return tok
-    for k in range(len(parts), 1, -1):
-        join = _cyr_norm("".join(parts[:k]))
-        if join and join in doc_map:
-            rest = "-".join(parts[k:])
-            return _sub(tok, doc_map[join] + (("-" + rest) if rest else ""))
-    return tok
+    out: List[str] = []
+    i, n, changed = 0, len(parts), False
+    while i < n:
+        matched = False
+        for k in range(n, i, -1):                     # пробег parts[i:k], длиннейший
+            join = _cyr_norm("".join(parts[i:k]))
+            if join and join in doc_map:
+                out.append(doc_map[join]); i = k; matched = changed = True
+                break
+        if not matched:
+            out.append(parts[i]); i += 1
+    return _sub(tok, "-".join(out)) if changed else tok
 
 
 def _pre_resolve(text: str, doc_map: Dict[str, str]) -> str:
@@ -494,6 +517,7 @@ def _build_doc_map(flat: List[Line], line_ocr: Dict[int, str], region_ids: set,
     Русские слова/фамилии (eq>0) и защищённые сокращения в карту не попадают —
     деградация кириллицы близка к нулю (сильнейший гейт — eq==0)."""
     oos_ids = _out_of_scope_ids(flat)          # библиография+приложения — вне фокуса
+    base_values = _base_value_set(base)
     eq = Counter()
     latc: Dict[str, Counter] = defaultdict(Counter)
     kup: Dict[str, bool] = {}
@@ -517,13 +541,29 @@ def _build_doc_map(flat: List[Line], line_ocr: Dict[int, str], region_ids: set,
                     _record_double(oo, cc, latc, kup, glossc, in_gloss)
             else:                                           # разной длины: латиница по порядку
                 lat = [x for x in c[j1:j2] if _is_clean_latin(_tok_core(x))]
-                li = 0
-                for oo in o[i1:i2]:
-                    if li >= len(lat):
-                        break
-                    if _has_cyr(oo) and not _has_lat(oo) and len(_tok_core(oo)) >= 2:
-                        _record_double(oo, lat[li], latc, kup, glossc, in_gloss)
-                        li += 1
+                # кандидаты для СКЛЕЙКИ — только ПРОПИСНЫЕ двойники (строчные рус.
+                # предлоги «по/на/с», которые OCR принял за латиницу «no», исключаем).
+                cands = [oo for oo in o[i1:i2]
+                         if _has_cyr(oo) and not _has_lat(oo)
+                         and len(_tok_core(oo)) >= 2 and _UPCYR.search(oo)]
+                # атомы-компоненты ИЗВЕСТНОЙ составной формы (Child, Pugh); латиница-
+                # дистрактор от рус. предлога («no») в base_values не входит -> отсеётся.
+                known = [_tok_core(x) for x in lat
+                         if _tok_core(x) in base_values and "-" not in _tok_core(x)]
+                joined = "-".join(known)
+                if (len(cands) == 1 and len(known) >= 2 and _is_compound(cands[0])
+                        and joined in base_values):
+                    # склеенный source-двойник (Child—Pugh одним токеном), OCR разбил
+                    # на атомы -> собираем известную составную форму, НЕ обрезаем.
+                    _record_double(cands[0], joined, latc, kup, glossc, in_gloss)
+                else:
+                    li = 0
+                    for oo in o[i1:i2]:
+                        if li >= len(lat):
+                            break
+                        if _has_cyr(oo) and not _has_lat(oo) and len(_tok_core(oo)) >= 2:
+                            _record_double(oo, lat[li], latc, kup, glossc, in_gloss)
+                            li += 1
     abbr_pairs, abbr_rus = _abbrev_langs(flat, region_ids, line_ocr)
 
     def protected(low: str) -> bool:
@@ -541,13 +581,13 @@ def _build_doc_map(flat: List[Line], line_ocr: Dict[int, str], region_ids: set,
             cand[low] = value
             value_support[value] += sum(cc.values())
 
-    base_values = _base_value_set(base)
     doc_map: Dict[str, str] = {}
     new_map: Dict[str, str] = {}
     for low, value in cand.items():
         if (sum(latc[low].values()) >= _MIN_DOUBLE_HITS      # >=2 набл. в теле
                 or low in glossc                             # регион глоссария
                 or value in base_values                      # форма известна базе
+                or value in _SEED_CLEAN                       # чистая форма из сида (hapax)
                 or value_support[value] >= _MIN_DOUBLE_HITS):  # форму дают >=2 двойника
             doc_map[low] = value
             if low not in base:
@@ -793,6 +833,13 @@ class OcrRecoverer:
                 # построчным клипом (psm 7 + апскейл) — плотные аббревиатуры-ключи
                 # (ТNМ->TNM) и курсивные определения page-psm6 читает мусорно.
                 if id(ln) in region_ids:
+                    clip = self._clip_text(fpage, page.number, ln.bbox)
+                    if clip:
+                        band = clip
+                elif not band and len(ln.text.strip()) >= 3:
+                    # ТЕЛО: лента пуста/съехала (плотный абзац, page-psm6 не покрыл
+                    # строку) — переснимаем построчным клипом для надёжного
+                    # соответствия слой<->OCR. Кэш клипов есть; фолбэк редкий.
                     clip = self._clip_text(fpage, page.number, ln.bbox)
                     if clip:
                         band = clip
