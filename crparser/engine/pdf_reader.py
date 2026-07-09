@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+import os
 import re
 from collections import Counter
 from typing import Dict, List
@@ -177,16 +178,21 @@ class PdfReader:
         full = "\n".join(page.text for page in pages)
         # локальный импорт: OCR-зависимости не грузятся для чистых файлов/при отказе
         from crparser.engine.ocr import OcrRecoverer, is_hybrid_candidate
-        if not is_hybrid_candidate(full):
+        from crparser.engine import ocr_pins
+        base = ocr_pins.load_base()
+        if not is_hybrid_candidate(full, base):
             return
         try:
             recoverer = OcrRecoverer()
             if not recoverer.available():
                 return          # OCR не настроен — тихо, вывод как без OCR
-            fixed = recoverer.hybrid_recover(self._doc, pages)
+            fixed, new_map = recoverer.hybrid_recover(self._doc, pages, base)
             if fixed:
                 self.norm_stats["ocr_hybrid_lines"] = fixed
                 self._recount_corruption(pages)
+            if new_map:
+                doc_id = os.path.splitext(os.path.basename(self._path))[0]
+                ocr_pins.write_shard(doc_id, new_map)
         except Exception as exc:  # noqa: BLE001
             self.ocr_warnings.append(f"гибрид-OCR не выполнен ({exc!r})")
 

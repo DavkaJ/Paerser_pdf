@@ -9,25 +9,32 @@ OCR-восстановление битого текстового слоя (и�
 
 Два режима:
 
-  ГИБРИД (`hybrid_recover`) — кириллица в слое чистая, битая только латиница
-    (HBsAg->НВзА§, BCLC->ВСЬС, IgM/IgG->1§М/1§С, Child-Pugh->Ри§Ь). Строки с
-    битыми токенами рендерятся по bbox в растр, Tesseract `rus+eng --psm 7`
-    восстанавливает латиницу; чистая кириллица берётся ИЗ СЛОЯ (выравнивание по
-    кириллическим якорям), восстановленная латиница — из OCR. Меняется только
-    Line.text битых строк; bbox/size/bold/структура не трогаются.
+  ГИБРИД (`hybrid_recover`) — кириллица в слое ЧИСТАЯ, битая только латиница,
+    отрендеренная кириллицей-двойником (BCLC->ВСЬС, Liver->Ыуег, Hepatitis->Нерабб,
+    virus->У1гиз, HBsAg->НВзА§, Child-Pugh->Ри§Ь). Для кандидата OCR-ятся ВСЕ
+    страницы (rus+eng), каждая строка слоя сливается со своей OCR-строкой ТОКЕН-
+    УРОВНЕВО: нативная кириллица — АВТОРИТЕТНАЯ база (её OCR по-русски portит ё/е,
+    переносы, пунктуацию), OCR-латиница подставляется ТОЛЬКО на «битые двойники»
+    (токен с §/мешанина, либо подтверждённый глиф-двойник из карты документа).
+    Реальные русские слова, аббревиатуры (ТАХЭ/УЗИ/СНВС), фамилии — не трогаются.
+    Меняется только Line.text; bbox/size/bold/структура не трогаются.
 
   ПОЛНЫЙ (`full_ocr`) — годного текста нет (скан или тотальная порча). Все
     страницы рендерятся, Tesseract `rus+eng --psm 6 tsv` даёт строки с боксами;
     из них собираются Page/Line, которые дальше идут в штатный Segmenter/Stats.
 
+Карта «кривое->чистое» строится из СЛОВАРЯ «Список сокращений» (регион OCR-ится и
+сопоставляется по позиции) + статистики двойников по телу + КРОСС-ДОК базы пинов
+(ocr_pins). Новые двойники документа пишутся в шард для пополнения базы.
+
 Обнаружение — ТОЛЬКО существующие детекторы `textnorm` (не дублируем эвристику):
 битый токен = `_is_section_sign_glyph_token` ИЛИ `_RE_MIXED`; документ-кандидат
-по плотностному порогу `section_sign_glyph_tokens`.
+по `section_sign_glyph_tokens` (§-плотность) ИЛИ по якорям базы пинов.
 
 Путь к бинарю и TESSDATA_PREFIX — из окружения (`TESSERACT_CMD`/`TESSERACT_PATH`,
 `TESSDATA_PREFIX`), с fallback на PATH и стандартные каталоги установки. Падение
-Tesseract (нет бинаря / нет rus / ошибка запуска) НЕ роняет парсинг: пишем
-предупреждение и возвращаем исходные строки — файл разбирается как прежде.
+Tesseract (нет бинаря / нет rus / ошибка запуска) НЕ роняет парсинг: тихо
+пропускаем — файл разбирается как без OCR.
 """
 
 from __future__ import annotations
@@ -36,8 +43,9 @@ import os
 import re
 import shutil
 import subprocess
+from collections import Counter, defaultdict
 from difflib import SequenceMatcher
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import fitz  # PyMuPDF (уже зависимость движка)
 
@@ -52,7 +60,7 @@ from crparser.engine.textnorm import (
 # Рендер: DPI (>=300 по ТЗ), паддинг клипа строки (в пунктах PDF), таймаут вызова.
 _DEFAULT_DPI = 300
 _CLIP_PAD_PT = 3.0
-_TESS_TIMEOUT = 60
+_TESS_TIMEOUT = 120
 
 # Стандартные места установки Tesseract на Windows/Unix (fallback к env/PATH —
 # это НЕ хардкод конкретного файла, а типовые каталоги пакета).
@@ -67,7 +75,28 @@ _COMMON_TESS_PATHS = (
 )
 
 _CYR = re.compile(r"[А-Яа-яЁё]")
+_LAT = re.compile(r"[A-Za-z]")
+_UPCYR = re.compile(r"[А-ЯЁ]")
+# Точки/подчёркивания-лидеры оглавления: строки-ToC OCR читает мусорно — их слияние
+# с OCR не ведём (только пред-разрешение подтверждённых двойников безопасно).
+_LEAD = re.compile(r"\.{3,}|_{3,}")
+# Якорь региона «Список сокращений»; конец — «Термины и определения» ИЛИ первый
+# нумерованный раздел (те же структурные маркеры, что у toc._BODY_MARKERS).
+_ABBR_ANCHOR = re.compile(r"^\s*список\s+сокращ", re.IGNORECASE)
+_TERM_ANCHOR = re.compile(r"^\s*(термин\w*\s+и\s+определ|\d)", re.IGNORECASE)
+# Запись словаря «КЛЮЧ - определение»/«КЛЮЧ — определение».
+_DASH = re.compile(r"\s[-–—]\s")
+_TOK_PUNCT = ".,;:()[]«»\"'`-—%<>±*"
+# Чистая латинская форма-восстановление: буква в начале, дальше латиница/цифры/. - /
+# (мусор с апострофами/кавычками — русская ошибка OCR, не латинский двойник).
+_CLEAN_LATIN = re.compile(r"[A-Za-z][A-Za-z0-9./-]*$")
+# Минимум наблюдений «кривое->чистое», чтобы принять двойник из статистики тела.
+_MIN_DOUBLE_HITS = 2
 
+
+# ============================================================================
+# Резолвинг Tesseract + предикаты токенов
+# ============================================================================
 
 def _resolve_tesseract() -> Optional[str]:
     """Путь к бинарю tesseract: env -> PATH -> типовые каталоги. None — нет."""
@@ -84,20 +113,82 @@ def _resolve_tesseract() -> Optional[str]:
     return None
 
 
+def _tok_core(tok: str) -> str:
+    return tok.strip(_TOK_PUNCT)
+
+
+def _has_lat(s: str) -> bool:
+    return bool(_LAT.search(s))
+
+
+def _has_cyr(s: str) -> bool:
+    return bool(_CYR.search(s))
+
+
+def _has_digit(s: str) -> bool:
+    return any(ch.isdigit() for ch in s)
+
+
+def _cyr_letters(s: str) -> int:
+    return sum(1 for ch in s if _CYR.match(ch))
+
+
+def _is_clean_latin(s: str) -> bool:
+    return bool(_CLEAN_LATIN.match(s))
+
+
 def _is_broken_token(tok: str) -> bool:
     """Битый токен: впаянный «§» ИЛИ смешение кириллицы и латиницы в слове."""
     return _is_section_sign_glyph_token(tok) or bool(_RE_MIXED.search(tok))
 
 
-def is_hybrid_candidate(text: str) -> bool:
-    """Документ — кандидат на ГИБРИД: плотность «§-в-токене» выше порога.
+def _cyr_norm(tok: str) -> str:
+    """Нормализованное «ядро» кириллического токена: буквы/цифры/«/»/«§», нижний
+    регистр, ё->е. Ключ карты двойников (совпадает с формой ключей базы пинов).
+    Цифры, «/» и «§» сохраняем: «у1гиз», «кт/мрт», «ри§ь», «нвза§» — различимы и
+    «§» держит длину ключа (иначе глиф-сигнал длины срезал бы §-двойники)."""
+    core = _tok_core(tok).lower().replace("ё", "е")
+    return "".join(ch for ch in core if _CYR.match(ch) or ch.isdigit() or ch in "/§")
 
-    Быстрый выход для чистых файлов: без «§» в тексте работы ноль."""
-    if "§" not in text:
+
+def _numberish(value: str) -> bool:
+    """OCR-значение — почти число (для случая «Ю0»->«100»)."""
+    core = _tok_core(value)
+    return bool(core) and sum(1 for ch in core if ch.isdigit()) / len(core) >= 0.6
+
+
+def _glyph_signal(key_core: str, value: str, has_upper: bool) -> bool:
+    """Структурный признак: кириллический токен — это латинский глиф-двойник, а не
+    русское слово. Слэш-совмещённые (КТ/МРТ) — русские сокращения, не двойники;
+    с цифрой внутри — двойник при >=2 кир. буквах ИЛИ числовом значении (Ю0->100);
+    без цифры — прописной токен длиной >=4 (ВСЬС/Ыуег/Нерабб). Короткие строчные
+    служебные слова (по/на/для) и строчные длинные отсекаются (нет has_upper)."""
+    if "/" in key_core and not _has_digit(key_core):
         return False
-    sig, glyph = section_sign_counts(text)
-    return section_sign_glyph_tokens(sig, glyph) > 0
+    if _has_digit(key_core):
+        return _cyr_letters(key_core) >= 2 or _numberish(value)
+    return len(key_core) >= 4 and has_upper
 
+
+def is_hybrid_candidate(text: str, base: Optional[dict] = None) -> bool:
+    """Документ — кандидат на кирилло-латинскую глиф-порчу.
+
+    Триггеры: (1) плотность «§-в-токене» выше порога (section_sign_glyph_tokens);
+    (2) в тексте есть кривые якоря из кросс-док базы пинов (двойники ВСЬС/Ыуег и
+    без «§»). `looks_glyph_corrupted` как гейт НЕ используем: он True и на ЧИСТЫХ
+    файлах с легит-латиницей (IgG/TNM — смешение скриптов), это сломало бы
+    регрессию чистых. Чистый файл без «§» и без якорей базы -> False, работы ноль."""
+    if "§" in text:
+        sig, glyph = section_sign_counts(text)
+        if section_sign_glyph_tokens(sig, glyph) > 0:
+            return True
+    from crparser.engine import ocr_pins
+    return ocr_pins.anchor_hit(text, base)
+
+
+# ============================================================================
+# Выравнивание строк слой<->OCR и слияние (нативная кириллица авторитетна)
+# ============================================================================
 
 def _cyr_key(tok: str, side: str, idx: int):
     """Ключ выравнивания: только кириллические буквы токена (ё->е). Токен без
@@ -108,26 +199,206 @@ def _cyr_key(tok: str, side: str, idx: int):
     return cyr if cyr else ("\x00" + side, idx)
 
 
+def _align_ops(orig: str, ocr: str):
+    ot, ct = orig.split(), ocr.split()
+    ka = [_cyr_key(t, "o", i) for i, t in enumerate(ot)]
+    kb = [_cyr_key(t, "c", i) for i, t in enumerate(ct)]
+    return ot, ct, SequenceMatcher(None, ka, kb, autojunk=False).get_opcodes()
+
+
 def merge_line(orig: str, ocr: str) -> str:
-    """Слить чистую кириллицу СЛОЯ и восстановленную латиницу OCR.
+    """Слить чистую кириллицу СЛОЯ и восстановленную латиницу OCR (зонно).
 
     Выравниваем по кириллическим якорям: совпавшие (genuine Cyrillic) участки
     берём ИЗ СЛОЯ (orig), несовпавшие — из OCR (там восстановленная латиница).
-    Битые латинские токени слоя кириллице OCR не соответствуют -> заменяются;
-    настоящая кириллица (её OCR читает как кириллицу) -> совпадает -> сохраняется.
-    Пустой OCR -> возвращаем исходную строку (без потерь)."""
+    Пустой OCR -> возвращаем исходную строку. НЕ ослаблять: используется как
+    точечный fallback (_recover_line)."""
     ot = orig.split()
     ct = ocr.split()
     if not ct:
         return orig
-    ka = [_cyr_key(t, "o", i) for i, t in enumerate(ot)]
-    kb = [_cyr_key(t, "c", i) for i, t in enumerate(ct)]
-    sm = SequenceMatcher(None, ka, kb, autojunk=False)
+    _, _, ops = _align_ops(orig, ocr)
     out: List[str] = []
-    for tag, i1, i2, j1, j2 in sm.get_opcodes():
+    for tag, i1, i2, j1, j2 in ops:
         out.extend(ot[i1:i2] if tag == "equal" else ct[j1:j2])
     merged = " ".join(out).strip()
     return merged or orig
+
+
+def _sub(tok: str, val: str) -> str:
+    """Подставить чистое значение вместо «ядра» токена, сохранив внешнюю пунктуацию."""
+    core = _tok_core(tok)
+    return tok.replace(core, val, 1) if core else val
+
+
+def _resolve_line(orig: str, ocr: str, doc_map: Dict[str, str]) -> str:
+    """ТОКЕН-УРОВНЕВОЕ восстановление строки. Заменяем ТОЛЬКО: (а) подтверждённый
+    глиф-двойник из doc_map (в любой зоне); (б) собственно битый токен (§/мешанина)
+    — по doc_map или позиционной OCR-латинице внутри своей зоны замены. Все прочие
+    токены (нативная кириллица, реальные слова) — из слоя, авторитетно."""
+    if not ocr.split():
+        return _pre_resolve(orig, doc_map)
+    ot, ct, ops = _align_ops(orig, ocr)
+    out: List[str] = []
+    for tag, i1, i2, j1, j2 in ops:
+        if tag == "equal":
+            out.extend(ot[i1:i2])
+            continue
+        lz, cz = ot[i1:i2], ct[j1:j2]
+        if len(lz) == len(cz):                       # позиционное сопоставление
+            for lk, ck in zip(lz, cz):
+                low = _cyr_norm(lk)
+                if _has_cyr(lk) and not _has_lat(lk) and low in doc_map:
+                    out.append(_sub(lk, doc_map[low]))
+                elif _is_broken_token(lk):
+                    out.append(_sub(lk, doc_map[low]) if low in doc_map
+                               else (ck if _is_clean_latin(_tok_core(ck)) else lk))
+                else:
+                    out.append(lk)                   # нативный токен — из слоя
+        else:                                        # разной длины: латиница по порядку
+            lat = [c for c in cz if _is_clean_latin(_tok_core(c))]
+            li = 0
+            for lk in lz:
+                low = _cyr_norm(lk)
+                if _has_cyr(lk) and not _has_lat(lk) and low in doc_map:
+                    out.append(_sub(lk, doc_map[low]))
+                elif _is_broken_token(lk):
+                    if low in doc_map:
+                        out.append(_sub(lk, doc_map[low]))
+                    elif li < len(lat):
+                        out.append(lat[li]); li += 1
+                    # иначе битый токен без соответствия — отбрасываем
+                else:
+                    out.append(lk)                   # нативный токен — из слоя
+    return _pre_resolve(" ".join(out), doc_map)
+
+
+def _pre_resolve(text: str, doc_map: Dict[str, str]) -> str:
+    """Пред-разрешение: заменить в тексте ТОЛЬКО подтверждённые глиф-двойники из
+    doc_map (кириллический токен без латиницы). Нативную кириллицу не трогает."""
+    if not doc_map:
+        return text
+    out: List[str] = []
+    for tok in text.split():
+        low = _cyr_norm(tok)
+        if low and low in doc_map and _has_cyr(tok) and not _has_lat(tok):
+            out.append(_sub(tok, doc_map[low]))
+        else:
+            out.append(tok)
+    return " ".join(out)
+
+
+# ============================================================================
+# Карта «кривое->чистое»: словарь сокращений + статистика тела + база пинов
+# ============================================================================
+
+def _band_text(bbox, words) -> str:
+    """Текст OCR-слов, чей вертикальный центр попал в полосу строки слоя bbox."""
+    x0, y0, x1, y1 = bbox
+    r = [(wx0, w) for cy, wx0, wx1, w in words
+         if y0 <= cy < y1 and wx1 > x0 - 2 and wx0 < x1 + 2]
+    r.sort()
+    return " ".join(w for _, w in r)
+
+
+def _abbr_region_ids(flat: List[Line]) -> set:
+    """id строк региона «Список сокращений»..«Термины и определения»/первый раздел.
+    Берём ТЕЛОвое (не оглавление) вхождение якоря — без точек-лидеров."""
+    ai = next((i for i, ln in enumerate(flat)
+               if _ABBR_ANCHOR.search(ln.text) and not _LEAD.search(ln.text)), None)
+    if ai is None:
+        return set()
+    ti = next((i for i, ln in enumerate(flat)
+               if i > ai and _TERM_ANCHOR.search(ln.text) and not _LEAD.search(ln.text)),
+              min(ai + 60, len(flat)))
+    return {id(flat[i]) for i in range(ai, ti)}
+
+
+def _abbrev_langs(flat: List[Line], region_ids: set,
+                  line_ocr: Dict[int, str]) -> Tuple[Dict[str, str], set]:
+    """Разобрать «Список сокращений»: для каждой записи «КЛЮЧ - определение» решить
+    по OCR определения, латинская это аббревиатура или русская.
+      * определение латинское (Barcelona Clinic Liver Cancer) -> карта КЛЮЧ->чистый
+        первый OCR-токен (ВСЬС->BCLC) — структурный высокодостоверный двойник;
+      * определение русское (компьютерная томография) -> КЛЮЧ в защиту (abbr_rus):
+        русское сокращение (ТАХЭ/УЗИ/СНВС) никогда не латинизируем."""
+    pairs: Dict[str, str] = {}
+    rus: set = set()
+    for ln in flat:
+        if id(ln) not in region_ids:
+            continue
+        layer = ln.text.strip()
+        ocr = line_ocr.get(id(ln), "")
+        if not _DASH.search(layer):
+            continue
+        key_layer = layer.split()[0]
+        kk = _cyr_norm(key_layer)
+        if not kk or _has_lat(key_layer):        # латинский КЛЮЧ ловит статистика тела
+            continue
+        oc = ocr.split()[1:] if ocr else []
+        lat = sum(1 for w in oc if _is_clean_latin(_tok_core(w)))
+        cyr = sum(1 for w in oc if _has_cyr(w) and not _has_lat(w) and len(_tok_core(w)) >= 3)
+        if lat > cyr and ocr:
+            first = _tok_core(ocr.split()[0])
+            if _is_clean_latin(first):
+                pairs[kk] = first
+        else:
+            rus.add(kk)
+    return pairs, rus
+
+
+def _build_doc_map(flat: List[Line], line_ocr: Dict[int, str], region_ids: set,
+                   base: Dict[str, str]) -> Tuple[Dict[str, str], Dict[str, str]]:
+    """Карта документа {кривое->чистое} и НОВЫЕ (не из базы) записи для шарда.
+
+    Источники (по возрастанию доверия): статистика двойников тела (никогда не
+    совпал с кириллицей OCR = never-trusted, структурный глиф-сигнал, >=2 набл.,
+    не защищённое рус.-сокращение) -> словарь сокращений (латинское определение)
+    -> база пинов. Русские слова/фамилии (OCR читает их кириллицей хоть раз) и
+    защищённые рус.-сокращения в карту не попадают — нулевая деградация кириллицы."""
+    eq = Counter()
+    latc: Dict[str, Counter] = defaultdict(Counter)
+    kup: Dict[str, bool] = {}
+    for ln in flat:
+        ocr = line_ocr.get(id(ln), "")
+        if not ocr or _LEAD.search(ln.text):
+            continue
+        o, c, ops = _align_ops(ln.text, ocr)
+        for tag, i1, i2, j1, j2 in ops:
+            if tag == "equal":
+                for t in o[i1:i2]:
+                    if _has_cyr(t) and not _has_lat(t):
+                        eq[_cyr_norm(t)] += 1
+            elif (i2 - i1) == (j2 - j1):
+                for oo, cc in zip(o[i1:i2], c[j1:j2]):
+                    core = _tok_core(oo); low = _cyr_norm(oo); ccc = _tok_core(cc)
+                    if _has_cyr(oo) and not _has_lat(oo) and _is_clean_latin(ccc) and len(core) >= 2:
+                        latc[low][ccc] += 1
+                        kup[low] = kup.get(low, False) or bool(_UPCYR.search(core))
+    abbr_pairs, abbr_rus = _abbrev_langs(flat, region_ids, line_ocr)
+
+    def protected(low: str) -> bool:
+        return low in abbr_rus or any(_cyr_norm(p) in abbr_rus for p in low.split("/"))
+
+    doc_map: Dict[str, str] = {}
+    new_map: Dict[str, str] = {}
+    for low, cc in latc.items():
+        if protected(low) or eq.get(low, 0) > 0:      # русское слово/сокращение -> защита
+            continue
+        value = cc.most_common(1)[0][0]
+        if _glyph_signal(low, value, kup.get(low, False)) and sum(cc.values()) >= _MIN_DOUBLE_HITS:
+            doc_map[low] = value
+            if low not in base:
+                new_map[low] = value
+    for low, value in abbr_pairs.items():             # словарь — структурный, приоритетнее
+        if not protected(low):
+            doc_map[low] = value
+            new_map[low] = value
+    # база пинов — только чтение: досыпаем известные двойники, не перетирая документ
+    for low, value in base.items():
+        if low not in doc_map and not protected(low):
+            doc_map[low] = value
+    return doc_map, new_map
 
 
 class OcrRecoverer:
@@ -210,85 +481,17 @@ class OcrRecoverer:
         pix = page.get_pixmap(matrix=mat, clip=clip)
         return pix.tobytes("png")
 
-    # ---- ГИБРИД -------------------------------------------------------------
-
-    def hybrid_recover(self, doc: "fitz.Document", pages: List[Page]) -> int:
-        """Починить битые строки на месте (меняем только Line.text). Возвращает
-        число восстановленных строк. При недоступном OCR — 0 без изменений.
-
-        Быстрый путь: клипы ВСЕХ битых строк страницы складываются в ОДИН узкий
-        растр (вертикальная лента с белыми промежутками) и OCR-ятся одним вызовом
-        `--psm 6 tsv`; результат раскладывается обратно по строкам через
-        вертикальные полосы-«band». Так на страницу — один запуск Tesseract (а не
-        по одному на строку), причём картинка маленькая (только битые строки, не
-        вся страница) — на порядок быстрее полностраничного OCR при той же
-        точности. Fallback (нет ленты/после слияния осталась «§») — клип строки
-        `--psm 7`, гарантирующий уход битых токенов."""
-        if not self.available():
-            return 0
-        fixed = 0
-        for page in pages:
-            broken = [ln for ln in page.lines
-                      if any(_is_broken_token(t) for t in ln.text.split())]
-            if not broken:
-                continue
-            fpage = doc[page.number - 1]
-            texts = self._strip_ocr(fpage, broken)
-            for line in broken:
-                cand = texts.get(id(line), "")
-                new_text = merge_line(line.text, cand) if cand else line.text
-                if (not cand) or any(_is_broken_token(t) for t in new_text.split()):
-                    alt = self._recover_line(fpage, line)   # точечный fallback
-                    if alt and not any(_is_broken_token(t) for t in alt.split()):
-                        new_text = alt
-                if new_text and new_text != line.text:
-                    line.text = new_text
-                    fixed += 1
-            page.text = "\n".join(ln.text for ln in page.lines)
-        return fixed
-
-    def _strip_ocr(self, fpage: "fitz.Page", lines: List[Line]) -> dict:
-        """OCR ленты из клипов битых строк за один вызов -> {id(line): текст}.
-
-        Клипы складываем вертикально с белым промежутком; по TSV раскидываем слова
-        обратно в исходные строки по вертикальной полосе (band). Пустой результат
-        при любой ошибке (вызывающий сделает точечный fallback)."""
+    def _page_words(self, fpage: "fitz.Page") -> list:
+        """OCR всей страницы (`--psm 6 tsv`) -> список слов (cy, x0, x1, текст) в
+        пунктах PDF. Пусто при сбое рендера/OCR."""
         try:
-            from PIL import Image
-        except Exception:  # noqa: BLE001 — без PIL остаётся точечный путь
-            return {}
-        import io as _io
-        gap, scale = 40, self._dpi / 72.0
-        imgs, bands, y = [], [], 0
-        for line in lines:
-            x0, y0, x1, y1 = line.bbox
-            if x1 <= x0 or y1 <= y0:
-                continue
-            clip = fitz.Rect(x0 - _CLIP_PAD_PT, y0 - _CLIP_PAD_PT,
-                             x1 + _CLIP_PAD_PT, y1 + _CLIP_PAD_PT)
-            try:
-                pix = fpage.get_pixmap(matrix=fitz.Matrix(scale, scale), clip=clip)
-                img = Image.open(_io.BytesIO(pix.tobytes("png"))).convert("L")
-            except Exception:  # noqa: BLE001
-                continue
-            imgs.append((y, img, line))
-            bands.append((y, y + img.height, line))
-            y += img.height + gap
-        if not imgs:
-            return {}
-        width = max(img.width for _, img, _ in imgs)
-        canvas = Image.new("L", (width, y), 255)
-        for top, img, _ in imgs:
-            canvas.paste(img, (0, top))
-        buf = _io.BytesIO()
-        canvas.save(buf, format="PNG")
-        tsv = self._run(buf.getvalue(), psm=6, tsv=True)
-        return self._words_to_bands(tsv, bands)
-
-    @staticmethod
-    def _words_to_bands(tsv: str, bands: List[Tuple]) -> dict:
-        """Разложить слова TSV по полосам bands (по вертикальному центру слова)."""
-        acc: dict = {id(ln): [] for _, _, ln in bands}
+            png = self._render(fpage, None)
+        except Exception as exc:  # noqa: BLE001
+            self.warnings.append(f"OCR: рендер страницы не удался ({exc!r})")
+            return []
+        tsv = self._run(png, psm=6, tsv=True)
+        scale = 72.0 / self._dpi
+        words = []
         for row in tsv.splitlines():
             cols = row.split("\t")
             if len(cols) < 12 or not cols[0].isdigit() or int(cols[0]) != 5:
@@ -297,17 +500,54 @@ class OcrRecoverer:
             if not word:
                 continue
             try:
-                top, height = int(cols[7]), int(cols[9])
+                left, top, w, h = (int(cols[6]), int(cols[7]), int(cols[8]), int(cols[9]))
             except ValueError:
                 continue
-            cy = top + height / 2.0
-            for y0b, y1b, ln in bands:
-                if y0b <= cy < y1b:
-                    acc[id(ln)].append(word)
-                    break
-        return {k: " ".join(v) for k, v in acc.items() if v}
+            words.append(((top + h / 2.0) * scale, left * scale, (left + w) * scale, word))
+        return words
+
+    # ---- ГИБРИД -------------------------------------------------------------
+
+    def hybrid_recover(self, doc: "fitz.Document", pages: List[Page],
+                       base: Optional[Dict[str, str]] = None) -> Tuple[int, Dict[str, str]]:
+        """Восстановить кирилло-латинскую глиф-порчу по всему документу-кандидату.
+
+        OCR-ит ВСЕ страницы (полнота важнее скорости), строит карту двойников из
+        словаря сокращений + статистики тела + базы пинов, затем ТОКЕН-УРОВНЕВО
+        сливает каждую строку слоя с её OCR-строкой (нативная кириллица авторитетна).
+        Меняет только Line.text. Возвращает (число_изменённых_строк, новые_двойники
+        для шарда). При недоступном OCR — (0, {}) без изменений."""
+        if not self.available():
+            return 0, {}
+        base = base or {}
+        flat = [ln for page in pages for ln in page.lines]
+        line_ocr: Dict[int, str] = {}
+        for page in pages:
+            fpage = doc[page.number - 1]
+            words = self._page_words(fpage)
+            for ln in page.lines:
+                line_ocr[id(ln)] = _band_text(ln.bbox, words) if words else ""
+        region_ids = _abbr_region_ids(flat)
+        doc_map, new_map = _build_doc_map(flat, line_ocr, region_ids, base)
+        fixed = 0
+        for page in pages:
+            changed = False
+            for ln in page.lines:
+                before = ln.text
+                if _LEAD.search(before):
+                    after = _pre_resolve(before, doc_map)
+                else:
+                    after = _resolve_line(before, line_ocr.get(id(ln), ""), doc_map)
+                if after and after != before:
+                    ln.text = after
+                    fixed += 1
+                    changed = True
+            if changed:
+                page.text = "\n".join(ln.text for ln in page.lines)
+        return fixed, new_map
 
     def _recover_line(self, fpage: "fitz.Page", line: Line) -> str:
+        """Точечный fallback: клип строки по bbox, `--psm 7`, слияние merge_line."""
         x0, y0, x1, y1 = line.bbox
         if x1 <= x0 or y1 <= y0:
             return line.text
@@ -318,12 +558,8 @@ class OcrRecoverer:
         except Exception as exc:  # noqa: BLE001
             self.warnings.append(f"OCR: рендер строки не удался ({exc!r})")
             return line.text
-        ocr = self._run(png, psm=7)
-        # OCR может отдать несколько визуальных строк — склеиваем в одну.
-        ocr = " ".join(ocr.split())
-        if not ocr:
-            return line.text
-        return merge_line(line.text, ocr)
+        ocr = " ".join(self._run(png, psm=7).split())
+        return merge_line(line.text, ocr) if ocr else line.text
 
     # ---- ПОЛНЫЙ -------------------------------------------------------------
 

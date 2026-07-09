@@ -145,6 +145,14 @@ def main() -> int:
         print("НЕ ЗАПИСАНЫ (%d): %s" % (len(failed_write), ", ".join(failed_write)))
     print("отчёт: %s  (%.0fs)" % (REPORT, time.time() - t0))
 
+    # Слияние шардов OCR-пинов в общий ocr_pins.json — ЕДИНИЧНЫМ процессом после
+    # пула (воркеры писали только свои шарды, без гонки за общий файл).
+    try:
+        from crparser.engine import ocr_pins
+        print("OCR-пины: база = %d записей" % ocr_pins.merge_shards())
+    except Exception as exc:  # noqa: BLE001
+        print("OCR-пины: слияние шардов не выполнено (%r)" % exc)
+
     return _integrity_check()
 
 
