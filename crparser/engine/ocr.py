@@ -187,6 +187,29 @@ def _is_compound(tok: str) -> bool:
     return any(ch in _tok_core(tok) for ch in "-—–")
 
 
+# Разделитель компонентов склеенного токена — ТОЛЬКО дефис (как в прежнем
+# _hyphen_resolve). Слэш НЕ разделяем: слэш-склейки (Р01/РБ-Ы) чинятся ПИНОМ по
+# полной кир-норме токена («р01/рбы»->«PD1/PD-L1»), а не покомпонентно, — иначе
+# слэш-токены списка литературы («саге/Сапсег», «У/ап§») правились бы как двойники.
+_COMPOUND_SEP = re.compile(r"(-)")
+
+
+def _is_native_ru(tok: str) -> bool:
+    """Компонент — НОРМАЛЬНАЯ русская морфема, а не глиф-двойник латиницы.
+
+    Жёсткий инвариант против латинизации русского: такой компонент берётся из
+    НАТИВНОГО слоя ДОСЛОВНО и никогда не подменяется чтением OCR. Признак: чистая
+    кириллица (без латиницы/цифр/«§»), длина >=3 и есть СТРОЧНАЯ кириллическая
+    буква — т.е. слово/морфема («терапии», «положительного», «ингибитора»), а не
+    прописная аббревиатура-двойник (ВСЬС/СЫЫ) и не битый токен (Ьпд§е)."""
+    core = _tok_core(tok)
+    if len(core) < 3 or _has_lat(core) or _has_digit(core) or "§" in core:
+        return False
+    if not _has_cyr(core):
+        return False
+    return any(("а" <= ch <= "я") or ch == "ё" for ch in core)
+
+
 def _latinize_flanked(text: str) -> str:
     """Одиночная ПРОПИСНАЯ кириллица-двойник латиницы, зажатая между двумя чистыми
     многобуквенными латинскими токенами («Hepatitis В virus» -> «Hepatitis B virus»),
@@ -295,7 +318,16 @@ def merge_line(orig: str, ocr: str) -> str:
     _, _, ops = _align_ops(orig, ocr)
     out: List[str] = []
     for tag, i1, i2, j1, j2 in ops:
-        out.extend(ot[i1:i2] if tag == "equal" else ct[j1:j2])
+        if tag == "equal":
+            out.extend(ot[i1:i2])
+            continue
+        lz, cz = ot[i1:i2], ct[j1:j2]
+        if len(lz) == len(cz):
+            # инвариант: нативную русскую морфему в зоне-замене НЕ латинизируем —
+            # берём её из слоя, OCR-латиницу ставим только на не-русские токены.
+            out.extend(lk if _is_native_ru(lk) else ck for lk, ck in zip(lz, cz))
+        else:
+            out.extend(cz)
     merged = " ".join(out).strip()
     return merged or orig
 
@@ -306,11 +338,13 @@ def _sub(tok: str, val: str) -> str:
     return tok.replace(core, val, 1) if core else val
 
 
-def _resolve_line(orig: str, ocr: str, doc_map: Dict[str, str]) -> str:
+def _resolve_line(orig: str, ocr: str, doc_map: Dict[str, str],
+                  genuine: frozenset = frozenset()) -> str:
     """ТОКЕН-УРОВНЕВОЕ восстановление строки. Заменяем ТОЛЬКО: (а) подтверждённый
     глиф-двойник из doc_map (в любой зоне); (б) собственно битый токен (§/мешанина)
     — по doc_map или позиционной OCR-латинице внутри своей зоны замены. Все прочие
-    токены (нативная кириллица, реальные слова) — из слоя, авторитетно."""
+    токены (нативная кириллица, реальные слова) — из слоя, авторитетно. `genuine` —
+    кир-нормы генуинно-русских токенов (eq>0), которые в битых склейках не латинизируем."""
     if not ocr.split():
         return _pre_resolve(orig, doc_map)
     ot, ct, ops = _align_ops(orig, ocr)
@@ -326,8 +360,14 @@ def _resolve_line(orig: str, ocr: str, doc_map: Dict[str, str]) -> str:
                 if _has_cyr(lk) and not _has_lat(lk) and low in doc_map:
                     out.append(_sub(lk, doc_map[low]))
                 elif _is_broken_token(lk):
-                    out.append(_sub(lk, doc_map[low]) if low in doc_map
-                               else (ck if _is_clean_latin(_tok_core(ck)) else lk))
+                    if low in doc_map:
+                        out.append(_sub(lk, doc_map[low]))
+                    else:
+                        # СКЛЕЙКА (Ьпд§е-терапии) — покомпонентно, русское из слоя;
+                        # None -> одиночный битый токен -> чтение OCR целиком.
+                        comp = _resolve_broken_compound(lk, ck, doc_map, genuine)
+                        out.append(comp if comp is not None
+                                   else (ck if _is_clean_latin(_tok_core(ck)) else lk))
                 else:
                     out.append(lk)                   # нативный токен — из слоя
         else:                                        # разной длины: латиница по порядку
@@ -340,12 +380,30 @@ def _resolve_line(orig: str, ocr: str, doc_map: Dict[str, str]) -> str:
                 elif _is_broken_token(lk):
                     if low in doc_map:
                         out.append(_sub(lk, doc_map[low]))
-                    elif li < len(lat):
-                        out.append(lat[li]); li += 1
-                    # иначе битый токен без соответствия — отбрасываем
+                    else:
+                        # СКЛЕЙКА -> покомпонентно (без позиц. OCR: зоны разной
+                        # длины), русское из слоя; None (одиночный) -> латиница OCR.
+                        comp = _resolve_broken_compound(lk, "", doc_map, genuine)
+                        if comp is not None:
+                            out.append(comp)
+                        elif li < len(lat):
+                            out.append(lat[li]); li += 1
+                        # иначе битый токен без соответствия — отбрасываем
                 else:
                     out.append(lk)                   # нативный токен — из слоя
     return _pre_resolve(" ".join(out), doc_map)
+
+
+def _reassemble(pieces: List[Tuple[int, str]], seps: List[str]) -> str:
+    """Собрать компоненты обратно, ставя ИСХОДНЫЙ разделитель перед каждым (кроме
+    первого). `pieces` — список (индекс_первого_компонента, текст); разделитель
+    перед пробегом, начинающимся с компонента a, — это seps[a-1]."""
+    s = ""
+    for idx, (a, text) in enumerate(pieces):
+        if idx > 0:
+            s += seps[a - 1]
+        s += text
+    return s
 
 
 def _hyphen_resolve(tok: str, doc_map: Dict[str, str]) -> str:
@@ -355,23 +413,82 @@ def _hyphen_resolve(tok: str, doc_map: Dict[str, str]) -> str:
     направо, на каждой позиции берём МАКСИМАЛЬНЫЙ ПРОБЕГ дефис-компонентов, чья
     кир-норма — ПОЛНЫЙ ключ карты, заменяем его чистой формой, русские компоненты
     оставляем как есть. Замена по дефис-ГРАНИЦЕ (компонент целиком), не произвольная
-    подстрока: ключ карты (eq==0 глиф-двойник) не совпадёт с рус. морфемой."""
+    подстрока: ключ карты (eq==0 глиф-двойник) не совпадёт с рус. морфемой. Слэш-
+    склейки (Р01/РБ-Ы) сюда не расщепляются — их чинит ПИН по полной кир-норме."""
     core = _tok_core(tok)
-    parts = core.split("-")
-    if len(parts) < 2:
+    toks = _COMPOUND_SEP.split(core)
+    comps, seps = toks[0::2], toks[1::2]
+    if len(comps) < 2:
         return tok
-    out: List[str] = []
-    i, n, changed = 0, len(parts), False
+    pieces: List[Tuple[int, str]] = []
+    i, n, changed = 0, len(comps), False
     while i < n:
         matched = False
-        for k in range(n, i, -1):                     # пробег parts[i:k], длиннейший
-            join = _cyr_norm("".join(parts[i:k]))
+        for k in range(n, i, -1):                     # пробег comps[i:k], длиннейший
+            join = _cyr_norm("".join(comps[i:k]))
             if join and join in doc_map:
-                out.append(doc_map[join]); i = k; matched = changed = True
+                pieces.append((i, doc_map[join])); i = k; matched = changed = True
                 break
         if not matched:
-            out.append(parts[i]); i += 1
-    return _sub(tok, "-".join(out)) if changed else tok
+            pieces.append((i, comps[i])); i += 1
+    return _sub(tok, _reassemble(pieces, seps)) if changed else tok
+
+
+def _resolve_broken_compound(lk: str, ck: str, doc_map: Dict[str, str],
+                             genuine: frozenset) -> Optional[str]:
+    """Разрешить БИТЫЙ склеенный токен (Ьпд§е-терапии), НЕ латинизируя русские
+    морфемы. Возвращает None, если токен НЕ склейка (тогда — обычная ветвь).
+
+    lk — токен слоя, ck — его OCR-прочтение («bridge-Tepanuu»); `genuine` —
+    множество кир-норм ГЕНУИННО-РУССКИХ токенов документа (OCR хоть раз прочитал их
+    кириллицей: eq>0). Компоненты слева направо:
+      (1) максимальный пробег с кир-нормой = ключ карты -> чистая форма (Ри§Ь->Pugh);
+      (2) компонент из `genuine` -> ДОСЛОВНО из СЛОЯ (жёсткий инвариант: генуинно-
+          русское НЕ латинизируем, что бы ни прочитал OCR: «терапии», не «Tepanuu»);
+      (3) прочий битый компонент -> позиционная чистая латиница OCR (СЫЫ->Child,
+          Ьпд§е->bridge), если OCR-токен разбит на столько же компонентов; иначе — слой.
+    Разделитель («-») сохраняется на исходном месте.
+
+    `genuine`, а не морфологический признак, — потому что битая латиница часто
+    выглядит как русское слово («поп»=non, «пзк»=risk в англоязычной библиографии):
+    её OCR читает чистой латиницей (eq==0), и она ДОЛЖНА замениться. Ключевое отличие
+    от прежнего поведения: битый СКЛЕЕННЫЙ токен НИКОГДА не заменяется чтением OCR
+    целиком — латиница ставится только в позицию НЕ-генуинного битого компонента."""
+    core = _tok_core(lk)
+    toks = _COMPOUND_SEP.split(core)
+    comps, seps = toks[0::2], toks[1::2]
+    if len(comps) < 2:
+        return None
+    # Покомпонентная обработка нужна ТОЛЬКО чтобы уберечь генуинно-русскую МОРФЕМУ в
+    # склейке (Ьпд§е-ТЕРАПИИ). Если защищать нечего (вся склейка — латиница/двойники,
+    # как в англоязычной библиографии «Ying-Hui», «Direct-Acting»), возвращаем None ->
+    # обычная ветвь берёт чтение OCR ЦЕЛИКОМ (чище, чем слой). Порог длины >=3: одно-
+    # /двухбуквенные генуинные токены (предлоги «у/в/с/о/к», инициалы) слишком
+    # неоднозначны — по ним склейку не защищаем (иначе «У-…» ловилось бы ложно).
+    if not any(len(_cyr_norm(c)) >= 3 and _cyr_norm(c) in genuine for c in comps):
+        return None
+    ccomps = _COMPOUND_SEP.split(_tok_core(ck))[0::2] if ck else []
+    positional = ccomps if len(ccomps) == len(comps) else None
+    pieces: List[Tuple[int, str]] = []
+    i, n, changed = 0, len(comps), False
+    while i < n:
+        matched = False
+        for k in range(n, i, -1):
+            join = _cyr_norm("".join(comps[i:k]))
+            if join and join in doc_map:
+                pieces.append((i, doc_map[join])); i = k; matched = changed = True
+                break
+        if matched:
+            continue
+        comp = comps[i]
+        if _cyr_norm(comp) in genuine:                # генуинно-русский — из слоя (инвариант)
+            pieces.append((i, comp))
+        elif positional and _is_clean_latin(_tok_core(positional[i])):
+            pieces.append((i, _tok_core(positional[i]))); changed = True   # чистая латиница OCR
+        else:
+            pieces.append((i, comp))                  # нет чистого чтения — из слоя
+        i += 1
+    return _sub(lk, _reassemble(pieces, seps)) if changed else lk
 
 
 def _pre_resolve(text: str, doc_map: Dict[str, str]) -> str:
@@ -502,8 +619,10 @@ def _base_value_set(base: Dict[str, str]) -> set:
 
 
 def _build_doc_map(flat: List[Line], line_ocr: Dict[int, str], region_ids: set,
-                   base: Dict[str, str]) -> Tuple[Dict[str, str], Dict[str, str]]:
-    """Карта документа {кривое->чистое} и НОВЫЕ (не из базы) записи для шарда.
+                   base: Dict[str, str]
+                   ) -> Tuple[Dict[str, str], Dict[str, str], frozenset]:
+    """Карта документа {кривое->чистое}, НОВЫЕ (не из базы) записи для шарда и
+    множество ГЕНУИННО-РУССКИХ кир-норм (eq>0) — их битые склейки не латинизируют.
 
     Двойник принимается, если он: (1) НЕ защищённое рус.-сокращение; (2) never-
     trusted (OCR ни разу не прочитал токен кириллицей, eq==0); (3) прошёл
@@ -600,7 +719,10 @@ def _build_doc_map(flat: List[Line], line_ocr: Dict[int, str], region_ids: set,
     for low, value in base.items():
         if low not in doc_map and not protected(low):
             doc_map[low] = value
-    return doc_map, new_map
+    # генуинно-русские кир-нормы: OCR хоть раз прочитал их кириллицей (eq>0). Их НИ
+    # в какой битой склейке не латинизируем (см. _resolve_broken_compound).
+    genuine = frozenset(k for k, c in eq.items() if c > 0)
+    return doc_map, new_map, genuine
 
 
 class OcrRecoverer:
@@ -844,7 +966,7 @@ class OcrRecoverer:
                     if clip:
                         band = clip
                 line_ocr[id(ln)] = band
-        doc_map, new_map = _build_doc_map(flat, line_ocr, region_ids, base)
+        doc_map, new_map, genuine = _build_doc_map(flat, line_ocr, region_ids, base)
         fixed = 0
         for page in pages:
             changed = False
@@ -853,7 +975,8 @@ class OcrRecoverer:
                 if _LEAD.search(before):
                     after = _pre_resolve(before, doc_map)
                 else:
-                    after = _resolve_line(before, line_ocr.get(id(ln), ""), doc_map)
+                    after = _resolve_line(before, line_ocr.get(id(ln), ""),
+                                          doc_map, genuine)
                     after = _latinize_flanked(after)  # «Hepatitis В virus»->«...B...»
                 if after and after != before:
                     ln.text = after
