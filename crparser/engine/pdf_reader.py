@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import os
 import re
 from collections import Counter
@@ -21,6 +22,18 @@ from crparser.engine.models import BBox, Line, Page
 from crparser.engine.textnorm import (
     glyph_suspect_count, looks_glyph_corrupted, normalize_line,
     pseudo_ascii_counts)
+
+def _pdf_sha256(path: str):
+    """sha256 исходного PDF — часть content-addressed ключа OCR-кэша. None при сбое."""
+    try:
+        h = hashlib.sha256()
+        with open(path, "rb") as fh:
+            for chunk in iter(lambda: fh.read(1 << 20), b""):
+                h.update(chunk)
+        return h.hexdigest()
+    except Exception:  # noqa: BLE001
+        return None
+
 
 # Бит 4 (16) в span["flags"] PyMuPDF — признак жирного начертания.
 _FLAG_BOLD = 1 << 4
@@ -188,7 +201,8 @@ class PdfReader:
                 return          # OCR не настроен — тихо, вывод как без OCR
             doc_id = os.path.splitext(os.path.basename(self._path))[0]
             fixed, new_map = recoverer.hybrid_recover(
-                self._doc, pages, base, doc_id=doc_id)
+                self._doc, pages, base, doc_id=doc_id,
+                pdf_sha=_pdf_sha256(self._path))
             if fixed:
                 self.norm_stats["ocr_hybrid_lines"] = fixed
                 self._recount_corruption(pages)

@@ -39,6 +39,7 @@ Tesseract (нет бинаря / нет rus / ошибка запуска) НЕ 
 
 from __future__ import annotations
 
+import hashlib
 import io
 import json
 import os
@@ -77,6 +78,84 @@ _TESS_TIMEOUT = 120
 # повторные прогоны на тех же файлах (прошлый полный прогон шёл ~2 часа).
 _OCR_CACHE_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "ocr_cache")
+
+# --------------------------------------------------------------------------- #
+# Отпечаток стека для content-addressed кэша (промпт 02, ПРАВКА 2).            #
+# Ключ дискового кэша ОБЯЗАН зависеть от ВСЕГО, что влияет на результат: версии #
+# Tesseract, хеша traineddata, версии Pillow, dpi, версии препроцессинга, langs.#
+# Раньше ключ был basename+page+dpi+langs+preproc+psm — без хеша PDF и без       #
+# версии стека: замена PDF при том же имени или апгрейд Tesseract молча отдавали #
+# старый TSV. Теперь имя файла = <pdf_sha12>_p<page>_<stack_sha12>_psm<N>.json.  #
+# --------------------------------------------------------------------------- #
+_stack_sig_cache: Dict[tuple, str] = {}
+
+
+def _sha256_hex(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def _file_sha256(path: str) -> Optional[str]:
+    try:
+        h = hashlib.sha256()
+        with open(path, "rb") as fh:
+            for chunk in iter(lambda: fh.read(1 << 20), b""):
+                h.update(chunk)
+        return h.hexdigest()
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _traineddata_dirs(cmd: Optional[str], tessdata: Optional[str]) -> list:
+    dirs = []
+    if tessdata:
+        dirs.append(tessdata)
+    if cmd:
+        bindir = os.path.dirname(cmd)
+        dirs.append(os.path.join(bindir, "tessdata"))
+        dirs.append(os.path.join(os.path.dirname(bindir), "share", "tessdata"))
+    return dirs
+
+
+def _stack_signature(cmd: Optional[str], tessdata: Optional[str], langs: str,
+                     dpi: int, preproc: int) -> str:
+    """Короткий (12 hex) отпечаток стека OCR: версия Tesseract + sha используемых
+    traineddata + версия Pillow + dpi + langs + версия препроцессинга. Кешируется
+    на процесс. При смене любого компонента ключ кэша меняется -> пересчёт."""
+    key = (cmd, tessdata, langs, dpi, preproc)
+    cached = _stack_sig_cache.get(key)
+    if cached is not None:
+        return cached
+    parts = ["dpi=%d" % dpi, "langs=%s" % langs, "preproc=%d" % preproc]
+    # версия Tesseract
+    tver = None
+    if cmd:
+        try:
+            out = subprocess.run([cmd, "--version"], capture_output=True, text=True,
+                                 timeout=_TESS_TIMEOUT)
+            lines = (out.stdout or out.stderr or "").splitlines()
+            tver = lines[0].strip() if lines else None
+        except Exception:  # noqa: BLE001
+            tver = None
+    parts.append("tess=%s" % tver)
+    # версия Pillow
+    try:
+        import PIL
+        parts.append("pillow=%s" % getattr(PIL, "__version__", None))
+    except Exception:  # noqa: BLE001
+        parts.append("pillow=None")
+    # sha256 используемых traineddata
+    dirs = _traineddata_dirs(cmd, tessdata)
+    for lang in sorted({p for p in langs.split("+") if p}):
+        sha = None
+        for d in dirs:
+            p = os.path.join(d, lang + ".traineddata")
+            if os.path.isfile(p):
+                sha = _file_sha256(p)
+                break
+        parts.append("%s=%s" % (lang, sha))
+    sig = _sha256_hex("|".join(parts).encode("utf-8"))[:12]
+    _stack_sig_cache[key] = sig
+    return sig
 
 # Стандартные места установки Tesseract на Windows/Unix (fallback к env/PATH —
 # это НЕ хардкод конкретного файла, а типовые каталоги пакета).
@@ -738,9 +817,11 @@ class OcrRecoverer:
         self._checked = False
         self._available = False
         self._tessdata = os.environ.get("TESSDATA_PREFIX") or None
-        #: идентификатор документа для ключа дискового кэша OCR (ставится в
-        #: hybrid_recover/full_ocr); None -> кэш не используется, только рендер.
+        #: человекочитаемая метка документа (пишется ВНУТРЬ файла кэша, НЕ в ключ).
         self._doc_id: Optional[str] = None
+        #: sha256 исходного PDF — часть ключа кэша (content-addressed). None -> кэш
+        #: не используется (нет отпечатка содержимого), только рендер.
+        self._pdf_sha: Optional[str] = None
         self.warnings: List[str] = []
 
     # ---- доступность --------------------------------------------------------
@@ -830,16 +911,20 @@ class OcrRecoverer:
 
     # ---- дисковый кэш сырого TSV -------------------------------------------
 
+    def _stack12(self) -> str:
+        """Отпечаток стека OCR (Tesseract/traineddata/Pillow/dpi/langs/preproc)."""
+        return _stack_signature(self._cmd, self._tessdata, self._langs,
+                                self._dpi, _PREPROC_VERSION)
+
     def _cache_path(self, page_no: int, psm: int) -> Optional[str]:
-        """Путь к кэш-файлу TSV для (документ, страница, dpi, langs, psm, версия
-        препроцессинга). None -> кэшировать нечем (нет doc_id)."""
-        if not self._doc_id:
+        """Путь к content-addressed кэш-файлу TSV: <pdf_sha12>_p<page>_<stack12>_psm<N>.
+        Ключ зависит от содержимого PDF и всего стека, а не от basename. None -> нет
+        отпечатка PDF (кэшировать нечем)."""
+        if not self._pdf_sha:
             return None
-        langs = self._langs.replace("+", "-")
-        name = "%s_p%d_d%d_%s_v%d_psm%d.json" % (
-            self._doc_id, page_no, self._dpi, langs, _PREPROC_VERSION, psm)
-        safe = re.sub(r"[^0-9A-Za-zА-Яа-яЁё_.-]", "_", name)
-        return os.path.join(_OCR_CACHE_DIR, safe)
+        name = "%s_p%d_%s_psm%d.json" % (
+            self._pdf_sha[:12], page_no, self._stack12(), psm)
+        return os.path.join(_OCR_CACHE_DIR, name)
 
     def _cached_tsv(self, fpage: "fitz.Page", page_no: int, psm: int) -> str:
         """TSV страницы: из кэша при попадании (без рендера/Tesseract), иначе
@@ -859,7 +944,8 @@ class OcrRecoverer:
             try:
                 os.makedirs(_OCR_CACHE_DIR, exist_ok=True)
                 JsonWriter._atomic_dump(
-                    {"tsv": tsv, "dpi": self._dpi, "preproc": _PREPROC_VERSION}, path)
+                    {"tsv": tsv, "dpi": self._dpi, "preproc": _PREPROC_VERSION,
+                     "doc_id": self._doc_id}, path)
             except Exception:  # noqa: BLE001
                 pass
         return tsv
@@ -873,12 +959,12 @@ class OcrRecoverer:
         if x1 <= x0 or y1 <= y0:
             return ""
         path = None
-        if self._doc_id:
-            key = "%s_clip_p%d_%d_%d_%d_%d_d%d_s%s_v%d_psm%d.json" % (
-                self._doc_id, page_no, round(x0), round(y0), round(x1), round(y1),
-                self._dpi, str(scale).replace(".", "-"), _PREPROC_VERSION, psm)
+        if self._pdf_sha:
+            key = "%s_clip_p%d_%d_%d_%d_%d_s%s_%s_psm%d.json" % (
+                self._pdf_sha[:12], page_no, round(x0), round(y0), round(x1), round(y1),
+                str(scale).replace(".", "-"), self._stack12(), psm)
             path = os.path.join(
-                _OCR_CACHE_DIR, re.sub(r"[^0-9A-Za-zА-Яа-яЁё_.-]", "_", key))
+                _OCR_CACHE_DIR, re.sub(r"[^0-9A-Za-z_.-]", "_", key))
             try:
                 if os.path.isfile(path):
                     with open(path, encoding="utf-8") as fh:
@@ -931,7 +1017,8 @@ class OcrRecoverer:
 
     def hybrid_recover(self, doc: "fitz.Document", pages: List[Page],
                        base: Optional[Dict[str, str]] = None,
-                       doc_id: Optional[str] = None) -> Tuple[int, Dict[str, str]]:
+                       doc_id: Optional[str] = None,
+                       pdf_sha: Optional[str] = None) -> Tuple[int, Dict[str, str]]:
         """Восстановить кирилло-латинскую глиф-порчу по всему документу-кандидату.
 
         OCR-ит ВСЕ страницы (полнота важнее скорости), строит карту двойников из
@@ -942,6 +1029,7 @@ class OcrRecoverer:
         if not self.available():
             return 0, {}
         self._doc_id = doc_id
+        self._pdf_sha = pdf_sha
         base = base or {}
         flat = [ln for page in pages for ln in page.lines]
         region_ids = _abbr_region_ids(flat)          # регион глоссария (по якорям)
@@ -1004,12 +1092,14 @@ class OcrRecoverer:
     # ---- ПОЛНЫЙ -------------------------------------------------------------
 
     def full_ocr(self, doc: "fitz.Document",
-                 doc_id: Optional[str] = None) -> List[Page]:
+                 doc_id: Optional[str] = None,
+                 pdf_sha: Optional[str] = None) -> List[Page]:
         """Собрать страницы из ПОЛНОГО OCR (скан/тотальная порча). При недоступном
         OCR — пустой список (вызывающий сохраняет прежнее поведение)."""
         if not self.available():
             return []
         self._doc_id = doc_id
+        self._pdf_sha = pdf_sha
         pages: List[Page] = []
         for index in range(doc.page_count):
             fpage = doc[index]

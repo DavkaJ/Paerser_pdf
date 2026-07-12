@@ -145,13 +145,15 @@ def main() -> int:
         print("НЕ ЗАПИСАНЫ (%d): %s" % (len(failed_write), ", ".join(failed_write)))
     print("отчёт: %s  (%.0fs)" % (REPORT, time.time() - t0))
 
-    # Слияние шардов OCR-пинов в общий ocr_pins.json — ЕДИНИЧНЫМ процессом после
-    # пула (воркеры писали только свои шарды, без гонки за общий файл).
+    # OCR-пины: база ocr_pins.json — НЕИЗМЕНЯЕМЫЙ вход (промпт 02). Накопленные за
+    # прогон пары НЕ дописываются в базу, а уходят в предложение на ревью
+    # (_corpus/pins_proposed_<runid>.json), собранное ЕДИНИЧНЫМ процессом после пула.
     try:
         from crparser.engine import ocr_pins
-        print("OCR-пины: база = %d записей" % ocr_pins.merge_shards())
+        print("OCR-пины: предложено %d новых пар -> _corpus/pins_proposed_*.json "
+              "(требуется ревью)" % ocr_pins.merge_shards())
     except Exception as exc:  # noqa: BLE001
-        print("OCR-пины: слияние шардов не выполнено (%r)" % exc)
+        print("OCR-пины: сбор предложения не выполнен (%r)" % exc)
 
     return _integrity_check()
 
