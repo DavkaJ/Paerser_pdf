@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cr.local/cr_schema.json",
+  "title": "CR parser output document",
+  "type": "object",
+  "required": ["metadata", "sections", "tables", "excluded", "stats", "warnings"],
+  "additionalProperties": true,
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "required": ["source_file", "document_type", "title", "id"],
+      "additionalProperties": true,
+      "properties": {
+        "source_file": {"type": "string"},
+        "document_type": {"type": "string"},
+        "title": {"type": ["string", "null"]},
+        "id": {"type": ["string", "null"]},
+        "url": {"type": ["string", "null"]},
+        "year": {"type": ["integer", "string", "null"]},
+        "end_year": {"type": ["integer", "string", "null"]},
+        "age_group": {"type": ["string", "null"]},
+        "mkb_codes": {"type": "array", "items": {"type": "string"}},
+        "developer": {"type": ["string", "null"]},
+        "approval_status": {"type": ["string", "null"]},
+        "publication_date": {"type": ["string", "null"]},
+        "application_status": {"type": ["string", "null"]}
+      }
+    },
+    "sections": {"type": "array", "items": {"$ref": "#/$defs/section"}},
+    "tables": {"type": "array", "items": {"$ref": "#/$defs/table"}},
+    "excluded": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": ["title", "text"],
+          "additionalProperties": true,
+          "properties": {"title": {"type": "string"}, "text": {"type": "string"}}
+        }
+      }
+    },
+    "stats": {"$ref": "#/$defs/stats"},
+    "warnings": {"type": "array", "items": {"type": "string"}},
+    "provenance": {"type": "object"}
+  },
+  "$defs": {
+    "bbox": {
+      "type": "array",
+      "items": {"type": "number"},
+      "minItems": 4,
+      "maxItems": 4
+    },
+    "section": {
+      "type": "object",
+      "required": ["number", "title", "level", "text", "children"],
+      "additionalProperties": true,
+      "properties": {
+        "number": {"type": ["string", "null"]},
+        "title": {"type": "string"},
+        "level": {"type": "integer"},
+        "text": {"type": "string"},
+        "children": {"type": "array", "items": {"$ref": "#/$defs/section"}},
+        "section_id": {"type": ["string", "null"]},
+        "page": {"type": ["integer", "null"]},
+        "bbox": {"anyOf": [{"$ref": "#/$defs/bbox"}, {"type": "null"}]},
+        "line_ids": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "table": {
+      "type": "object",
+      "required": ["page", "number", "caption", "raw_text", "bbox"],
+      "additionalProperties": true,
+      "properties": {
+        "page": {"type": ["integer", "null"]},
+        "number": {"type": ["string", "null"]},
+        "caption": {"type": ["string", "null"]},
+        "raw_text": {"type": "string"},
+        "bbox": {"$ref": "#/$defs/bbox"},
+        "low_confidence": {"type": "boolean"},
+        "reconciled": {"type": "boolean"},
+        "reconcile_score": {"type": "number"},
+        "continues_table": {"type": ["string", "null"]},
+        "claimed_line_ids": {"type": "array", "items": {"type": "string"}},
+        "source": {"type": "string"}
+      }
+    },
+    "stats": {
+      "type": "object",
+      "required": ["total_chars", "sections_found", "tables_found", "coverage_percent"],
+      "additionalProperties": true,
+      "properties": {
+        "total_chars": {"type": "integer"},
+        "total_words": {"type": "integer"},
+        "sections_found": {"type": "integer"},
+        "tables_found": {"type": "integer"},
+        "included_chars": {"type": "integer"},
+        "excluded_chars": {"type": "integer"},
+        "table_chars": {"type": "integer"},
+        "accounted_chars": {"type": "integer"},
+        "coverage_percent": {"type": "number"},
+        "corruption": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "spacing_fixed": {"type": "integer"},
+            "doubling_fixed": {"type": "integer"},
+            "glyph_tokens": {"type": "integer"},
+            "glyph_regions": {"type": "integer"},
+            "pseudo_ascii_tokens": {"type": "integer"}
+          }
+        }
+      }
+    }
+  }
+}

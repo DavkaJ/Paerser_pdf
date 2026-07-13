@@ -33,6 +33,7 @@ from __future__ import annotations
 import argparse
 import glob
 import json
+import math
 import os
 import re
 import sys
@@ -46,6 +47,11 @@ try:
 except Exception:
     pass
 
+# jsonschema — обязательная зависимость валидатора. Отсутствие библиотеки НЕ
+# должно молча пропускать проверку схемы (fail-open): даём импорту упасть, чтобы
+# валидатор не запустился вовсе, а не «прошёл» без контроля контракта.
+import jsonschema
+
 from crparser.engine.parser import DocumentParser
 from crparser.engine.jsonio import JsonWriter
 from crparser.engine.pdf_reader import PdfReader
@@ -56,6 +62,80 @@ from crparser.profiles import create_profile
 # Порог покрытия: ниже COV_FAIL — потеря текста (FAIL); ниже COV_WARN — заметка.
 COV_FAIL = 99.0
 COV_WARN = 99.9
+
+# Порог OVERCOUNT: сумма учтённого (included+excluded+tables) выше total_chars на
+# >2% -> дубли между buckets. Замер: у КР848_1 сумма 61 551 при total 54 047
+# (превышение 13,9%), у КР809_1 175 807 против 171 506 (2,51%). Ниже 2% — шум
+# округления подписей таблиц.
+OVERCOUNT_MIN = 1.02
+
+# JSON Schema выходного документа (draft 2020-12). Валидатор fail-closed: документ,
+# не соответствующий контракту, не может быть выпущен ни при каких обстоятельствах.
+_SCHEMA_PATH = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "crparser", "data", "cr_schema.json")
+with open(_SCHEMA_PATH, encoding="utf-8") as _fh:
+    _CR_SCHEMA = json.load(_fh)
+_SCHEMA_VALIDATOR = jsonschema.Draft202012Validator(_CR_SCHEMA)
+
+
+# --- римская нумерация оглавления (промпт 03, ПРАВКА 4) ---------------------
+# Кириллические гомографы римских цифр -> латинские (типовая порча источника).
+_ROMAN_HOMOGRAPH = str.maketrans({
+    "Х": "X", "х": "X", "С": "C", "с": "C", "І": "I", "і": "I",
+    "Ѵ": "V", "ѵ": "V", "У": "Y", "у": "Y"})
+# «XII. Заголовок», «V Лечение», смешанный «XII.1 …».
+_RE_ROMAN_HEAD = re.compile(r"^([IVXLC]+)(?:\.(\d+))?\.?\s+(.+)$")
+_ROMAN_VALS = {"I": 1, "V": 5, "X": 10, "L": 50, "C": 100}
+
+
+def _roman_to_int(tok: str) -> Optional[int]:
+    total = 0
+    prev = 0
+    for ch in reversed(tok):
+        v = _ROMAN_VALS.get(ch)
+        if v is None:
+            return None
+        if v < prev:
+            total -= v
+        else:
+            total += v
+            prev = v
+    return total
+
+
+def _int_to_roman(n: int) -> str:
+    table = [(100, "C"), (90, "XC"), (50, "L"), (40, "XL"), (10, "X"),
+             (9, "IX"), (5, "V"), (4, "IV"), (1, "I")]
+    out = ""
+    for val, sym in table:
+        while n >= val:
+            out += sym
+            n -= val
+    return out
+
+
+def _parse_roman_entry(title: str) -> Optional[Tuple[str, str]]:
+    """Из пункта оглавления без арабского номера достать римский номер+заголовок.
+
+    Возвращает ('XII', 'Критерии …') / ('XII.1', '…') или None. Строгая проверка:
+    токен обязан быть валидной римской цифрой 1..30 (иначе — обычная строка,
+    случайно начинающаяся с латинских I/V/X)."""
+    orig = (title or "").strip()
+    t = orig.translate(_ROMAN_HOMOGRAPH)     # гомографы — ТОЛЬКО для распознавания
+    m = _RE_ROMAN_HEAD.match(t)
+    if not m:
+        return None
+    rom = m.group(1).upper()
+    val = _roman_to_int(rom)
+    if val is None or not (1 <= val <= 30) or _int_to_roman(val) != rom:
+        return None
+    # заголовок берём из ОРИГИНАЛА (translate 1:1 сохраняет позиции), чтобы не
+    # латинизировать кириллицу тела: «оценки качеСтва» != «оценки качеCтва».
+    rest = orig[m.start(3):].strip()
+    if len(rest) < 3:
+        return None
+    number = rom if not m.group(2) else "%s.%s" % (rom, m.group(2))
+    return number, rest
 
 # Якорь оглавления (тот же, что у профиля КР). Парсинг оглавления — общий код в
 # crparser.engine.toc (его же использует парсер, чтобы отсеивать фантомы — баг 4).
@@ -98,7 +178,18 @@ class Toc:
         self.body_norm = body_norm
 
     def numbered(self) -> List[Tuple[str, str]]:
-        return [(n, t) for n, t in self.entries if n and _NUM_RE.match(n)]
+        """Нумерованные пункты оглавления: И арабские, И римские (верхний уровень).
+        Римские пункты источник хранит как (None, 'XII. …') — парсер оглавления их
+        не нумерует; извлекаем римский номер здесь."""
+        out: List[Tuple[str, str]] = []
+        for n, t in self.entries:
+            if n and _NUM_RE.match(n):
+                out.append((n, t))
+            elif n is None:
+                r = _parse_roman_entry(t)
+                if r:
+                    out.append(r)
+        return out
 
     def body_has_numbered(self, number: str, title: str) -> bool:
         """В теле документа номер стоит рядом со своим заголовком (это раздел)."""
@@ -169,7 +260,8 @@ class Report:
 
     @property
     def ok(self) -> bool:
-        return not self.fails and self.skipped is None
+        # fail-closed: REVIEW тоже НЕ ok. PASS — только чистый файл без замечаний.
+        return not self.fails and not self.reviews and self.skipped is None
 
     @property
     def status(self) -> str:
@@ -182,10 +274,87 @@ class Report:
         return "PASS"
 
 
+def _schema_error(doc) -> Optional[str]:
+    """Первая ошибка схемы (или None). Пустой {} и любой не-контрактный документ
+    вернут ошибку -> SCHEMA FAIL (fail-closed)."""
+    if not isinstance(doc, dict):
+        return "документ не является объектом JSON"
+    errs = sorted(_SCHEMA_VALIDATOR.iter_errors(doc),
+                  key=lambda e: [str(p) for p in e.path])
+    if errs:
+        e = errs[0]
+        loc = "/".join(str(p) for p in e.path) or "<root>"
+        return "%s: %s" % (loc, e.message[:160])
+    return None
+
+
+def _recount_stats(doc: dict) -> Dict[str, int]:
+    """Пересчитать счётчики ПРЯМО из doc (той же формулой, что stats.py), чтобы
+    сверить с заявленными в doc['stats'] — их никто иначе не перепроверяет."""
+    flat = [s for s, _ in walk(doc.get("sections", []))]
+    included = sum(len(s.get("title") or "") + len(s.get("text") or "") for s in flat)
+    excluded = 0
+    for bucket in (doc.get("excluded", {}) or {}).values():
+        for item in bucket:
+            excluded += len(item.get("title", "")) + len(item.get("text", ""))
+    tables = doc.get("tables", []) or []
+    table = sum(len(t.get("raw_text") or "") + len(t.get("caption") or "")
+                for t in tables)
+    return {"sections_found": len(flat), "tables_found": len(tables),
+            "included_chars": included, "excluded_chars": excluded,
+            "table_chars": table}
+
+
+def _check_stats_and_coverage(rep: "Report", doc: dict, stats: dict) -> None:
+    """ПРАВКА 3: stats пересчитываются, а не принимаются на веру."""
+    recount = _recount_stats(doc)
+    # STATS_MISMATCH — расхождение заявленного и фактического любого счётчика.
+    for field, actual in recount.items():
+        if field in stats and stats.get(field) != actual:
+            rep.fail("STATS_MISMATCH",
+                     "%s: заявлено %s, факт %s" % (field, stats.get(field), actual))
+    # coverage_percent вне [0,100] / NaN / None -> FAIL.
+    cov = stats.get("coverage_percent")
+    bad = (cov is None or not isinstance(cov, (int, float))
+           or isinstance(cov, bool)
+           or (isinstance(cov, float) and math.isnan(cov))
+           or cov < 0 or cov > 100)
+    if bad:
+        rep.fail("COVERAGE_INVALID",
+                 "coverage_percent вне [0,100]/NaN/None: %r" % (cov,))
+    # OVERCOUNT — сумма учтённого превышает источник (дубли между buckets).
+    total = stats.get("total_chars", 0) or 0
+    accounted = (recount["included_chars"] + recount["excluded_chars"]
+                 + recount["table_chars"])
+    if total > 0 and accounted > total * OVERCOUNT_MIN:
+        rep.review("OVERCOUNT",
+                   "сумма учтённого %d превышает источник %d на %d символов "
+                   "(%.1f%%) — дубли между buckets"
+                   % (accounted, total, accounted - total, accounted / total * 100 - 100))
+    # coverage_percent пересчитываем той же формулой, что stats.py, и сверяем с
+    # заявленным: подделанное покрытие (100 при фактических 40) -> STATS_MISMATCH.
+    if isinstance(total, int) and total > 0 and not bad:
+        accounted_capped = min(accounted, total)
+        exp_cov = (round(accounted_capped / total * 100, 2)
+                   if recount["included_chars"] else 0.0)
+        if abs(float(cov) - exp_cov) > 0.01:
+            rep.fail("STATS_MISMATCH",
+                     "coverage_percent: заявлено %s, факт %s" % (cov, exp_cov))
+
+
 def validate_doc(name: str, doc: dict, toc: Optional[Toc]) -> Report:
     rep = Report(name)
+    # ---- ПРАВКА 1: JSON Schema (fail-closed). Пустой {} и любой не-контрактный
+    # документ -> SCHEMA FAIL, а НЕ SKIP: файл, не отвечающий контракту, выпущен
+    # быть не может ни при каких условиях. ----
+    serr = _schema_error(doc)
+    if serr is not None:
+        rep.fail("SCHEMA", serr)
+        return rep
     sections = doc.get("sections", [])
     stats = doc.get("stats", {})
+    # ---- ПРАВКА 3: перепроверка stats/coverage до сверки со скан-логикой ----
+    _check_stats_and_coverage(rep, doc, stats)
 
     # ---- скан без текстового слоя -> SKIPPED_SCAN (не FAIL, без сверки с TOC) ----
     # PDF-скан даёт пустой/почти пустой извлекаемый текст (total_chars ≈ 0): файл
@@ -204,7 +373,9 @@ def validate_doc(name: str, doc: dict, toc: Optional[Toc]) -> Report:
     # Раньше сюда же попадала ветка «cov<=0 и sec_found==0», но она поглощена
     # проверкой пустого вывода ниже (sec_found==0 => included_chars==0 => REVIEW):
     # файл с текстом, но без разделов — это не скан на OCR, а честный REVIEW.
-    if total_chars < 200:
+    # not rep.fails: реальный скан имеет согласованные ~0 stats и не даёт FAIL;
+    # если stats уже дали FAIL (подделаны) — это НЕ безобидный скан, не маскируем.
+    if total_chars < 200 and not rep.fails:
         rep.skip(f"текстовый слой пуст (total_chars={total_chars}, "
                  f"coverage={cov}) — скан, на OCR/ручную обработку")
         return rep
@@ -310,11 +481,17 @@ def validate_doc(name: str, doc: dict, toc: Optional[Toc]) -> Report:
             rep.fail("HIERARCHY_BROKEN", f"{num}: родитель в дереве = {got!r}, ожидался {prefix!r}")
 
     # ---- сверка с оглавлением ----
+    # ПРАВКА 4: нераспознанное/пустое оглавление — НЕ повод для PASS. Сейчас такой
+    # файл молча проходил структурную сверку «ни с чем».
     if toc is None:
-        rep.warn("TOC", "оглавление не извлечено — проверены только структурные инварианты")
+        rep.review("TOC_NONE",
+                   "оглавление не извлечено — структура не сверена, файл не может быть PASS")
         return rep
 
     exp = toc.numbered()
+    if not exp:
+        rep.review("TOC_NONE",
+                   "оглавление распознано, но без нумерованных пунктов — сверять не с чем")
     exp_count = Counter(n for n, _ in exp)
     exp_titles: Dict[str, List[str]] = defaultdict(list)
     for n, t in exp:
@@ -340,6 +517,15 @@ def validate_doc(name: str, doc: dict, toc: Optional[Toc]) -> Report:
         if not matched and num in act_count:
             matched = any(_prefix_words_match(title, t) for t in act_titles[num])
         if matched:
+            continue
+        # римский пункт оглавления, чей заголовок присутствует в выводе под АРАБСКИМ
+        # номером (парсер нумерует римские главы канонически: «V. Краткая» -> раздел
+        # «1»). Номера НИКОГДА не совпадут (V != 1), поэтому body_has_numbered ниже
+        # ложно дал бы MISSING. Это перенумерация, а не потеря -> WARN.
+        if not _NUM_RE.match(num) and any(
+                titles_match(title, s.get("title") or "") for s in numbered):
+            rep.warn("SOURCE_DEFECT",
+                     f"{num} {title!r} — римская глава под арабским номером (перенумерация)")
             continue
         # «Список литературы»/«Приложение…»/«Критерии оценки качества», которым
         # источник дал номер раздела, парсер сохраняет как регион-исключение
@@ -512,6 +698,9 @@ def main(argv: Optional[List[str]] = None) -> int:
                     help="готовый JSON вывода парсера (иначе парсер прогоняется на PDF)")
     ap.add_argument("--registry", default=None, help="путь к Excel-реестру КР")
     ap.add_argument("--quiet", action="store_true", help="скрыть WARN, печатать только FAIL")
+    ap.add_argument("--allow-review", action="store_true",
+                    help="локальная отладка: не считать REVIEW провалом (по умолчанию "
+                         "REVIEW/FAIL/SKIP -> ненулевой exit; PASS — единственный успех)")
     args = ap.parse_args(argv)
 
     pdfs = _iter_pdfs(args.input)
@@ -549,19 +738,27 @@ def main(argv: Optional[List[str]] = None) -> int:
             for w in rep.warns:
                 print(f"    · {w}")
 
-    skipped = [r for r in reports if r.skipped]
-    judged = [r for r in reports if not r.skipped]
-    npass = sum(1 for r in judged if r.ok)
-    review = [r for r in judged if r.status == "REVIEW"]
+    # ПРАВКА 2: честный exit. PASS — единственный успех; REVIEW/FAIL/SCHEMA, а также
+    # SKIP при непустом слое — НЕ успех. Три числа печатаем раздельно.
+    npass = sum(1 for r in reports if r.status == "PASS")
+    nreview = sum(1 for r in reports if r.status == "REVIEW")
+    nfail = sum(1 for r in reports if r.status == "FAIL")
+    skipped = [r for r in reports if r.status == "SKIP"]
     print("\n" + "=" * 70)
-    print(f"ИТОГ: {npass}/{len(judged)} файлов PASS"
-          + (f"  ({len(review)} REVIEW)" if review else "")
-          + (f"  (+{len(skipped)} SKIPPED_SCAN)" if skipped else ""))
+    print(f"ИТОГ ({len(reports)} файлов): PASS={npass}  REVIEW={nreview}  "
+          f"FAIL={nfail}  SKIP={len(skipped)}")
     if skipped:
-        print("СКАНЫ (на OCR/ручную обработку): "
+        print("СКАНЫ (не обработаны, на OCR/ручную обработку): "
               + ", ".join(r.name for r in skipped))
+    # exit 0 ТОЛЬКО если каждый файл PASS. --allow-review прощает лишь REVIEW.
+    if args.allow_review:
+        bad = nfail + len(skipped)
+    else:
+        bad = len(reports) - npass
+    print(f"exit {0 if bad == 0 else 1}"
+          + ("  (--allow-review: REVIEW не считается провалом)" if args.allow_review else ""))
     print("=" * 70)
-    return 0 if npass == len(judged) else 1
+    return 0 if bad == 0 else 1
 
 
 if __name__ == "__main__":
