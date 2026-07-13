@@ -182,13 +182,19 @@ def _config() -> dict:
         cfg["cov_warn"] = getattr(validate, "COV_WARN", None)
     except Exception:  # noqa: BLE001
         pass
-    # max_workers не является модульной константой batch_report — читаем из исходника.
+    # max_workers — теперь CLI-параметр --workers (промпт 05), не константа. Читаем
+    # его default из исходника; форма default=min(os.cpu_count() or N, M).
     try:
         import re
         src = open(os.path.join(_ROOT, "batch_report.py"), encoding="utf-8").read()
-        m = re.search(r"max_workers\s*=\s*(\d+)", src)
+        m = re.search(r"--workers.*?default=min\(os\.cpu_count\(\)\s*or\s*\d+,\s*(\d+)\)",
+                      src, re.DOTALL)
         if m:
-            cfg["max_workers"] = int(m.group(1))
+            cfg["max_workers"] = "min(cpu,%s)" % m.group(1)
+        else:
+            m2 = re.search(r"max_workers\s*=\s*(\d+)", src)
+            if m2:
+                cfg["max_workers"] = int(m2.group(1))
     except Exception:  # noqa: BLE001
         pass
     return cfg
