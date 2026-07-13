@@ -313,11 +313,29 @@ def _shipped_facts() -> dict:
 # --------------------------------------------------------------------------- #
 # Команды CLI                                                                #
 # --------------------------------------------------------------------------- #
+def _atomic_write_json(obj, path: str) -> None:
+    """Атомарная запись (temp+fsync+os.replace): без торн/«Extra data» при прерывании
+    или конкурентной записи — тот же класс, что уже починен в batch_report/revalidate."""
+    tmp = "%s.tmp.%d" % (path, os.getpid())
+    try:
+        with open(tmp, "w", encoding="utf-8") as fh:
+            json.dump(obj, fh, ensure_ascii=False, indent=1)
+            fh.flush()
+            os.fsync(fh.fileno())
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            if os.path.exists(tmp):
+                os.remove(tmp)
+        except OSError:
+            pass
+        raise
+
+
 def cmd_snapshot() -> int:
     manifest = build_manifest()
     os.makedirs(os.path.dirname(MANIFEST), exist_ok=True)
-    with open(MANIFEST, "w", encoding="utf-8") as fh:
-        json.dump(manifest, fh, ensure_ascii=False, indent=1)
+    _atomic_write_json(manifest, MANIFEST)
     c = manifest["counts"]
     print("baseline_manifest.json записан -> %s" % os.path.relpath(MANIFEST, _ROOT))
     print("  входов: %d, выходов: %d" % (c["inputs"], c["outputs"]))
