@@ -3,6 +3,13 @@
   "include": ["metadata", "sections", "tables", "excluded.appendices"],
   "exclude": ["excluded.references", "excluded.toc", "excluded.front_matter",
               "excluded.other", "warnings", "stats"],
+  "exclude_fields": {
+    "reason": "Поля провенанса промпта 08 — ДИАГНОСТИКА, не обучающий контент (раздутие JSON +65.8% на КР1_4). span_uids/bbox/page/section_id — геометрия источника; claimed_span_uids/source — учёт владения; top-level provenance — сводка по каналам/расхождениям. В обучающий корпус НЕ идут.",
+    "section": ["section_id", "page", "bbox", "span_uids"],
+    "table": ["claimed_span_uids", "source"],
+    "excluded_item": ["span_uids"],
+    "top_level": ["provenance"]
+  },
   "rationale": {
     "excluded.appendices": "ВКЛЮЧАЕМ. Приложения КР содержат шкалы (Child-Pugh, ECOG, Karnofsky), критерии оценки качества и алгоритмы — клинически ценный контент. Аудит §4.1 прямо считает их потерю в table recall провалом. Следствие: пины и mixed-script детектор ОБЯЗАНЫ покрывать эту зону (промпт 04), а coverage не вправе считать её легитимно исключённой (промпт 10).",
     "excluded.references": "иностранная библиография не чистится; exact-token attestation 43-50% на эталонах — непригодна для обучения.",

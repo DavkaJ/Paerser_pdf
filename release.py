@@ -165,15 +165,33 @@ def layout_quarantine(label, items, run_id):
 # --------------------------------------------------------------------------- #
 # Экспорт по контракту                                                        #
 # --------------------------------------------------------------------------- #
-def cut_by_contract(doc):
+def cut_by_contract(doc, contract=None):
     """Физически вырезать запрещённые зоны. Остаётся metadata/sections/tables +
-    excluded.appendices (клинически ценные шкалы/критерии/алгоритмы)."""
+    excluded.appendices (клинически ценные шкалы/критерии/алгоритмы).
+
+    ПОЛЯ провенанса промпта 08 (span_uids/bbox/page/section_id/claimed_span_uids/
+    source) и top-level `provenance` — ДИАГНОСТИКА, не обучающий контент: их
+    вырезаем по contract['exclude_fields'] (top-level provenance выпадает сам —
+    в выход он не копируется)."""
+    ef = (contract or _load_contract()).get("exclude_fields", {})
+    sec_drop = set(ef.get("section", []))
+    tbl_drop = set(ef.get("table", []))
+    exc_drop = set(ef.get("excluded_item", []))
+
+    def cut_section(s):
+        o = {k: v for k, v in s.items() if k not in sec_drop}
+        if "children" in o:
+            o["children"] = [cut_section(c) for c in o.get("children") or []]
+        return o
+
     out = {"metadata": doc.get("metadata", {}),
-           "sections": doc.get("sections", []),
-           "tables": doc.get("tables", [])}
+           "sections": [cut_section(s) for s in doc.get("sections", [])],
+           "tables": [{k: v for k, v in t.items() if k not in tbl_drop}
+                      for t in doc.get("tables", [])]}
     app = (doc.get("excluded", {}) or {}).get("appendices")
     if app:
-        out["excluded"] = {"appendices": app}
+        out["excluded"] = {"appendices": [
+            {k: v for k, v in i.items() if k not in exc_drop} for i in app]}
     return out
 
 
@@ -211,7 +229,7 @@ def export(label, items, run_meta, as_release):
         if not _corruption_zero(doc):         # двойная страховка поверх гейта 04
             skipped_corruption.append(base)
             continue
-        cut = cut_by_contract(doc)
+        cut = cut_by_contract(doc, contract)
         dst = os.path.join(out_root, base + ".json")
         with open(dst, "w", encoding="utf-8") as fh:
             json.dump(cut, fh, ensure_ascii=False, indent=1)
