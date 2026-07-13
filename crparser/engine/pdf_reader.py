@@ -135,6 +135,7 @@ class PdfReader:
                     text = _clean_line("".join(parts))
                     if not text:
                         continue
+                    raw_text = text          # ДО нормализации (provenance: text_raw)
 
                     # «обратная» глифовая порча (кириллица->ASCII) — считаем по
                     # СЫРОМУ тексту строки (до нормализации), доля агрегируется
@@ -162,6 +163,8 @@ class PdfReader:
                         bbox=_norm_bbox(raw_line.get("bbox")),
                         size=max(sizes) if sizes else 0.0,
                         bold=any(bolds),
+                        text_raw=raw_text,      # provenance (промпт 08)
+                        source="native",
                     ))
 
             # разрыв базовых линий к предыдущей строке (для детекции «пустых строк»,
