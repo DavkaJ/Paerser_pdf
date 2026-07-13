@@ -384,11 +384,62 @@ def cmd_verify() -> int:
             diverged = True
             print("[%s] изменился: %s -> %s" % (label, base.get(key), cur.get(key)))
 
+    # env — поэлементно. Смена версии Tesseract/traineddata/Pillow/PyMuPDF ломает
+    # воспроизводимость OCR, ради которой манифест и делался, поэтому это FAIL сверки.
+    # ВАЖНО: путь traineddata (path) машинозависим — сравниваем ТОЛЬКО sha256 содержимого.
+    if _diff_env(base.get("env", {}), cur.get("env", {})):
+        diverged = True
+
+    # config — ocr_dpi, max_workers, cov_fail, cov_warn.
+    b_cfg, c_cfg = base.get("config", {}) or {}, cur.get("config", {}) or {}
+    for k in ("ocr_dpi", "max_workers", "cov_fail", "cov_warn"):
+        if b_cfg.get(k) != c_cfg.get(k):
+            diverged = True
+            print("[config] %s: %s -> %s" % (k, b_cfg.get(k), c_cfg.get(k)))
+
+    # report_sha256
+    if base.get("report_sha256") != cur.get("report_sha256"):
+        diverged = True
+        print("[report] report_sha256: %s -> %s"
+              % (base.get("report_sha256"), cur.get("report_sha256")))
+
+    # counts — inputs, outputs, pages_total, pass, fail, review.
+    b_cnt, c_cnt = base.get("counts", {}) or {}, cur.get("counts", {}) or {}
+    for k in ("inputs", "outputs", "pages_total", "pass", "fail", "review"):
+        if b_cnt.get(k) != c_cnt.get(k):
+            diverged = True
+            print("[counts] %s: %s -> %s" % (k, b_cnt.get(k), c_cnt.get(k)))
+
     if diverged:
         print("\nРАСХОЖДЕНИЯ ЕСТЬ.")
         return 1
     print("\nрасхождений нет.")
     return 0
+
+
+def _diff_env(base_env: dict, cur_env: dict) -> bool:
+    """Поэлементная сверка окружения. traineddata сравнивается по sha256, не по пути."""
+    diverged = False
+    for k in ("python", "pymupdf", "pdfplumber", "pillow", "pytesseract", "fonttools"):
+        if base_env.get(k) != cur_env.get(k):
+            diverged = True
+            print("[env] %s: %s -> %s" % (k, base_env.get(k), cur_env.get(k)))
+    b_t = base_env.get("tesseract", {}) or {}
+    c_t = cur_env.get("tesseract", {}) or {}
+    if b_t.get("version") != c_t.get("version"):
+        diverged = True
+        print("[env] tesseract.version: %s -> %s"
+              % (b_t.get("version"), c_t.get("version")))
+    b_td = b_t.get("traineddata", {}) or {}
+    c_td = c_t.get("traineddata", {}) or {}
+    for lang in sorted(set(b_td) | set(c_td)):
+        b_sha = (b_td.get(lang) or {}).get("sha256")
+        c_sha = (c_td.get(lang) or {}).get("sha256")
+        if b_sha != c_sha:
+            diverged = True
+            print("[env] tesseract.traineddata.%s.sha256: %s -> %s"
+                  % (lang, b_sha, c_sha))
+    return diverged
 
 
 def cmd_drift() -> int:
