@@ -204,8 +204,74 @@ class Toc:
         return bool(words) and " ".join(words[:4]) in self.body_norm
 
 
+# Кэш разбора оглавления (промпт 00). Включён по умолчанию; --no-toc-cache отключает.
+_TOC_CACHE_ENABLED = True
+_toc_code_sig_cache: Optional[str] = None
+_ocr_stack_sig_cache: Optional[str] = None
+
+
+def _toc_code_sig() -> str:
+    """Короткий (8 hex) хеш кода, влияющего на РАЗБОР оглавления (entries+body_norm):
+    toc.py целиком + parse_toc + якорь TOC. НЕ включает Toc.numbered()/римские хелперы
+    и гейты валидатора — они работают ПОСЛЕ кэша, поверх сырых entries, поэтому их
+    правки (промпты 04/10/12) кэш не инвалидируют. Смена самого разбора — инвалидирует."""
+    global _toc_code_sig_cache
+    if _toc_code_sig_cache is not None:
+        return _toc_code_sig_cache
+    import hashlib
+    import inspect
+    from crparser.engine import toc as _toc_mod
+    parts = [open(_toc_mod.__file__, "rb").read(),
+             inspect.getsource(parse_toc).encode("utf-8"),
+             _TOC_ANCHOR.pattern.encode("utf-8")]
+    _toc_code_sig_cache = hashlib.sha256(b"\x00".join(parts)).hexdigest()[:8]
+    return _toc_code_sig_cache
+
+
+def _ocr_stack_sig() -> str:
+    """Отпечаток OCR-стека (8 hex). КРИТИЧНО для ключа TOC-кэша: parse_toc ->
+    PdfReader.read() -> ГИБРИД-OCR (pdf_reader._maybe_hybrid_ocr). Значит entries/
+    body_norm ЗАВИСЯТ от версии Tesseract/traineddata/Pillow/DPI и самой доступности
+    OCR. Без этого отпечатка кэш молча отдал бы оглавление, посчитанное при ДРУГОМ
+    состоянии стека, — а TOC определяет MISSING, MISSING определяет FAIL (тот же класс
+    бага, что убран из OCR-кэша в промпте 02). Переиспользуем ocr._stack_signature."""
+    global _ocr_stack_sig_cache
+    if _ocr_stack_sig_cache is not None:
+        return _ocr_stack_sig_cache
+    try:
+        from crparser.engine import ocr
+        cmd = ocr._resolve_tesseract()
+        tessdata = os.environ.get("TESSDATA_PREFIX") or None
+        langs = os.environ.get("OCR_LANGS", "rus+eng")
+        dpi = max(int(os.environ.get("OCR_DPI", ocr._DEFAULT_DPI)), 300)
+        sig = ocr._stack_signature(cmd, tessdata, langs, dpi, ocr._PREPROC_VERSION)[:8]
+    except Exception:  # noqa: BLE001 — при недоступном OCR-модуле отдельное пространство
+        sig = "noocrmod"
+    _ocr_stack_sig_cache = sig
+    return _ocr_stack_sig_cache
+
+
+def _toc_cache_key() -> str:
+    """Ключ разбора для имени кэша: <toc_code_sha8>_<ocr_stack_sha8>."""
+    return "%s_%s" % (_toc_code_sig(), _ocr_stack_sig())
+
+
 def parse_toc(pdf_path: str) -> Optional[Toc]:
-    """Прочитать PDF, разобрать оглавление (общий код) и текст тела вне него."""
+    """Прочитать PDF, разобрать оглавление (общий код) и текст тела вне него.
+    Результат кэшируется по (sha256 PDF + хеш кода разбора + отпечаток OCR-стека) —
+    PDF не открывается повторно при попадании (промпт 00). OCR-стек в ключе обязателен:
+    parse_toc гибрид-OCR-ит кандидатов, поэтому оглавление зависит и от стека."""
+    from crparser.engine import toc_cache
+    from crparser.engine.pdf_reader import _pdf_sha256
+    sha = _pdf_sha256(pdf_path) if _TOC_CACHE_ENABLED else None
+    key = _toc_cache_key() if sha else None
+    if sha:
+        hit = toc_cache.load(sha[:12], key)
+        if hit is not toc_cache._MISSING:
+            ents = hit.get("entries")
+            if ents is None:
+                return None
+            return Toc([tuple(e) for e in ents], hit.get("body_norm", ""))
     reader = PdfReader(pdf_path)
     try:
         pages = reader.read()
@@ -214,12 +280,16 @@ def parse_toc(pdf_path: str) -> Optional[Toc]:
     lines = [ln.text for page in pages for ln in page.lines]
     entries = parse_entries(lines, _TOC_ANCHOR)
     if entries is None:
+        if sha:
+            toc_cache.store(sha[:12], key, None, "")
         return None
     # текст тела (вне региона оглавления) — для проверки «номер стоит рядом со
     # своим заголовком в теле» (отличает реальную потерю от перенумерации)
     bounds = toc_bounds(lines, _TOC_ANCHOR)
     start, end = bounds if bounds else (0, -1)
     body_norm = norm(" ".join(lines[:start] + lines[end + 1:]))
+    if sha:
+        toc_cache.store(sha[:12], key, list(entries), body_norm)
     return Toc(entries, body_norm)
 
 
@@ -701,7 +771,12 @@ def main(argv: Optional[List[str]] = None) -> int:
     ap.add_argument("--allow-review", action="store_true",
                     help="локальная отладка: не считать REVIEW провалом (по умолчанию "
                          "REVIEW/FAIL/SKIP -> ненулевой exit; PASS — единственный успех)")
+    ap.add_argument("--no-toc-cache", action="store_true",
+                    help="отключить кэш разбора оглавления (для отладки/сверки)")
     args = ap.parse_args(argv)
+    if args.no_toc_cache:
+        global _TOC_CACHE_ENABLED
+        _TOC_CACHE_ENABLED = False
 
     pdfs = _iter_pdfs(args.input)
     if not pdfs:
