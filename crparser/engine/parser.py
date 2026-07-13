@@ -19,16 +19,38 @@
 from __future__ import annotations
 
 import os
-from typing import List
+from collections import defaultdict
+from typing import Dict, List
 
-from crparser.engine.models import MetadataContext, ParseResult
-from crparser.engine.pdf_reader import PdfReader
+from crparser.engine.models import (
+    BBox, ExcludedItem, MetadataContext, PageIR, ParseResult, Page, Section, Table)
+from crparser.engine.pdf_reader import PdfReader, build_page_ir
 from crparser.engine.segmenter import Segmenter
 from crparser.engine.stats import StatsCalculator
 from crparser.engine.tables import TableExtractor
 from crparser.engine.textnorm import (
     glyph_suspect_count, pseudo_ascii_counts, pseudo_ascii_glyph_tokens)
 from crparser.profiles.base import DocumentProfile
+
+
+def _bbox_overlaps(a: BBox, b: BBox, pad: float = 1.0) -> bool:
+    """Прямоугольники строки и таблицы пересекаются (с малым допуском pad).
+
+    Пересечение (а не «центр внутри») выбрано намеренно: строки, чей центр лёг ВНЕ
+    bbox таблицы (потому и не вычтены сегментером), но которые физически заходят в
+    её область, честно оказываются заявлены И разделом, И таблицей — так инвариант
+    владения ДЕЛАЕТ ВИДИМЫМ двойной учёт (аудит §4.2 про КР628_2). Их чинят 09/10."""
+    ax0, ay0, ax1, ay1 = a
+    bx0, by0, bx1, by1 = b
+    return not (ax1 < bx0 - pad or ax0 > bx1 + pad
+                or ay1 < by0 - pad or ay0 > by1 + pad)
+
+
+def _walk_sections(sections: List[Section]):
+    """Рекурсивный обход дерева разделов (узел + все потомки)."""
+    for s in sections:
+        yield s
+        yield from _walk_sections(s.children)
 
 
 class DocumentParser:
@@ -96,6 +118,12 @@ class DocumentParser:
         sections = segmented["sections"]
         excluded = segmented["excluded"]
 
+        # 4b. provenance (промпт 08): PageIR по ИТОГОВЫМ страницам, заявка таблиц на
+        # спаны по геометрии, инвариант владения (дубли/сироты -> warnings, НЕ падаем).
+        page_ir = build_page_ir(pages)
+        self._assign_table_claims(tables, pages)
+        self._ownership_check(sections, tables, excluded, page_ir, warnings_list)
+
         # 5. статистика покрытия
         stats = self._stats.compute(full_text, sections, excluded, tables)
         # счётчики порчи текста: разрядка/удвоение (починены) + глиф-токены
@@ -125,7 +153,69 @@ class DocumentParser:
             excluded=excluded,
             stats=stats,
             warnings=warnings_list,
+            page_ir=page_ir,
         )
+
+    # ---- provenance: заявка таблиц и инвариант владения (промпт 08) -----------
+
+    @staticmethod
+    def _assign_table_claims(tables: List[Table], pages: List[Page]) -> None:
+        """Проставить каждой таблице span_uids строк, чьи bbox пересекают её область.
+        Источник дампа — pdfplumber/нативный слой, поэтому source='native'."""
+        by_page: Dict[int, List] = defaultdict(list)
+        for page in pages:
+            for ln in page.lines:
+                by_page[page.number].append(ln)
+        for t in tables:
+            claimed: List[str] = []
+            seen: set = set()
+            for ln in by_page.get(t.page, []):
+                if _bbox_overlaps(ln.bbox, t.bbox) and ln.span_uid not in seen:
+                    seen.add(ln.span_uid)
+                    claimed.append(ln.span_uid)
+            t.claimed_span_uids = claimed
+            t.source = "native"
+
+    @staticmethod
+    def _ownership_check(sections: List[Section], tables: List[Table],
+                         excluded: Dict[str, List[ExcludedItem]],
+                         page_ir: List[PageIR], warnings: List[str]) -> None:
+        """Инвариант владения: каждый span_uid имеет НЕ БОЛЕЕ одного владельца среди
+        sections ∪ tables ∪ excluded. Дубли ОЖИДАЕМЫ (их источник чинят 09 и 10) —
+        НЕ падаем, а делаем видимыми: пишем в warnings число и первые 10. Спаны без
+        владельца — тоже в warnings. Формулировки БЕЗ подстроки 'ocr' (иначе
+        сработал бы гейт OCR_REQUIRED валидатора)."""
+        owners: Dict[str, set] = defaultdict(set)   # span_uid -> множество владельцев
+        for s in _walk_sections(sections):
+            key = ("section", id(s))
+            for uid in set(s.span_uids):
+                owners[uid].add(key)
+        for t in tables:
+            key = ("table", id(t))
+            for uid in set(t.claimed_span_uids):
+                owners[uid].add(key)
+        for bucket in excluded.values():
+            for item in bucket:
+                key = ("excluded", id(item))
+                for uid in set(item.span_uids):
+                    owners[uid].add(key)
+
+        dup = sorted(uid for uid, ow in owners.items() if len(ow) > 1)
+        all_uids: set = set()
+        for pir in page_ir:
+            for sp in pir.spans:
+                all_uids.add(sp.span_uid)
+        orphans = sorted(all_uids - set(owners))
+
+        if dup:
+            warnings.append(
+                "provenance: %d спанов заявлены более чем одним владельцем "
+                "(дубли; источник чинят промпты 09/10): %s"
+                % (len(dup), ", ".join(dup[:10])))
+        if orphans:
+            warnings.append(
+                "provenance: %d спанов без владельца: %s"
+                % (len(orphans), ", ".join(orphans[:10])))
 
     # ---- OCR-восстановление (изолировано в crparser.engine.ocr) --------------
 

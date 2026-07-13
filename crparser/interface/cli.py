@@ -73,6 +73,10 @@ def build_arg_parser() -> argparse.ArgumentParser:
     ap.add_argument("--out", default=None,
                     help="папка для JSON (по умолчанию — рядом с PDF)")
     ap.add_argument("--quiet", action="store_true", help="не печатать сводку по файлам")
+    ap.add_argument("--no-provenance", dest="provenance", action="store_false",
+                    default=True,
+                    help="компактный выход: без provenance-полей и блока provenance "
+                         "(совпадает с прежней формой JSON)")
     return ap
 
 
@@ -101,7 +105,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         return 2
 
     parser = DocumentParser(profile)
-    writer = JsonWriter()
+    writer = JsonWriter(include_provenance=args.provenance)
 
     ok, failed = 0, 0
     for pdf_path in pdfs:

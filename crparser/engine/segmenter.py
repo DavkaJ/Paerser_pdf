@@ -22,6 +22,7 @@ from typing import Dict, List, Optional, TYPE_CHECKING
 
 from crparser.engine.models import (
     BBox,
+    ExcludedItem,
     ExcludedSpec,
     Heading,
     HeadingKind,
@@ -109,9 +110,28 @@ class Segmenter:
 
         sections = self._run_state_machine(split_body, excluded)
         sections = self._drop_phantom_duplicates(sections)
+        # provenance: схлопнуть повторы span_uid ВНУТРИ узла/элемента (одна строка,
+        # разбитая split_inline_headings, даёт клоны с ОДНИМ span_uid). На владельца
+        # это не влияет, но список должен быть чистым множеством (промпт 10).
+        for s in sections:
+            s.span_uids = self._dedupe(s.span_uids)
+        for bucket in excluded.values():
+            for item in bucket:
+                item.span_uids = self._dedupe(item.span_uids)
         tree = self._build_hierarchy(sections)
 
         return {"sections": tree, "excluded": excluded}
+
+    @staticmethod
+    def _dedupe(uids: List[str]) -> List[str]:
+        """Порядок-сохраняющее удаление повторов span_uid."""
+        seen: set = set()
+        out: List[str] = []
+        for u in uids:
+            if u not in seen:
+                seen.add(u)
+                out.append(u)
+        return out
 
     def _drop_phantom_duplicates(self, sections: List[Section]) -> List[Section]:
         """
@@ -147,6 +167,9 @@ class Segmenter:
                 if out:
                     tail = (" " + s.title + " " + s.text).rstrip()
                     out[-1].text = (out[-1].text + tail).strip()
+                    # provenance: спаны снятого узла переходят к тому, к чьему тексту
+                    # подклеены (иначе они стали бы «без владельца»)
+                    out[-1].span_uids.extend(s.span_uids)
             else:
                 out.append(s)
         return out
@@ -309,6 +332,8 @@ class Segmenter:
         """Поделить предтекст на front_matter и toc по маркеру оглавления."""
         front_parts: List[str] = []
         toc_parts: List[str] = []
+        front_uids: List[str] = []
+        toc_uids: List[str] = []
         in_toc = False
         for line in front_lines:
             text = line.text.strip()
@@ -316,15 +341,23 @@ class Segmenter:
                 continue
             if self._spec.toc.match(text):
                 in_toc = True
+                toc_uids.append(line.span_uid)   # сам маркер «Оглавление» — в toc
                 continue
-            (toc_parts if in_toc else front_parts).append(text)
+            if in_toc:
+                toc_parts.append(text)
+                toc_uids.append(line.span_uid)
+            else:
+                front_parts.append(text)
+                front_uids.append(line.span_uid)
 
         if front_parts:
-            excluded["front_matter"].append(
-                {"title": "front_matter", "text": " ".join(front_parts).strip()})
+            excluded["front_matter"].append(ExcludedItem(
+                title="front_matter", text=" ".join(front_parts).strip(),
+                span_uids=front_uids, kind="front_matter"))
         if toc_parts:
-            excluded["toc"].append(
-                {"title": "Оглавление", "text": " ".join(toc_parts).strip()})
+            excluded["toc"].append(ExcludedItem(
+                title="Оглавление", text=" ".join(toc_parts).strip(),
+                span_uids=toc_uids, kind="toc"))
 
     # ---- основной конечный автомат ---------------------------------------
 
@@ -342,7 +375,8 @@ class Segmenter:
         # «висящий» номер (kind=NUMBER_ONLY) и накопитель открытого заголовка
         pending_number: Optional[Heading] = None
         pending_idx: int = -1                # строка, где встретился висящий номер
-        open_heading: Optional[Dict] = None  # {'heading': Heading, 'title_parts': [...], 'extra': int}
+        # open_heading: {'heading', 'title_parts', 'extra', 'span_uids', 'page', 'bbox'}
+        open_heading: Optional[Dict] = None
 
         def flush_open() -> None:
             nonlocal open_heading, current, last_number, max_top
@@ -371,7 +405,9 @@ class Segmenter:
                             "сохранены оба раздела" % (num, seen_numbers[num], title))
                 else:
                     seen_numbers[num] = title
-            section = Section(number=num, title=title, level=heading.level, text="")
+            section = Section(number=num, title=title, level=heading.level, text="",
+                              span_uids=list(open_heading["span_uids"]),
+                              page=open_heading["page"], bbox=open_heading["bbox"])
             sections.append(section)
             current = section
             last_number = num or last_number
@@ -449,11 +485,16 @@ class Segmenter:
             if excl_mode:
                 if region in ("references", "appendices"):
                     excl_mode = region
-                    excluded[excl_mode].append({"title": text, "text": ""})
+                    excluded[excl_mode].append(ExcludedItem(
+                        title=text, text="", span_uids=[line.span_uid],
+                        kind=excl_mode))
                 elif excluded[excl_mode]:
                     excluded[excl_mode][-1]["text"] += " " + text
+                    excluded[excl_mode][-1].span_uids.append(line.span_uid)
                 else:
-                    excluded[excl_mode].append({"title": excl_mode, "text": text})
+                    excluded[excl_mode].append(ExcludedItem(
+                        title=excl_mode, text=text, span_uids=[line.span_uid],
+                        kind=excl_mode))
                 i += 1
                 continue
 
@@ -476,8 +517,14 @@ class Segmenter:
                         page=line.page,
                         bbox=line.bbox,
                     )
+                    # provenance: якорь раздела — строка с висящим номером («4.»);
+                    # спаны узла = номер + все строки, поглощённые в заголовок.
+                    title_uids = [lines[k].span_uid for k in range(i, i + consumed)]
                     open_heading = {"heading": heading, "title_parts": [title],
-                                    "extra": 0}
+                                    "extra": 0,
+                                    "span_uids": [lines[pending_idx].span_uid] + title_uids,
+                                    "page": lines[pending_idx].page,
+                                    "bbox": lines[pending_idx].bbox}
                     claim_top(heading)
                     pending_number = None
                     i += consumed
@@ -488,6 +535,7 @@ class Segmenter:
             if open_heading is not None and self._is_continuation(line, open_heading):
                 open_heading["title_parts"].append(text)
                 open_heading["extra"] += 1
+                open_heading["span_uids"].append(line.span_uid)
                 i += 1
                 continue
 
@@ -496,7 +544,8 @@ class Segmenter:
                 flush_open()
                 current = None
                 excl_mode = region
-                excluded[excl_mode].append({"title": text, "text": ""})
+                excluded[excl_mode].append(ExcludedItem(
+                    title=text, text="", span_uids=[line.span_uid], kind=region))
                 i += 1
                 continue
 
@@ -534,7 +583,8 @@ class Segmenter:
                                              heading.canonical):
                     flush_open()
                     open_heading = {"heading": heading, "title_parts": [heading.title],
-                                    "extra": 0}
+                                    "extra": 0, "span_uids": [line.span_uid],
+                                    "page": line.page, "bbox": line.bbox}
                     claim_top(heading)
                     i += 1
                     continue
@@ -558,7 +608,9 @@ class Segmenter:
             if heading and heading.kind == HeadingKind.NAMED:
                 flush_open()
                 section = Section(number=None, title=heading.title,
-                                  level=heading.level, text="")
+                                  level=heading.level, text="",
+                                  span_uids=[line.span_uid], page=line.page,
+                                  bbox=line.bbox)
                 sections.append(section)
                 current = section
                 i += 1
@@ -569,8 +621,11 @@ class Segmenter:
                 flush_open()
             if current is not None:
                 current.text += " " + text
+                current.span_uids.append(line.span_uid)
             else:
-                excluded["other"].append({"title": "unassigned", "text": text})
+                excluded["other"].append(ExcludedItem(
+                    title="unassigned", text=text, span_uids=[line.span_uid],
+                    kind="other"))
             i += 1
 
         flush_open()
@@ -829,6 +884,6 @@ class Segmenter:
         return re.sub(r"\s+", " ", (text or "")).strip()
 
     @staticmethod
-    def _empty_excluded() -> Dict[str, List[Dict[str, str]]]:
+    def _empty_excluded() -> Dict[str, List[ExcludedItem]]:
         return {"front_matter": [], "toc": [], "references": [],
                 "appendices": [], "other": []}

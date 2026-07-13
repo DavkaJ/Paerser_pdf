@@ -1059,6 +1059,10 @@ class OcrRecoverer:
                     after = _latinize_flanked(after)  # «Hepatitis В virus»->«...B...»
                 if after and after != before:
                     ln.text = after
+                    # provenance (промпт 08): выбранный канал строки — OCR; native
+                    # (битый слой) остаётся в ln.text_raw как альтернативный кандидат.
+                    # Выбор канала НЕ меняется — он и так был OCR, только фиксируем.
+                    ln.source = "ocr"
                     fixed += 1
                     changed = True
             if changed:
@@ -1154,5 +1158,6 @@ class OcrRecoverer:
                 text=text,
                 bbox=(g["x0"] * scale, g["y0"] * scale, g["x1"] * scale, g["y1"] * scale),
                 size=size if size > 0 else 12.0,
-                bold=False))
+                bold=False,
+                source="ocr"))       # provenance (промпт 08): полный OCR-скан
         return lines

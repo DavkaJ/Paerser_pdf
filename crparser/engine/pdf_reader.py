@@ -18,7 +18,8 @@ from typing import Dict, List
 
 import fitz  # PyMuPDF
 
-from crparser.engine.models import BBox, Line, Page
+from crparser.engine.models import (
+    BBox, Line, Page, PageIR, make_page_ir, make_source_span)
 from crparser.engine.textnorm import (
     glyph_suspect_count, looks_glyph_corrupted, normalize_line,
     pseudo_ascii_counts)
@@ -68,6 +69,48 @@ def _norm_bbox(bbox) -> BBox:
         return (0.0, 0.0, 0.0, 0.0)
     x0, y0, x1, y1 = bbox
     return (float(x0), float(y0), float(x1), float(y1))
+
+
+def _line_candidates(ln: Line):
+    """Кандидаты и выбранный канал одной строки (промпт 08).
+
+    Гибрид-OCR правит Line.text ПО МЕСТУ, а text_raw хранит нативный текст: если
+    строка отмечена source="ocr" и её native отличается — это ОДИН span с ДВУМЯ
+    кандидатами (native=битый слой, ocr=восстановление). Выбор канала здесь НЕ
+    меняется — только фиксируется (границы промпта 08)."""
+    if ln.source == "ocr" and ln.text_raw and ln.text_raw != ln.text:
+        conf = {"ocr": ln.confidence} if ln.confidence is not None else {}
+        return {"native": ln.text_raw, "ocr": ln.text}, conf, "ocr"
+    if ln.source != "native":
+        conf = {ln.source: ln.confidence} if ln.confidence is not None else {}
+        return {ln.source: ln.text}, conf, ln.source
+    return {"native": ln.text}, {}, "native"
+
+
+def build_page_ir(pages: List[Page]) -> List[PageIR]:
+    """Собрать PageIR ПО ФИНАЛЬНЫМ страницам (после гибрид-/полного-OCR).
+
+    Вызывается из parser ПОСЛЕ выбора итогового набора страниц (полный OCR заменяет
+    pages целиком, поэтому строить IR в read() нельзя). Каждая Line -> один
+    SourceSpan; каналы считаются по ВЫБРАННОМУ каналу строки."""
+    page_irs: List[PageIR] = []
+    for page in pages:
+        spans = []
+        channel_counts: Dict[str, int] = {}
+        for ln in page.lines:
+            cand, conf, sel = _line_candidates(ln)
+            spans.append(make_source_span(
+                ln.span_uid, page.number, ln.bbox, cand, conf, sel))
+            channel_counts[sel] = channel_counts.get(sel, 0) + 1
+        if channel_counts:
+            # основной канал — самый частый (при равенстве — лексикографически)
+            primary = max(channel_counts.items(), key=lambda kv: (kv[1], kv[0]))[0]
+        else:
+            primary = "native"
+        aux = sorted(c for c in channel_counts if c != primary)
+        page_irs.append(make_page_ir(
+            page.number, spans, primary, aux, {"channel_counts": dict(channel_counts)}))
+    return page_irs
 
 
 class PdfReader:

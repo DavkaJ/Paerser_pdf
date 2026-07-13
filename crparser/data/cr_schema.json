@@ -64,7 +64,7 @@
         "section_id": {"type": ["string", "null"]},
         "page": {"type": ["integer", "null"]},
         "bbox": {"anyOf": [{"$ref": "#/$defs/bbox"}, {"type": "null"}]},
-        "line_ids": {"type": "array", "items": {"type": "string"}}
+        "span_uids": {"type": "array", "items": {"type": "string"}}
       }
     },
     "table": {
@@ -81,7 +81,7 @@
         "reconciled": {"type": "boolean"},
         "reconcile_score": {"type": "number"},
         "continues_table": {"type": ["string", "null"]},
-        "claimed_line_ids": {"type": "array", "items": {"type": "string"}},
+        "claimed_span_uids": {"type": "array", "items": {"type": "string"}},
         "source": {"type": "string"}
       }
     },

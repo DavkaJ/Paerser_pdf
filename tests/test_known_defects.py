@@ -171,12 +171,12 @@ def test_D13_multipage_table_continuation():
 # ГРУППА D — provenance (промпт 08): D15 xfail
 # ============================================================================
 
-@pytest.mark.xfail(strict=True, reason="дефект аудита §1.3; provenance — промпт 08")
 def test_D15_section_has_provenance(outout_doc):
-    """Section не имеет section_id/page/bbox/line_ids, хотя профиль их вычисляет."""
+    """ЗАКРЫТ промптом 08: Section несёт section_id/page/bbox/span_uids (провенанс).
+    Редакция 2 промпта переименовала line_ids -> span_uids (геометрический якорь)."""
     doc = outout_doc("КР1000_1")
     s = doc["sections"][0]
-    assert "section_id" in s and "page" in s and "line_ids" in s
+    assert "section_id" in s and "page" in s and "bbox" in s and "span_uids" in s
 
 
 # ============================================================================
