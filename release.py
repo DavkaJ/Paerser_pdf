@@ -218,10 +218,15 @@ def export(label, items, run_meta, as_release):
         exported.append(base)
         file_sha[base] = _sha256_file(dst)
 
+    from_current = run_meta is None
     manifest = {
-        "run_id": label, "generated_from": ("run_manifest" if run_meta else "current_state"),
+        "run_id": label, "generated_from": ("current_state" if from_current else "run_manifest"),
+        "not_for_distribution": from_current,   # --current: незамороженное состояние
         "contract_version": contract["version"], "attested": attested,
-        "disclaimer": ("Корпус НЕ аттестован против gold set (промпт 14 не выполнен). "
+        "disclaimer": (("НЕ ДЛЯ ОТГРУЗКИ. Собрано из НЕЗАМОРОЖЕННОГО состояния "
+                        "(--current), не из верифицированного прогона. Только оценка "
+                        "готовности. " if from_current else "")
+                       + "Корпус НЕ аттестован против gold set (промпт 14 не выполнен). "
                        "Числовых порогов качества нет. Использовать как КАНДИДАТ, не релиз."),
         "count": len(exported),
         "excluded_zones": contract["exclude"],
@@ -423,7 +428,11 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="Карантин + release-экспортёр КР.")
     ap.add_argument("--run", help="run_id из _runs/")
     ap.add_argument("--current", action="store_true",
-                    help="из текущего report.json + outout/ (без свежего прогона)")
+                    help="из НЕЗАМОРОЖЕННОГО report.json + outout/ (только оценка, НЕ отгрузка). "
+                         "Требует --i-know-this-is-unfrozen.")
+    ap.add_argument("--i-know-this-is-unfrozen", dest="unfrozen_ack", action="store_true",
+                    help="подтвердить, что --current собран из незамороженного состояния и "
+                         "НЕПРИГОДЕН к отгрузке (именно так родился рассинхрон 596 файлов)")
     ap.add_argument("--sample", action="store_true", help="сформировать выборку на ручную проверку")
     ap.add_argument("--recall-notice", action="store_true")
     ap.add_argument("--as-release", action="store_true",
@@ -438,8 +447,16 @@ def main() -> int:
     if not args.run and not args.current:
         print("нужен --run <run_id> или --current (или --recall-notice)")
         return 2
+    if args.current and not args.unfrozen_ack:
+        print("ОТКАЗ: --current собирает из НЕЗАМОРОЖЕННОГО состояния (не свежий "
+              "верифицированный прогон) — это механизм, породивший рассинхрон 596 "
+              "файлов. Для оценки готовности добавьте --i-know-this-is-unfrozen; для "
+              "отгрузки используйте --run <run_id> от полного прогона (промпт 05).")
+        return 2
 
     label, items, integrity_ok, note, run_meta = load_source(args.run, args.current)
+    if args.current:
+        label = "current_UNFROZEN"      # имя кричит: это не отгружаемый релиз
     if note:
         print("ПРИМЕЧАНИЕ: %s" % note)
     layout_quarantine(label, items, label)

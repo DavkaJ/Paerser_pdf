@@ -110,15 +110,6 @@ def work(base):
     pdf = os.path.join(RAW, base + ".pdf")
     staging_path = os.path.join(_STAGING, base + ".json")
     input_sha = _sha256_file(pdf)
-    # тест-хук: имитировать мутацию immutable-базы пинов В ХОДЕ прогона (после 02
-    # такого быть не должно; проверяем, что детектор PINS_CHANGED это ловит).
-    if os.environ.get("CR_TEST_TOUCH_PINS") == base:
-        try:
-            with open(os.path.join("crparser", "data", "ocr_pins.json"), "a",
-                      encoding="utf-8") as fh:
-                fh.write(" ")
-        except Exception:  # noqa: BLE001
-            pass
     # --- parse ---
     try:
         doc = _WRITER.to_dict(_PARSER.parse(pdf))
@@ -127,12 +118,6 @@ def work(base):
         rep.fail("CRASH", repr(exc))
         return _mk(base, cls, rep, None, input_sha, None, t0, crash=True)
     # --- write to staging (атомарно) ---
-    # тест-хук (только для регресс-тестов транзакционности; в норме не задан):
-    # CR_TEST_FAIL_WRITE=<base> имитирует сбой инфраструктуры записи.
-    if os.environ.get("CR_TEST_FAIL_WRITE") == base:
-        rep = Report(base + ".pdf")
-        rep.fail("WRITE_FAILED", "имитация сбоя записи (CR_TEST_FAIL_WRITE)")
-        return _mk(base, cls, rep, None, input_sha, None, t0, write_failed=True)
     try:
         _WRITER._atomic_dump(doc, staging_path)
     except Exception as exc:  # noqa: BLE001 — WRITE_FAILED: сломана инфраструктура
@@ -210,6 +195,25 @@ def _run_pool(bases, workers, registry, classmap, staging_dir, timeout):
 # --------------------------------------------------------------------------- #
 # Публикация                                                                  #
 # --------------------------------------------------------------------------- #
+def compute_integrity(results, expected, pins_before, pins_after, staging_broken):
+    """Чистая функция: список нарушений целостности прогона (пусто == целостен).
+    WRITE_FAILED/SET_MISMATCH/PINS_CHANGED/STAGING_BROKEN блокируют публикацию; CRASH
+    и TIMEOUT — НЕ входят (это провал документа, а не инфраструктуры). Тестируется
+    напрямую (юнит), без env-хуков в боевом воркере."""
+    failures = []
+    if set(results) != set(expected):
+        failures.append("SET_MISMATCH: результатов %d, ожидалось %d"
+                        % (len(results), len(expected)))
+    write_failed = sorted(b for b, r in results.items() if not r["write_ok"])
+    if write_failed:
+        failures.append("WRITE_FAILED: " + ", ".join(write_failed))
+    if pins_before != pins_after:
+        failures.append("PINS_CHANGED: ocr_pins.json изменился в ходе прогона")
+    if staging_broken:
+        failures.append("STAGING_BROKEN: " + ", ".join(staging_broken))
+    return failures
+
+
 def publish(staging_dir, expected, results, full_run):
     """Копирует staging -> outout; удаляет устаревшие JSON упавших документов;
     при полном прогоне удаляет outout-артефакты вне expected. Только при
@@ -339,19 +343,8 @@ def main() -> int:
 
     # --- run_integrity ---
     pins_after = _sha256_file(pins_path)
-    result_keys = set(results)
-    if result_keys != set(expected):
-        integrity_failures.append(
-            "SET_MISMATCH: результатов %d, ожидалось %d" % (len(result_keys), len(expected)))
-    write_failed = [b for b, r in results.items() if not r["write_ok"]]
-    if write_failed:
-        integrity_failures.append("WRITE_FAILED: " + ", ".join(sorted(write_failed)))
-    if pins_before != pins_after:
-        integrity_failures.append("PINS_CHANGED: ocr_pins.json изменился в ходе прогона")
-    broken = _staging_integrity(staging_dir)
-    if broken:
-        integrity_failures.append("STAGING_BROKEN: " + ", ".join(broken))
-
+    integrity_failures += compute_integrity(
+        results, expected, pins_before, pins_after, _staging_integrity(staging_dir))
     run_integrity_ok = not integrity_failures
 
     counts = Counter(r["status"] for r in results.values())
@@ -369,10 +362,11 @@ def main() -> int:
             print("   ✗ " + f)
 
     # --- report.json (bare array, прежний формат) + report_meta.json ---
+    # Пишем АТОМАРНО (temp+fsync+os.replace): прерывание не оставляет обрыв/торн-JSON.
     report_items = [{k: results[b][k] for k in _REPORT_FIELDS}
                     for b in sorted(results)]
-    with open(REPORT, "w", encoding="utf-8") as fh:
-        json.dump(report_items, fh, ensure_ascii=False, indent=1)
+    from crparser.engine.jsonio import JsonWriter
+    JsonWriter._atomic_dump(report_items, REPORT)
     _write_manifests(run_dir, run_id, expected, results, code, ocr_info,
                      pins_before, pins_after, integrity_failures, args,
                      counts=counts, n_crash=n_crash, n_timeout=n_timeout,

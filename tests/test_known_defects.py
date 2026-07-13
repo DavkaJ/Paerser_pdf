@@ -217,46 +217,64 @@ def test_D18_no_PDI_target_in_base():
 # ГРУППА F — батч-транзакционность (промпт 05): xfail
 # ============================================================================
 
-def _run_batch(args, env_extra, tmp_path):
-    import subprocess
-    import sys
-    env = os.environ.copy()
-    env["CR_OUTOUT"] = str(tmp_path / "out")
-    env["CR_REPORT"] = str(tmp_path / "report.json")
-    (tmp_path / "out").mkdir(exist_ok=True)
-    env.update(env_extra)
-    return subprocess.run([sys.executable, "batch_report.py", *args, "--no-require-ocr"],
-                          cwd=ROOT, env=env, capture_output=True, text=True,
-                          encoding="utf-8", errors="replace", timeout=300)
+class _FakeWriter:
+    def __init__(self, dump=None):
+        self._dump = dump
+    def to_dict(self, result):
+        return {"ok": 1}
+    def _atomic_dump(self, doc, path):
+        if self._dump:
+            self._dump(doc, path)
 
 
-def test_D19_failed_write_exit2(tmp_path):
-    """ЗАКРЫТ промптом 05: сбой записи -> WRITE_FAILED -> run_integrity_ok=False,
-    публикации НЕТ, exit 2 (было: write_ok=False молча, exit 0)."""
-    for b in ("КР802_1", "КР845_1"):
-        if not os.path.exists(os.path.join(ROOT, "data", "raw", b + ".pdf")):
-            pytest.skip("нет фикстур КР802_1/КР845_1")
-    r = _run_batch(["КР802_1.pdf", "КР845_1.pdf"],
-                   {"CR_TEST_FAIL_WRITE": "КР845_1"}, tmp_path)
-    assert r.returncode == 2, r.stdout[-500:]
-    assert not list((tmp_path / "out").glob("*.json"))   # публикации не было
+def test_D19_failed_write_breaks_integrity(monkeypatch, tmp_path):
+    """ЗАКРЫТ промптом 05 (in-process, БЕЗ env-хуков в боевом воркере): сбой записи ->
+    статус FAIL(WRITE_FAILED), write_ok=False, и compute_integrity даёт нарушение
+    целостности (=> run_integrity_ok=False, публикации нет, exit 2)."""
+    import batch_report as B
+
+    def _raise(doc, path):
+        raise OSError("disk full (тест)")
+    monkeypatch.setattr(B, "_PARSER", type("P", (), {"parse": lambda s, p: object()})())
+    monkeypatch.setattr(B, "_WRITER", _FakeWriter(dump=_raise))
+    monkeypatch.setattr(B, "_CLASS", {})
+    monkeypatch.setattr(B, "_STAGING", str(tmp_path))
+    monkeypatch.setattr(B, "RAW", str(tmp_path))
+    r = B.work("КР_X")
+    assert r["status"] == "FAIL" and r["write_ok"] is False
+    assert any("WRITE_FAILED" in f for f in r["fails"])
+    fails = B.compute_integrity({"КР_X": r}, ["КР_X"], "a", "a", [])
+    assert any("WRITE_FAILED" in f for f in fails)
 
 
-def test_D20_crash_removes_stale(tmp_path):
-    """ЗАКРЫТ промптом 05: CRASH -> устаревший JSON упавшего документа удаляется при
-    публикации, exit 1 (было: старый JSON переживал прогон)."""
-    if not os.path.exists(os.path.join(ROOT, "data", "raw", "КР802_1.pdf")):
-        pytest.skip("нет фикстуры КР802_1")
-    fake = os.path.join(ROOT, "data", "raw", "КР_TESTCRASH.pdf")
-    open(fake, "w").write("not a real pdf")
-    try:
-        (tmp_path / "out").mkdir(exist_ok=True)
-        (tmp_path / "out" / "КР_TESTCRASH.json").write_text('{"stale":1}', encoding="utf-8")
-        r = _run_batch(["КР802_1.pdf", "КР_TESTCRASH.pdf"], {}, tmp_path)
-        assert r.returncode == 1, r.stdout[-500:]
-        assert not (tmp_path / "out" / "КР_TESTCRASH.json").exists()   # устаревший удалён
-    finally:
-        os.remove(fake)
+def test_D20_crash_removes_stale(monkeypatch, tmp_path):
+    """ЗАКРЫТ промптом 05: CRASH -> статус FAIL(CRASH), и publish удаляет устаревший
+    JSON упавшего документа (staging-выхода нет)."""
+    import batch_report as B
+    monkeypatch.setattr(B, "_PARSER",
+                        type("P", (), {"parse": lambda s, p: (_ for _ in ()).throw(ValueError("bad"))})())
+    monkeypatch.setattr(B, "_WRITER", _FakeWriter())
+    monkeypatch.setattr(B, "_CLASS", {})
+    monkeypatch.setattr(B, "_STAGING", str(tmp_path / "staging"))
+    monkeypatch.setattr(B, "RAW", str(tmp_path))
+    r = B.work("КР_C")
+    assert r["crash"] is True and r["status"] == "FAIL"
+    out = tmp_path / "out"
+    out.mkdir()
+    (out / "КР_C.json").write_text('{"stale":1}', encoding="utf-8")
+    staging = tmp_path / "staging"
+    staging.mkdir(exist_ok=True)
+    monkeypatch.setattr(B, "OUTOUT", str(out))
+    B.publish(str(staging), ["КР_C"], {"КР_C": r}, full_run=False)
+    assert not (out / "КР_C.json").exists()          # устаревший удалён при публикации
+
+
+def test_D_pins_change_breaks_integrity():
+    """Изменение ocr_pins.json в ходе прогона (before != after) -> нарушение целостности
+    (тестируется чистой функцией, без порчи боевой базы)."""
+    import batch_report as B
+    fails = B.compute_integrity({"КР_X": {"write_ok": True}}, ["КР_X"], "sha_before", "sha_AFTER", [])
+    assert any("PINS_CHANGED" in f for f in fails)
 
 
 # ============================================================================
