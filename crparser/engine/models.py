@@ -178,8 +178,35 @@ class Table:
     # выводится только когда True, чтобы не менять схему обычных таблиц.
     low_confidence: bool = False
     # --- provenance (промпт 08); сериализуются В КОНЕЦ объекта, аддитивно ---
-    claimed_span_uids: List[str] = field(default_factory=list)  # спаны в bbox таблицы
+    claimed_span_uids: List[str] = field(default_factory=list)  # спаны, вычитаемые таблицей
     source: str = "native"                                      # канал дампа таблицы
+    # --- недеструктивность (промпт 09); аддитивно, В КОНЕЦ ---
+    reconciled: bool = True             # прошёл ли reconcile (иначе вычитания нет)
+    # reconcile_score = |tokens(B)∩tokens(A)| / |tokens(B)|, где A — сетка pdfplumber,
+    # B — IR-спаны внутри bbox. Это МЕРА СОХРАННОСТИ (успела ли сетка A захватить весь
+    # текст области), а НЕ корректности: A и B читают ОДИН нативный слой, поэтому
+    # глиф-битая таблица даёт score≈1.0 (обе стороны видят одинаковый мусор ШСС/Т1а/МО)
+    # — это НОРМА, корректность глифов — зона промпта 13. Низкий score = сетка НЕ
+    # захватила часть области (усечённая многостраничная / bbox-overcapture прозы).
+    reconcile_score: float = 1.0
+    continues_table: Optional[str] = None   # номер таблицы, чьим продолжением это является
+    row_count: int = 0                  # строк в сетке (полнота структуры, НЕ reconcile)
+    cell_count: int = 0                 # непустых ячеек
+    empty_cell_ratio: float = 0.0       # доля пустых ячеек
+
+
+@dataclass
+class TableExtractionResult:
+    """Итог извлечения таблиц (промпт 09). Разводит два вопроса:
+      * какие таблицы нашли (`tables`) — факт таблицы не теряем НИКОГДА;
+      * что вычитать из тела (`subtraction`) — ТОЛЬКО реконсилированные, по span_uid.
+    `subtraction`: page_index(0-based) -> список bbox для сегментера (он не тронут, но
+    получает карту, построенную из reconciled-таблиц, а не по ходу эмиссии).
+    `diagnostics`: что нашли/отвергли, с score и причиной (для warnings/отчёта)."""
+
+    tables: List["Table"] = field(default_factory=list)
+    subtraction: Dict[int, List[BBox]] = field(default_factory=dict)
+    diagnostics: List[Dict[str, Any]] = field(default_factory=list)
 
 
 @dataclass

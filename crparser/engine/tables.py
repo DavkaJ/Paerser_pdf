@@ -24,10 +24,196 @@ import statistics
 import warnings
 from typing import Dict, List, Optional, Tuple
 
+import fitz  # PyMuPDF — дешёвый гейт find_tables по векторным линиям (промпт 09)
 import pdfplumber
 
 from crparser.engine.models import BBox, Page, Table
 from crparser.engine.textnorm import looks_glyph_corrupted, normalize_line
+
+# --- предфильтр find_tables (промпт 09) -------------------------------------
+# find_tables() = 94% CPU pdfplumber (замер: 85 мс/стр). Стратегия по умолчанию —
+# `lines`: таблица НЕ находится без ВЕКТОРНЫХ линий. Значит страницу без H+V линий
+# можно пропустить БЕЗ потери recall (замер: 0 страниц «нет линий, но таблица есть»
+# на 2786 стр). Линии видны из PyMuPDF (`get_drawings`) за 1.4 мс/стр (60× дешевле).
+# ВНИМАНИЕ: гарантия recall держится на стратегии `lines`. Любая смена table_settings
+# на text/explicit (промпт 15) АННУЛИРУЕТ гейт — перепрогнать recall-замер.
+_HLINE_MIN = 10.0   # мин. длина горизонтального сегмента, pt
+_VLINE_MIN = 5.0    # мин. длина вертикального сегмента, pt
+
+
+def _page_line_stats(fpage: "fitz.Page") -> Tuple[int, int]:
+    """(#горизонтальных, #вертикальных) векторных линий-сегментов страницы.
+    Считаем и явные линии («l»), и стороны прямоугольников («re»). При сбое —
+    (большие числа): не гейтить (безопасно — прогнать find_tables как раньше)."""
+    h = v = 0
+    try:
+        for d in fpage.get_drawings():
+            for it in d.get("items", []):
+                op = it[0]
+                if op == "l":
+                    p1, p2 = it[1], it[2]
+                    if abs(p1.y - p2.y) < 1.0 and abs(p1.x - p2.x) >= _HLINE_MIN:
+                        h += 1
+                    elif abs(p1.x - p2.x) < 1.0 and abs(p1.y - p2.y) >= _VLINE_MIN:
+                        v += 1
+                elif op == "re":
+                    r = it[1]
+                    if r.width >= _HLINE_MIN:
+                        h += 1
+                    if r.height >= _VLINE_MIN:
+                        v += 1
+    except Exception:  # noqa: BLE001 — при сбое гейт не срабатывает
+        return 999, 999
+    return h, v
+
+
+def _page_has_table_lines(fpage: "fitz.Page") -> bool:
+    """Есть ли на странице рамка-кандидат: >=1 горизонтальная И >=1 вертикальная
+    линия. Только такие страницы имеет смысл гонять через find_tables (стратегия
+    `lines`); остальные детерминированно вернули бы пусто."""
+    h, v = _page_line_stats(fpage)
+    return h >= 1 and v >= 1
+
+
+# --- дедуп ансамбля по ВЛОЖЕННОСТИ (промпт 09) -------------------------------
+# find_tables эмитит и всю таблицу, и её подрегион (ячейку/строку) как отдельные
+# таблицы. Замер: 251 из 252 table↔table-пар — «small-in-big» с IoU<0.5 (у вложенной
+# IoU мал: площадь_малой/площадь_большой). Дедуп — по ВЛОЖЕННОСТИ (доля меньшего,
+# накрытая пересечением), а НЕ по IoU. Порядок: junk-фильтр -> ПОТОМ дедуп (иначе
+# «предпочесть большую» выбрало бы ложную полностраничную детекцию).
+_CONTAIN_MIN = 0.70   # кандидат накрыт лучшим на >= 70% своей площади -> подрегион
+# приоритет вердикта при дедупе: «ok»-таблицу НЕ снимаем ради «small»-детекции, даже
+# если та крупнее (иначе потеряли бы реальную таблицу внутри рыхлой большой детекции).
+_VERDICT_RANK = {"ok": 2, "small": 1, "junk": 0}
+
+
+def _bbox_area(b: BBox) -> float:
+    return max(0.0, b[2] - b[0]) * max(0.0, b[3] - b[1])
+
+
+def _covered_by(a: BBox, b: BBox) -> float:
+    """Доля площади a, накрытая пересечением с b (0..1). Направленно: «насколько a
+    сидит внутри b»."""
+    ix0, iy0 = max(a[0], b[0]), max(a[1], b[1])
+    ix1, iy1 = min(a[2], b[2]), min(a[3], b[3])
+    if ix1 <= ix0 or iy1 <= iy0:
+        return 0.0
+    inter = (ix1 - ix0) * (iy1 - iy0)
+    aa = _bbox_area(a)
+    return inter / aa if aa > 0 else 0.0
+
+
+# --- reconcile (промпт 09): A=сетка pdfplumber vs B=IR-спаны -----------------
+# Пороги (ПРАВКА 3): рамочные — 0.80, безрамочные — 0.90. Вычитание ТОЛЬКО при
+# score >= порога И непустом raw_text.
+_RECONCILE_MIN = 0.80
+_RECONCILE_MIN_LOWCONF = 0.90
+_RE_TOKEN_STRIP = "«».,;:()[]{}\"'`-—–…%№*|/\\"
+
+
+def _norm_token(tok: str) -> str:
+    """casefold, ё->е, снять пунктуацию по краям — для сравнения токенов A/B."""
+    return tok.strip(_RE_TOKEN_STRIP).casefold().replace("ё", "е")
+
+
+def _tokenize(text: str) -> "Counter":
+    from collections import Counter
+    out = Counter()
+    for tok in (text or "").split():
+        t = _norm_token(tok)
+        if t:
+            out[t] += 1
+    return out
+
+
+def _grid_tokens(grid: List[List]) -> "Counter":
+    """Мультимножество токенов сетки pdfplumber (A)."""
+    from collections import Counter
+    out = Counter()
+    for row in grid or []:
+        for cell in row:
+            if cell:
+                out.update(_tokenize(str(cell)))
+    return out
+
+
+def _reconcile_score(b_tokens: "Counter", a_tokens: "Counter") -> float:
+    """|tokens(B) ∩ tokens(A)| / |tokens(B)| (по мультимножеству). Пусто в B -> 1.0
+    (нечего сохранять). Падает, когда A НЕ захватила часть текста B (усечение/
+    overcapture-проза)."""
+    total = sum(b_tokens.values())
+    if total == 0:
+        return 1.0
+    inter = sum(min(b_tokens[t], a_tokens.get(t, 0)) for t in b_tokens)
+    return inter / total
+
+
+def _grid_metrics(grid: List[List]) -> "tuple[int, int, float]":
+    """(row_count, cell_count непустых, empty_cell_ratio) по сетке A."""
+    rows = [r for r in (grid or []) if r]
+    nrow = len(rows)
+    total = sum(len(r) for r in rows)
+    nonempty = sum(1 for r in rows for c in r if c and str(c).strip())
+    empty_ratio = (total - nonempty) / total if total else 0.0
+    return nrow, nonempty, round(empty_ratio, 3)
+
+
+def _lines_in_bbox(page: Page, bbox: BBox) -> List:
+    """IR-строки (Line), чей ЦЕНТР лежит в bbox (та же геометрия, что вычитание
+    сегментера _covered_by_table). Это множество B для reconcile и источник raw_text."""
+    x0, y0, x1, y1 = bbox
+    out = []
+    for ln in page.lines:
+        lx0, ly0, lx1, ly1 = ln.bbox
+        cx, cy = (lx0 + lx1) / 2.0, (ly0 + ly1) / 2.0
+        if x0 - 2 <= cx <= x1 + 2 and y0 <= cy <= y1:
+            out.append(ln)
+    return out
+
+
+def _col_cuts_from_cells(tbl) -> List[float]:
+    """Внутренние вертикальные границы колонок из ячеек рамочной таблицы pdfplumber.
+    Пусто -> нет надёжной сетки (raw_text-from-IR упадёт на построчную раскладку)."""
+    try:
+        xs = sorted({round(c[0], 1) for c in tbl.cells}
+                    | {round(c[2], 1) for c in tbl.cells})
+    except Exception:  # noqa: BLE001
+        return []
+    return xs[1:-1] if len(xs) >= 3 else []
+
+
+def _raw_text_from_ir(b_lines: List, col_cuts: List[float]) -> "tuple[str, int]":
+    """raw_text из IR-строк B, разложенных по сетке (ПРАВКА 4). Строки группируем в
+    визуальные ряды по y; в ряду каждую строку кладём в колонку по x-центру
+    относительно col_cuts (границы из A). Так текст берётся из IR (восстановленный,
+    когда font-repair 13 наполнит спаны), а СТРУКТУРА — из геометрии A. Возвращает
+    (raw_text, row_count_ir). Пустой col_cuts -> одна колонка (построчно)."""
+    if not b_lines:
+        return "", 0
+    # визуальные ряды: группировка по y0 (та же логика, что _visual_rows, но на Line)
+    rows: List[List] = []
+    for ln in sorted(b_lines, key=lambda l: (round(l.bbox[1], 1), l.bbox[0])):
+        placed = False
+        for r in rows:
+            if abs(r[0].bbox[1] - ln.bbox[1]) <= _ROW_Y_TOL:
+                r.append(ln)
+                placed = True
+                break
+        if not placed:
+            rows.append([ln])
+    ncol = len(col_cuts) + 1
+    out_lines: List[str] = []
+    for row in rows:
+        cells: Dict[int, List[str]] = {}
+        for ln in sorted(row, key=lambda l: l.bbox[0]):
+            cx = (ln.bbox[0] + ln.bbox[2]) / 2.0
+            col = sum(1 for c in col_cuts if cx > c)
+            cells.setdefault(col, []).append(ln.text.strip())
+        parts = [" ".join(cells.get(k, [])) for k in range(ncol)]
+        line = "\t".join(parts).rstrip()
+        if line.strip():
+            out_lines.append(line)
+    return "\n".join(out_lines), len(out_lines)
 
 # pdfminer (под капотом pdfplumber) шумит на «грязных» PDF — глушим.
 warnings.filterwarnings("ignore")
@@ -193,6 +379,13 @@ class TableExtractor:
         #: сколько таблиц добавил fallback и сколько регионов помечено на OCR
         self.fallback_count = 0
         self.corrupt_count = 0
+        #: сколько страниц пропущено предфильтром find_tables (09, диагностика)
+        self.gated_pages = 0
+        #: сколько вложенных подрегионов снято дедупом (09)
+        self.dedup_count = 0
+        #: reconcile-диагностика (09): огрызки-шапки и непрошедшие reconcile
+        self.stub_count = 0
+        self.unreconciled_count = 0
 
     def extract(self, pages: List[Page], warnings_list: List[str]) -> List[Table]:
         """
@@ -207,37 +400,64 @@ class TableExtractor:
             return tables
 
         captions_by_page = self._collect_captions(pages)
+        # PyMuPDF-документ для дешёвого гейта find_tables по векторным линиям (09).
+        try:
+            fdoc = fitz.open(self._path)
+        except Exception:  # noqa: BLE001 — без гейта работаем как раньше (все страницы)
+            fdoc = None
 
         with pdf:
             # перенос несматченной подписи снизу предыдущей страницы (2б)
             carry: Optional[Dict] = None
+            # номер таблицы, доходящей до низа прошлой страницы (кандидат на
+            # продолжение вверху этой) — ПРАВКА 5, многостраничные таблицы
+            cont_number: Optional[str] = None
             for pno, page in enumerate(pdf.pages):
                 ph = float(page.height or 0.0)
                 pw = float(page.width or 0.0)
                 caps = captions_by_page.get(pno + 1, [])
-                try:
-                    found = page.find_tables()
-                except Exception as exc:  # noqa: BLE001
-                    warnings_list.append(f"find_tables упал на стр. {pno + 1}: {exc}")
-                    carry = None
-                    continue
+                # ПРЕДФИЛЬТР (09): страница без H+V векторных линий не может нести
+                # рамочную таблицу (стратегия lines) — find_tables там дал бы пусто.
+                # Пропускаем её без запуска тяжёлого детектора (−65% времени, 0 потерь).
+                if fdoc is not None and pno < fdoc.page_count \
+                        and not _page_has_table_lines(fdoc[pno]):
+                    self.gated_pages += 1
+                    found = []
+                else:
+                    try:
+                        found = page.find_tables()
+                    except Exception as exc:  # noqa: BLE001
+                        warnings_list.append(f"find_tables упал на стр. {pno + 1}: {exc}")
+                        carry = None
+                        continue
 
-                # 1) вердикт по каждой детекции, сверху вниз (детерминированно)
+                # 1) вердикт по каждой детекции (tbl хранится — нужен для сетки колонок)
                 dets = []
                 for tbl in found:
                     bbox = self._norm(tbl.bbox)
                     grid = self._safe_extract(tbl)
-                    dets.append((bbox, grid, self._validate(bbox, grid, pw, ph)))
-                dets.sort(key=lambda d: d[0][1])
+                    dets.append((bbox, grid, self._validate(bbox, grid, pw, ph), tbl))
+                # ПОРЯДОК (09): junk-фильтр ПЕРВЫМ — полностраничный/out-of-bounds
+                # мусор выбрасываем ДО дедупа, иначе «предпочесть большую» могло бы
+                # выбрать ложную полностраничную детекцию вместо настоящей меньшей.
+                survivors = []
+                for d in dets:
+                    if d[2] == "junk":
+                        self.junk_count += 1
+                    else:
+                        survivors.append(d)
+                # затем дедуп по ВЛОЖЕННОСТИ среди выживших (small-in-big -> убрать
+                # small, оставить большую рамочную с полной сеткой)
+                _before = len(survivors)
+                survivors = self._dedup_contained(survivors)
+                self.dedup_count += _before - len(survivors)
+                survivors.sort(key=lambda d: d[0][1])
 
                 # 2) привязка подписи: сначала ОСНОВНОЙ путь (подпись сверху) —
                 #    без изменений; затем новые пути (внутри bbox / спасение small)
                 page_tables: List[Dict] = []
                 used: set = set()
-                for bbox, grid, verdict in dets:
-                    if verdict == "junk":
-                        self.junk_count += 1
-                        continue
+                for bbox, grid, verdict, tbl in survivors:
                     low_conf = False
                     if verdict == "small":
                         # (2в) спасаем ТОЛЬКО под подписью вплотную сверху
@@ -253,7 +473,7 @@ class TableExtractor:
                     if cap is not None:
                         used.add(id(cap))
                     page_tables.append({
-                        "bbox": bbox,
+                        "bbox": bbox, "grid": grid, "tbl": tbl,
                         "number": cap["number"] if cap else None,
                         "caption": cap["caption"] if cap else None,
                         "low_conf": low_conf,
@@ -268,28 +488,48 @@ class TableExtractor:
                         top["number"] = carry["number"]
                         top["caption"] = carry["caption"]
 
-                # 4) эмиссия
+                # 3b) ПРАВКА 1: безрамочные кандидаты ТОЙ ЖЕ страницы (по подписи +
+                #     колонкам). Гейт по наличию подписи (whitespace-детектор всё равно
+                #     якорится на «Таблица N»). Слить с рамочными; безрамочный, что
+                #     перекрывает рамочную, отбрасываем (у рамочной достовернее сетка).
+                if caps:
+                    for wc in self._whitespace_candidates(page, pno, warnings_list):
+                        if any(_covered_by(wc["bbox"], ft["bbox"]) >= 0.5
+                               or _covered_by(ft["bbox"], wc["bbox"]) >= 0.5
+                               for ft in page_tables):
+                            continue
+                        page_tables.append(wc)
+                    page_tables.sort(key=lambda t: t["bbox"][1])
+
+                # 3c) ПРАВКА 5: продолжение таблицы с прошлой страницы (вверху, без
+                #     подписи). Связываем через continues_table, строки не теряем.
+                if cont_number is not None:
+                    cont = self._top_continuation(page, pno, warnings_list)
+                    if cont is not None and not any(
+                            _covered_by(cont["bbox"], ft["bbox"]) >= 0.5
+                            for ft in page_tables):
+                        cont["continues"] = cont_number
+                        page_tables.append(cont)
+                        page_tables.sort(key=lambda t: t["bbox"][1])
+
+                # 4) эмиссия с reconcile (09): текст raw_text из IR-спанов B по сетке A,
+                #    reconcile_score = |B∩A|/|B|, вычитание ТОЛЬКО у reconciled-таблиц.
+                ir_page = next((p for p in pages if p.number == pno + 1), None)
                 for t in page_tables:
-                    raw_text = self._dump_text(page, t["bbox"], pw, ph,
-                                               warnings_list, pno)
-                    tables.append(Table(
-                        page=pno + 1,
-                        number=t["number"],
-                        caption=t["caption"],
-                        raw_text=_collapse_ws(raw_text),
-                        bbox=tuple(round(v, 1) for v in t["bbox"]),  # type: ignore[arg-type]
-                        low_confidence=t["low_conf"],
-                    ))
-                    self.subtraction_map.setdefault(pno, []).append(t["bbox"])
+                    self._emit_table(t, ir_page, page, pw, ph, warnings_list, pno,
+                                     tables)
 
-                # 5) вычислить перенос для следующей страницы
+                # 5) перенос подписи + кандидат-продолжение для следующей страницы:
+                #    таблица, доходящая до низа (bbox снизу >= 0.80*высоты).
                 carry = self._carry_out(caps, used, page_tables, ph)
+                cont_number = None
+                if page_tables and ph > 0:
+                    low = max(page_tables, key=lambda t: t["bbox"][3])
+                    if low["bbox"][3] >= ph * 0.80:
+                        cont_number = low.get("number") or low.get("continues")
 
-            # Fallback: ТОЛЬКО если рамочный детектор не нашёл ничего во всём
-            # документе — тогда ищем безрамочные таблицы по подписи + колонкам.
-            # Так мы не трогаем файлы, где таблицы уже находятся.
-            if not tables:
-                self._whitespace_fallback(pdf, tables, warnings_list)
+        if fdoc is not None:
+            fdoc.close()
 
         if self.junk_count:
             warnings_list.append(
@@ -305,7 +545,76 @@ class TableExtractor:
                 f"выравниванию (fallback-детектор)")
         return tables
 
+    # ---- эмиссия одной таблицы с reconcile (промпт 09) -------------------
+
+    def _emit_table(self, t: Dict, ir_page, ppage, pw: float, ph: float,
+                    warnings_list: List[str], pno: int, tables: List[Table]) -> None:
+        """Собрать Table: raw_text из IR-спанов B по сетке A; reconcile_score=|B∩A|/|B|;
+        вычитание (subtraction_map + claimed_span_uids) ТОЛЬКО если reconciled.
+        reconciled = score>=порог И raw_text непуст И это не огрызок-шапка (TABLE_STUB)."""
+        bbox = t["bbox"]
+        grid = t["grid"]
+        b_lines = _lines_in_bbox(ir_page, bbox) if ir_page is not None else []
+        a_tokens = _grid_tokens(grid)
+        b_tokens = _tokenize(" ".join(ln.text for ln in b_lines))
+        score = _reconcile_score(b_tokens, a_tokens)
+        col_cuts = (_col_cuts_from_cells(t["tbl"]) if t.get("tbl") is not None
+                    else t.get("col_cuts", []))
+        raw_text, _ = _raw_text_from_ir(b_lines, col_cuts)
+        if not raw_text.strip():
+            # IR-строк нет (полоса не выровнена / full-OCR) -> дамп pdfplumber
+            raw_text = _collapse_ws(self._dump_text(ppage, bbox, pw, ph,
+                                                    warnings_list, pno))
+        row_count, cell_count, empty_ratio = _grid_metrics(grid)
+        # (Р2) ВТОРОЙ сторож: подпись «Таблица N» + row_count<=1 -> огрызок шапки,
+        # reconcile тут слеп (крошечный bbox), вычитания нет НЕЗАВИСИМО от score.
+        is_stub = t["number"] is not None and row_count <= 1
+        threshold = _RECONCILE_MIN_LOWCONF if t["low_conf"] else _RECONCILE_MIN
+        # ИНВАРИАНТ: пустой raw_text -> вычитания нет никогда (ни при каком score).
+        reconciled = (score >= threshold) and bool(raw_text.strip()) and not is_stub
+        if is_stub:
+            self.stub_count += 1
+            warnings_list.append(
+                "TABLE_STUB: «Таблица %s» стр.%d row_count=%d — огрызок шапки, "
+                "вычитания нет" % (t["number"], pno + 1, row_count))
+        elif not reconciled:
+            self.unreconciled_count += 1
+            warnings_list.append(
+                "reconcile не прошёл: «Таблица %s» стр.%d score=%.2f<%.2f — текст "
+                "оставлен в теле" % (t["number"] or "?", pno + 1, score, threshold))
+        # claimed_span_uids — ТОЛЬКО у reconciled (они и вычитаются). Так claimed ==
+        # subtracted, а raw_text строится из тех же B -> символы вычтенного ВСЕГДА в
+        # raw_text (инвариант E2 выполнен по построению).
+        claimed = [ln.span_uid for ln in b_lines] if reconciled else []
+        tables.append(Table(
+            page=pno + 1, number=t["number"], caption=t["caption"],
+            raw_text=raw_text,
+            bbox=tuple(round(v, 1) for v in bbox),  # type: ignore[arg-type]
+            low_confidence=t["low_conf"],
+            claimed_span_uids=claimed, source="native",
+            reconciled=reconciled, reconcile_score=round(score, 3),
+            continues_table=t.get("continues"),
+            row_count=row_count, cell_count=cell_count, empty_cell_ratio=empty_ratio,
+        ))
+        if reconciled:
+            self.subtraction_map.setdefault(pno, []).append(bbox)
+
     # ---- внутренняя кухня ------------------------------------------------
+
+    @staticmethod
+    def _dedup_contained(dets: List) -> List:
+        """Снять вложенные подрегионы. Кандидатов фиксируем в порядке (лучший вердикт,
+        затем бо́льшая площадь); кандидата, чья площадь на >= _CONTAIN_MIN накрыта уже
+        принятым (== он сидит внутри лучшего-или-равного), отбрасываем. Так «ok»-таблицу
+        не снимает «small»-детекция, даже если та крупнее (junk уже отфильтрован)."""
+        order = sorted(dets, key=lambda d: (-_VERDICT_RANK.get(d[2], 0),
+                                            -_bbox_area(d[0])))
+        kept: List = []
+        for d in order:
+            if any(_covered_by(d[0], k[0]) >= _CONTAIN_MIN for k in kept):
+                continue
+            kept.append(d)
+        return kept
 
     @staticmethod
     def _norm(bbox) -> BBox:
@@ -460,73 +769,115 @@ class TableExtractor:
             return None
         return max(cand, key=lambda c: c["bbox"][1])
 
-    # ---- fallback: безрамочные (whitespace-выровненные) таблицы -----------
+    # ---- безрамочные (whitespace-выровненные) кандидаты, ПЕР-СТРАНИЧНО (09) ---
 
-    def _whitespace_fallback(self, pdf, tables: List[Table],
-                             warnings_list: List[str]) -> None:
-        """Найти безрамочные таблицы по подписи «Таблица N» + колоночному
-        выравниванию. Вызывается только когда рамочный детектор пуст."""
-        for pno, page in enumerate(pdf.pages):
-            try:
-                words = page.extract_words(use_text_flow=False,
-                                           keep_blank_chars=False)
-            except Exception:  # noqa: BLE001
-                continue
-            if not words:
-                continue
-            rows = _group_rows(words)
-            cap_idx = [i for i, r in enumerate(rows)
-                       if _RE_TABLE_CAPTION.match(_row_text(r))]
-            if not cap_idx:
-                continue
+    def _whitespace_candidates(self, page, pno: int,
+                               warnings_list: List[str]) -> List[Dict]:
+        """Кандидаты безрамочных таблиц ОДНОЙ страницы (по подписи «Таблица N» +
+        колонкам). Возвращает dict'ы для общего пути эмиссии (_emit_table): у них
+        сетка A из pdfplumber-слов и col_cuts — reconcile применяется как к рамочным.
+        Раньше это был документный fallback под `if not tables` (терял безрамочную
+        на странице с рамочной); теперь — часть пер-страничного ансамбля."""
+        try:
+            words = page.extract_words(use_text_flow=False, keep_blank_chars=False)
+        except Exception:  # noqa: BLE001
+            return []
+        if not words:
+            return []
+        rows = _group_rows(words)
+        cap_idx = [i for i, r in enumerate(rows)
+                   if _RE_TABLE_CAPTION.match(_row_text(r))]
+        if not cap_idx:
+            return []
+        out: List[Dict] = []
+        for k, ci in enumerate(cap_idx):
+            stop = cap_idx[k + 1] if k + 1 < len(cap_idx) else len(rows)
+            cand = self._build_whitespace_candidate(rows, ci, stop, pno, warnings_list)
+            if cand is not None:
+                out.append(cand)
+        return out
 
-            for k, ci in enumerate(cap_idx):
-                stop = cap_idx[k + 1] if k + 1 < len(cap_idx) else len(rows)
-                table = self._build_fallback_table(rows, ci, stop, pno, page,
-                                                    warnings_list)
-                if table is not None:
-                    tables.append(table)
-                    self.fallback_count += 1
-                    x0, y0, x1, y1 = table.bbox
-                    self.subtraction_map.setdefault(pno, []).append(
-                        (x0, y0, x1, y1))
+    def _top_continuation(self, page, pno: int,
+                          warnings_list: List[str]) -> Optional[Dict]:
+        """Кандидат-ПРОДОЛЖЕНИЕ таблицы у ВЕРХА страницы, БЕЗ подписи (ПРАВКА 5):
+        колоночная структура, начинается у верхнего края, до первой подписи. Строки
+        продолжения многостраничной таблицы иначе теряются (КР1_4 Table 2 стр.64)."""
+        try:
+            words = page.extract_words(use_text_flow=False, keep_blank_chars=False)
+        except Exception:  # noqa: BLE001
+            return None
+        if not words:
+            return None
+        rows = _group_rows(words)
+        if not rows or rows[0]["top"] > _CARRY_TARGET_TOP_MAX:
+            return None                       # содержимое не у верха -> не продолжение
+        stop = next((i for i, r in enumerate(rows)
+                     if _RE_TABLE_CAPTION.match(_row_text(r))), len(rows))
+        window = rows[:stop]
+        if len(window) < 3:
+            return None
+        # продолжение — весь связный верхний регион до следующей подписи, обрезанный
+        # лишь на БОЛЬШОМ вертикальном разрыве (конец таблицы). НЕ применяем строгий
+        # _trim_to_columns: у таблиц с широкими многострочными ячейками (режимы КР1_4)
+        # он рубит регион на первой же «полноширинной» строке и теряет строки.
+        tops = [r["top"] for r in window]
+        diffs = [b - a for a, b in zip(tops, tops[1:]) if b - a > 0]
+        pitch = statistics.median(diffs) if diffs else 14.0
+        body_rows = [window[0]]
+        for r in window[1:]:
+            if r["top"] - body_rows[-1]["top"] > pitch * 4.0:
+                break
+            if _is_section_head_row(r):
+                break            # заголовок раздела -> конец продолжения таблицы
+            body_rows.append(r)
+        if len(body_rows) < 3:
+            return None
+        cuts, rr = _column_cuts(body_rows, strict=True)
+        if not cuts or rr < 3:
+            return None
+        if looks_glyph_corrupted(" ".join(_row_text(r) for r in body_rows)):
+            self.corrupt_count += 1
+            return None
+        ncol = len(cuts) + 1
+        grid = [[" ".join(_assign_columns(r, cuts).get(c, [])) for c in range(ncol)]
+                for r in body_rows]
+        if not _looks_like_real_table(grid):   # ужесточение: не проза/список/библио
+            return None
+        bbox = (min(r["x0"] for r in body_rows), min(r["top"] for r in body_rows),
+                max(r["x1"] for r in body_rows), max(r["bottom"] for r in body_rows))
+        return {"bbox": tuple(round(v, 1) for v in bbox), "grid": grid, "tbl": None,
+                "col_cuts": cuts, "number": None, "caption": None, "low_conf": True}
 
-    def _build_fallback_table(self, rows, ci, stop, pno, page,
-                              warnings_list) -> Optional[Table]:
-        """Собрать одну безрамочную таблицу из региона rows[ci..stop)."""
+    def _build_whitespace_candidate(self, rows, ci, stop, pno,
+                                    warnings_list) -> Optional[Dict]:
+        """Собрать один безрамочный кандидат из региона rows[ci..stop) как dict со
+        своей сеткой A (list-of-lists) и col_cuts — для reconcile в _emit_table."""
         m = _RE_TABLE_CAPTION.match(_row_text(rows[ci]))
         number = _norm_table_number(m.group(1)) if m else None
-
         window, caption_rows = _region_body(rows, ci, stop)
         if len(window) < 3:
             return None
-
-        # колоночное выравнивание: нужны >= 1 устойчивого внутреннего промежутка
-        # (>= 2 колонок) на >= 3 строках. Иначе это подпись без реальной таблицы.
-        # Для ОБРЕЗКИ берём «терпимые к прозе» реки (strict=False).
         cuts0, rr0 = _column_cuts(window, strict=False)
         if not cuts0 or rr0 < 3:
             return None
-
-        # обрезать регион на первой полноширинной строке прозы/заголовка (текст
-        # «течёт» сквозь ВСЕ колоночные реки) — чтобы bbox не съел соседний
-        # раздел и его текст не пропал из вывода.
         body_rows = _trim_to_columns(window, cuts0)
+        # ДОП. ЗАЩИТА (09): не тянуть регион ЧЕРЕЗ заголовок подраздела (2.2/3.5) —
+        # это конец таблицы. _trim_to_columns рубит только если заголовок ПЕРЕСЕКАЕТ
+        # реки; короткий заголовок в левой колонке проскакивал, и whitespace-регион
+        # съедал подразделы (регресс 28 MISSING). Рубим на ЛЮБОМ заголовке подраздела.
+        hcut = next((i for i, r in enumerate(body_rows)
+                     if _is_section_head_row(r)), None)
+        if hcut is not None:
+            body_rows = body_rows[:hcut]
         if len(body_rows) < 3:
             return None
-
-        # финальные реки — уже по чистому телу таблицы, со строгим фильтром
-        # (отсекает случайные «реки» внутри широкой колонки текста).
         cuts, river_rows = _column_cuts(body_rows, strict=True)
         if not cuts or river_rows < 3:
             return None
-
-        # подпись (может быть многострочной) — для поля caption и проверки порчи
         caption_text = " ".join(_row_text(rows[i]) for i in caption_rows).strip()
         body_text = " ".join(_row_text(r) for r in body_rows)
-
-        # глифовая порча: латиница, отрендеренная битым cmap как кириллица.
-        # Такой регион НЕ структурируем и НЕ схлопываем — помечаем на OCR.
+        # глифовая порча: латиница, отрендеренная битым cmap как кириллица — НЕ
+        # структурируем, помечаем на OCR (как раньше).
         if looks_glyph_corrupted(body_text) or looks_glyph_corrupted(caption_text):
             self.corrupt_count += 1
             sect = f"«{caption_text[:60]}»" if caption_text else f"№{number}"
@@ -534,20 +885,17 @@ class TableExtractor:
                 f"font_corruption: подозрение на глифовую порчу — на OCR "
                 f"(таблица {sect}, стр. {pno + 1})")
             return None
-
-        raw_text, low_conf = _build_grid_text(body_rows, cuts)
-        if not raw_text.strip():
+        # сетка A (list-of-lists) для reconcile/метрик — слова pdfplumber по колонкам
+        ncol = len(cuts) + 1
+        grid = [[" ".join(_assign_columns(r, cuts).get(c, [])) for c in range(ncol)]
+                for r in body_rows]
+        if not _looks_like_real_table(grid):   # ужесточение: не проза/список/библио
             return None
-
+        self.fallback_count += 1
         bbox = _region_bbox(rows[ci], body_rows)
-        return Table(
-            page=pno + 1,
-            number=number,
-            caption=caption_text or None,
-            raw_text=_collapse_ws(raw_text),
-            bbox=tuple(round(v, 1) for v in bbox),  # type: ignore[arg-type]
-            low_confidence=low_conf,
-        )
+        return {"bbox": tuple(round(v, 1) for v in bbox), "grid": grid, "tbl": None,
+                "col_cuts": cuts, "number": number,
+                "caption": caption_text or None, "low_conf": True}
 
 
 # ====================================================================== #
@@ -671,6 +1019,43 @@ _RE_SECTION_HEAD = re.compile(r"^\s*\d{1,2}(?:\.\d{1,3})+\.?\s+[А-ЯЁ]")
 
 def _looks_like_heading(text: str) -> bool:
     return bool(_RE_SECTION_HEAD.match(text))
+
+
+# заголовок подраздела: ДОТИРОВАННЫЙ номер + ЗАГЛАВНАЯ (кир/лат — «1.6.2 AL-амилоидоз»
+# начинается с латинской). Доза «1.5 мг» — строчная «м», не матчит.
+_RE_SUBSEC_HEAD = re.compile(r"^\s*\d{1,2}(?:\.\d{1,3})+\.?\s+[А-ЯЁA-Z]")
+
+
+_TABLE_KEY_CELL_MAX = 20   # средняя длина ячеек «ключевой» колонки таблицы, симв
+
+
+def _looks_like_real_table(grid: List[List]) -> bool:
+    """Ужесточение безрамочного детектора (09): регион — ТАБЛИЦА, а не абзац прозы.
+    Признак — есть КОЛОНКА КОРОТКИХ ячеек (ключ/метка: №, уровень «Да/Нет»/«C», имя
+    препарата): у таблицы всегда есть узкая колонка-ключ. У прозы (в т.ч. разбитой
+    ложной «рекой» на 2 колонки текстовых фрагментов) короткой колонки-ключа нет —
+    все колонки длинные. Критерии качества с ПЕРЕНОСАМИ длинных ячеек проходят (у них
+    колонка № коротка). >=4 непустых строк. Замер: 896 whitespace-таблиц -> меньше,
+    абзацы прозы отсеяны, критерии/препараты/шкалы целы."""
+    rows = [r for r in grid if any(str(c).strip() for c in r)]
+    if len(rows) < 4:
+        return False
+    ncol = max((len(r) for r in rows), default=0)
+    for i in range(ncol):
+        cells = [str(r[i]).strip() for r in rows if i < len(r) and str(r[i]).strip()]
+        if len(cells) >= 3 and sum(len(c) for c in cells) / len(cells) < _TABLE_KEY_CELL_MAX:
+            return True                       # есть узкая колонка-ключ -> таблица
+    return False
+
+
+def _is_section_head_row(row) -> bool:
+    """Строка-РЯД — заголовок ПОДРАЗДЕЛА (конец таблицы для whitespace-региона):
+    ДОТИРОВАННЫЙ номер + заглавная («2.2 Физикальное», «1.6.2 AL-амилоидоз»). Только
+    дотированный: одиночный номер неотличим от табличной ячейки-ряда («1 Тремелимумаб**
+    300 мг…» vs глава «2 Диагностика…») — риск срезать строки таблицы (КР1_4 Table 2)
+    выше пользы. Редкий случай главы под whitespace-таблицей (КР524_3/714_2) остаётся
+    как структурный REVIEW, контент сохранён в raw_text (не E2)."""
+    return bool(_RE_SUBSEC_HEAD.match(_row_text(row).strip()))
 
 
 def _trim_to_columns(window, cuts) -> List[Dict]:

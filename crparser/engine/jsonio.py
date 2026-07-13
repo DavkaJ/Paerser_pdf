@@ -114,6 +114,13 @@ class JsonWriter:
         if self._prov:
             out["claimed_span_uids"] = list(table.claimed_span_uids)
             out["source"] = table.source
+            # недеструктивность (промпт 09) — аддитивно, В КОНЕЦ
+            out["reconciled"] = table.reconciled
+            out["reconcile_score"] = table.reconcile_score
+            out["continues_table"] = table.continues_table
+            out["row_count"] = table.row_count
+            out["cell_count"] = table.cell_count
+            out["empty_cell_ratio"] = table.empty_cell_ratio
         return out
 
     def _excluded(self, excluded: Dict[str, List]) -> Dict[str, List[Dict[str, Any]]]:

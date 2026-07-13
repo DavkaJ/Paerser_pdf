@@ -82,7 +82,10 @@
         "reconcile_score": {"type": "number"},
         "continues_table": {"type": ["string", "null"]},
         "claimed_span_uids": {"type": "array", "items": {"type": "string"}},
-        "source": {"type": "string"}
+        "source": {"type": "string"},
+        "row_count": {"type": "integer"},
+        "cell_count": {"type": "integer"},
+        "empty_cell_ratio": {"type": "number"}
       }
     },
     "stats": {

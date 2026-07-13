@@ -118,10 +118,11 @@ class DocumentParser:
         sections = segmented["sections"]
         excluded = segmented["excluded"]
 
-        # 4b. provenance (промпт 08): PageIR по ИТОГОВЫМ страницам, заявка таблиц на
-        # спаны по геометрии, инвариант владения (дубли/сироты -> warnings, НЕ падаем).
+        # 4b. provenance (промпт 08/09): PageIR по ИТОГОВЫМ страницам; заявку таблиц
+        # на спаны (claimed_span_uids) теперь ставит САМ экстрактор — только у
+        # reconciled-таблиц (промпт 09), поэтому геометрический _assign_table_claims
+        # больше не вызывается. Инвариант владения (дубли/сироты -> warnings, НЕ падаем).
         page_ir = build_page_ir(pages)
-        self._assign_table_claims(tables, pages)
         self._ownership_check(sections, tables, excluded, page_ir, warnings_list)
 
         # 5. статистика покрытия

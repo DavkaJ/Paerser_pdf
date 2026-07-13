@@ -109,19 +109,23 @@ def test_D8_kr396_ocr_required(validate_base):
     assert any("OCR_REQUIRED" in r for r in rep.reviews)
 
 
-def test_D9_kr1_4_residual_pin(validate_base, outout_doc):
-    """ЗАКРЫТ промптом 04 (гейт RESIDUAL_PIN): КР1_4 с пинами в ТЕЛЕ больше не PASS.
-    Остаточные пины (Вагсе1опа/ВСЬС/1луег) сидят в tables — часть зоны ТЕЛО."""
+def test_D9_kr1_4_residual_pin_fixed_by_09(outout_doc):
+    """ЗАКРЫТ иначе, чем ждали: остаточные пины (Вагсе1опа/ВСЬС) сидели в OVER-CAPTURE-
+    кропе Table 1 (pdfplumber-дамп битого слоя). Промпт 09 (ПРАВКА 4: raw_text из IR)
+    берёт ВОССТАНОВЛЕННЫЙ гибрид-OCR текст тела (Barcelona/BCLC), а не битый крап —
+    остаточных пинов в теле больше НЕТ, КР1_4 -> PASS. Это и есть цель ПРАВКИ 4."""
     doc = outout_doc("КР1_4")
-    base = ocr_pins.load_base()
-    punct = ".,;:()[]«»\"'-—%<>±*"
-    tbl = " ".join((t.get("raw_text") or "") + " " + (t.get("caption") or "")
-                   for t in doc["tables"])
-    hits = [tok.strip(punct).lower() for tok in tbl.split()
-            if len(tok.strip(punct)) >= 3 and tok.strip(punct).lower() in base]
-    assert hits, "предусловие: у КР1_4 есть остаточные пины в таблицах"
-    rep = validate_base("КР1_4")
-    assert rep.status != "PASS"    # ждём REVIEW после гейта 04
+
+    def _walk(secs):
+        for s in secs:
+            yield s
+            yield from _walk(s.get("children", []))
+    body = " ".join(
+        [(t.get("raw_text") or "") for t in doc["tables"]]
+        + [(s.get("text") or "") for s in _walk(doc["sections"])])
+    # битые формы ушли, восстановленные — на месте (взяты из IR, а не из крапа)
+    assert "Вагсе1опа" not in body and "ВСЬС" not in body, "битые пины остались"
+    assert "Barcelona" in body and "BCLC" in body, "восстановленных форм нет"
 
 
 # ============================================================================
@@ -144,25 +148,23 @@ def test_D10_structured_coverage_absent(make_doc):
 # ГРУППА C — таблицы (промпт 09): xfail (репродукция по структуре кода)
 # ============================================================================
 
-@pytest.mark.xfail(strict=True, reason="дефект аудита §1.1 P0-3; постраничный fallback — промпт 09")
 def test_D12_table_fallback_is_document_level():
-    """whitespace-fallback стоит под document-level `if not tables:` -> безрамочные
-    таблицы теряются в документах с хоть одной рамочной. Фикс 09 делает его постраничным."""
+    """ЗАКРЫТ 09: whitespace-детектор больше НЕ под document-level `if not tables:` —
+    он пер-страничный (ансамбль), безрамочные не теряются рядом с рамочными."""
     src = _src(os.path.join("crparser", "engine", "tables.py"))
     assert "if not tables:" not in src, "fallback всё ещё document-level"
 
 
-@pytest.mark.xfail(strict=True, reason="дефект аудита §1.1 P0-3; reconcile перед вычитанием — промпт 09")
 def test_D14_subtraction_before_reconcile():
-    """bbox таблицы попадает в subtraction_map независимо от того, что вернул дамп ->
-    текст исчезает из тела. Фикс 09 вводит reconcile перед вычитанием."""
+    """ЗАКРЫТ 09: вычитание (subtraction_map) — ТОЛЬКО после reconcile (score>=порог),
+    не по факту эмиссии."""
     src = _src(os.path.join("crparser", "engine", "tables.py"))
     assert "reconcil" in src.lower(), "нет reconcile-гейта перед вычитанием"
 
 
-@pytest.mark.xfail(strict=True, reason="дефект аудита §4; многостраничные продолжения — промпт 09")
 def test_D13_multipage_table_continuation():
-    """Строки продолжения многостраничной таблицы теряются: нет связи continues_table."""
+    """ЗАКРЫТ 09: строки продолжения многостраничной таблицы связаны через
+    continues_table (КР1_4 Table 2 стр.63-64)."""
     src = _src(os.path.join("crparser", "engine", "tables.py"))
     assert "continues_table" in src
 
