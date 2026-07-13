@@ -13,6 +13,9 @@ crparser/data/ocr_cache/
 # кэш разбора оглавления по содержимому PDF (временно, до единого DocumentView)
 crparser/data/toc_cache/
 
+# run-scoped staging транзакционного батча (промпт 05)
+_runs/
+
 # временные/отладочные скрипты (имена с ведущим подчёркиванием) и бэкапы
 _*.py
 .bak/

@@ -76,7 +76,9 @@ _TESS_TIMEOUT = 120
 # Дисковый кэш сырого результата Tesseract (TSV) по (id+страница+dpi+langs+psm+
 # версия препроцессинга). Каталог рабочий — в .gitignore. Радикально ускоряет
 # повторные прогоны на тех же файлах (прошлый полный прогон шёл ~2 часа).
-_OCR_CACHE_DIR = os.path.join(
+# Путь кэша параметризуем через env CR_OCR_CACHE (промпт 05, правка 7): два агента
+# в разных worktree не должны делить один каталог кэша. По умолчанию — прежний путь.
+_OCR_CACHE_DIR = os.environ.get("CR_OCR_CACHE") or os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "ocr_cache")
 
 # --------------------------------------------------------------------------- #
@@ -157,18 +159,6 @@ def _stack_signature(cmd: Optional[str], tessdata: Optional[str], langs: str,
     _stack_sig_cache[key] = sig
     return sig
 
-# Стандартные места установки Tesseract на Windows/Unix (fallback к env/PATH —
-# это НЕ хардкод конкретного файла, а типовые каталоги пакета).
-_COMMON_TESS_PATHS = (
-    r"C:\Program Files\Tesseract-OCR\tesseract.exe",
-    r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
-    os.path.expanduser(r"~\Tesseract-OCR\tesseract.exe"),
-    os.path.expanduser(r"~\AppData\Local\Programs\Tesseract-OCR\tesseract.exe"),
-    "/usr/bin/tesseract",
-    "/usr/local/bin/tesseract",
-    "/opt/homebrew/bin/tesseract",
-)
-
 _CYR = re.compile(r"[А-Яа-яЁё]")
 _LAT = re.compile(r"[A-Za-z]")
 _UPCYR = re.compile(r"[А-ЯЁ]")
@@ -223,18 +213,19 @@ _CYR2LAT_UP = {k: v for k, v in _CYR2LAT.items() if k.isupper()}
 # ============================================================================
 
 def _resolve_tesseract() -> Optional[str]:
-    """Путь к бинарю tesseract: env -> PATH -> типовые каталоги. None — нет."""
+    """Путь к бинарю tesseract: ТОЛЬКО env (TESSERACT_CMD/TESSERACT_PATH) или PATH.
+
+    Промпт 05, правка 3-bis: молчаливый фолбэк на захардкоженные домашние каталоги
+    УБРАН. Он превращал доступность OCR в «удачу среды»: на машине без Tesseract на
+    PATH, но с ~/Tesseract-OCR/, батч молча включал OCR и производил ДРУГОЙ корпус,
+    завершаясь с exit 0. Теперь OCR — ОБЪЯВЛЕННОЕ предусловие прогона: не найден по
+    env/PATH -> None, и batch_report с --require-ocr останавливается (exit 2), а не
+    угадывает домашнюю директорию."""
     for var in ("TESSERACT_CMD", "TESSERACT_PATH"):
         cand = os.environ.get(var)
         if cand and os.path.isfile(cand):
             return cand
-    found = shutil.which("tesseract")
-    if found:
-        return found
-    for cand in _COMMON_TESS_PATHS:
-        if os.path.isfile(cand):
-            return cand
-    return None
+    return shutil.which("tesseract")
 
 
 def _tok_core(tok: str) -> str:

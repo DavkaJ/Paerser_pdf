@@ -217,18 +217,46 @@ def test_D18_no_PDI_target_in_base():
 # ГРУППА F — батч-транзакционность (промпт 05): xfail
 # ============================================================================
 
-@pytest.mark.xfail(strict=True, reason="дефект аудита §1.1 P0-1; staging+allowlist — промпт 05")
-def test_D19_failed_write_forces_fail():
-    """Сбой записи только ставит write_ok=False, статус не форсится в FAIL. Фикс 05 — WRITE_FAILED."""
-    src = _src("batch_report.py")
-    assert "WRITE_FAILED" in src
+def _run_batch(args, env_extra, tmp_path):
+    import subprocess
+    import sys
+    env = os.environ.copy()
+    env["CR_OUTOUT"] = str(tmp_path / "out")
+    env["CR_REPORT"] = str(tmp_path / "report.json")
+    (tmp_path / "out").mkdir(exist_ok=True)
+    env.update(env_extra)
+    return subprocess.run([sys.executable, "batch_report.py", *args, "--no-require-ocr"],
+                          cwd=ROOT, env=env, capture_output=True, text=True,
+                          encoding="utf-8", errors="replace", timeout=300)
 
 
-@pytest.mark.xfail(strict=True, reason="дефект аудита §1.1 P0-1; транзакционная публикация — промпт 05")
-def test_D20_crash_does_not_survive_publish():
-    """CRASH не инвалидирует старый JSON. Фикс 05 — staging + публикация по allowlist."""
-    src = _src("batch_report.py")
-    assert "staging" in src
+def test_D19_failed_write_exit2(tmp_path):
+    """ЗАКРЫТ промптом 05: сбой записи -> WRITE_FAILED -> run_integrity_ok=False,
+    публикации НЕТ, exit 2 (было: write_ok=False молча, exit 0)."""
+    for b in ("КР802_1", "КР845_1"):
+        if not os.path.exists(os.path.join(ROOT, "data", "raw", b + ".pdf")):
+            pytest.skip("нет фикстур КР802_1/КР845_1")
+    r = _run_batch(["КР802_1.pdf", "КР845_1.pdf"],
+                   {"CR_TEST_FAIL_WRITE": "КР845_1"}, tmp_path)
+    assert r.returncode == 2, r.stdout[-500:]
+    assert not list((tmp_path / "out").glob("*.json"))   # публикации не было
+
+
+def test_D20_crash_removes_stale(tmp_path):
+    """ЗАКРЫТ промптом 05: CRASH -> устаревший JSON упавшего документа удаляется при
+    публикации, exit 1 (было: старый JSON переживал прогон)."""
+    if not os.path.exists(os.path.join(ROOT, "data", "raw", "КР802_1.pdf")):
+        pytest.skip("нет фикстуры КР802_1")
+    fake = os.path.join(ROOT, "data", "raw", "КР_TESTCRASH.pdf")
+    open(fake, "w").write("not a real pdf")
+    try:
+        (tmp_path / "out").mkdir(exist_ok=True)
+        (tmp_path / "out" / "КР_TESTCRASH.json").write_text('{"stale":1}', encoding="utf-8")
+        r = _run_batch(["КР802_1.pdf", "КР_TESTCRASH.pdf"], {}, tmp_path)
+        assert r.returncode == 1, r.stdout[-500:]
+        assert not (tmp_path / "out" / "КР_TESTCRASH.json").exists()   # устаревший удалён
+    finally:
+        os.remove(fake)
 
 
 # ============================================================================
