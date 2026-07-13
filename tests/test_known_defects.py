@@ -102,16 +102,16 @@ def test_D11_kr848_overcount_detected(outout_doc):
 # ГРУППА A' — валидатор-гейты, ещё ОТКРЫТЫ (промпт 04): xfail
 # ============================================================================
 
-@pytest.mark.xfail(strict=True, reason="дефект аудита §3.3; гейт OCR_REQUIRED — промпт 04")
 def test_D8_kr396_ocr_required(validate_base):
-    """КР396_4 PASS при glyph_tokens=1 — должен стать REVIEW (OCR_REQUIRED)."""
+    """ЗАКРЫТ промптом 04 (гейт OCR_REQUIRED): КР396_4 (glyph_tokens=1) больше не PASS."""
     rep = validate_base("КР396_4")
     assert rep.status != "PASS"
+    assert any("OCR_REQUIRED" in r for r in rep.reviews)
 
 
-@pytest.mark.xfail(strict=True, reason="дефект аудита §3.5 P0-5; гейт RESIDUAL_PIN — промпт 04")
 def test_D9_kr1_4_residual_pin(validate_base, outout_doc):
-    """КР1_4 PASS при остаточных пинах в ТЕЛЕ (tables: Вагсе1опа/ВСЬС/1луег)."""
+    """ЗАКРЫТ промптом 04 (гейт RESIDUAL_PIN): КР1_4 с пинами в ТЕЛЕ больше не PASS.
+    Остаточные пины (Вагсе1опа/ВСЬС/1луег) сидят в tables — часть зоны ТЕЛО."""
     doc = outout_doc("КР1_4")
     base = ocr_pins.load_base()
     punct = ".,;:()[]«»\"'-—%<>±*"

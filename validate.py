@@ -69,6 +69,40 @@ COV_WARN = 99.9
 # округления подписей таблиц.
 OVERCOUNT_MIN = 1.02
 
+# --- структурные гейты (промпт 04): triage-пороги, откалиброваны по КОРПУСУ (не по
+# gold set — промпт 14 ещё не выполнен). Файл, прошедший гейты, — КАНДИДАТ, не
+# аттестованный документ. После промпта 14 перекалибровать на gold-dev + holdout. ---
+COLLAPSE_MIN_SECTIONS = 3       # <= стольких разделов
+COLLAPSE_MIN_CHARS = 20000      # при таком объёме — структура схлопнулась. Замер:
+#                                 ловит КР848_1 (1 секция) и КР401_2 (3).
+COLLAPSE_DOMINANCE = 0.60       # доля текста крупнейшей секции от included при >3
+#                                 секциях. Замер: КР973/953/205/246 = 0.61..0.77;
+#                                 <0.55 начинает цеплять короткие легитимные КР.
+COLLAPSE_HEADING_TAIL = 200     # >стольких символов после встроенного заголовка =
+#                                 несобранный раздел внутри text (ловит КР401_2).
+CANONICAL_RECALL_MIN = 5        # из 7 канонических глав; <5 -> потеряны главы, 0 -> FAIL.
+TABLE_STUB_MAX_CHARS = 200      # raw_text короче -> подозрение на огрызок-шапку. Замер:
+#                                 1152 из 11364 таблиц <200 симв, медиана корпуса 672.
+TABLE_DENSITY_MIN = 0.002       # симв/pt^2 при <3 таблицах в документе. Замер: у
+#                                 low-text таблиц p10=0.0016, p25=0.0023 -> 0.002 между.
+TABLE_MIN_FOR_PCT = 3           # >= стольких таблиц -> порог = 10-й перцентиль ДОКУМЕНТА.
+
+_PIN_PUNCT = ".,;:()[]«»\"'-—%<>±*"
+# ссылка на таблицу в тексте: «Таблица N», «табл. N», «в таблице N.M» (N может быть
+# приложенческим «П1» или дефис/слэш-составным).
+_RE_TABLE_REF = re.compile(
+    r"табл(?:иц[аеёуы]\w*|\.)\s*№?\s*((?:П)?\d+(?:[.\-/]\d+)?)", re.IGNORECASE)
+
+_cr_profile_cache = None
+
+
+def _canonical_chapters() -> dict:
+    """Канонические главы — ИЗ ПРОФИЛЯ (константы не дублируются в validate.py)."""
+    global _cr_profile_cache
+    if _cr_profile_cache is None:
+        _cr_profile_cache = create_profile("cr", None)
+    return _cr_profile_cache.canonical_chapters()
+
 # JSON Schema выходного документа (draft 2020-12). Валидатор fail-closed: документ,
 # не соответствующий контракту, не может быть выпущен ни при каких обстоятельствах.
 _SCHEMA_PATH = os.path.join(
@@ -412,6 +446,220 @@ def _check_stats_and_coverage(rep: "Report", doc: dict, stats: dict) -> None:
                      "coverage_percent: заявлено %s, факт %s" % (cov, exp_cov))
 
 
+def _successor_numbers(num: str) -> set:
+    """Кандидаты «следующего» номера: инкремент последнего компонента и следующая
+    глава верхнего уровня. Для «1.4» -> {«1.5», «2»}."""
+    parts = num.split(".")
+    out = set()
+    if parts and parts[-1].isdigit():
+        out.add(".".join(parts[:-1] + [str(int(parts[-1]) + 1)]))
+    if parts and parts[0].isdigit():
+        out.add(str(int(parts[0]) + 1))
+    return out
+
+
+def _embedded_heading_count(section: dict) -> int:
+    """Число РАЗНЫХ «несобранных заголовков» внутри плоского text секции с номером N:
+    последовательные номера N.k+1, N.k+2 …, каждый как «<номер> <Заглавная>» и с
+    >COLLAPSE_HEADING_TAIL символов после него. На плоском тексте (без переносов
+    строк) единичное совпадение «<число> <Заглавная>» шумно (глава «1» содержит
+    «2 Недели»), поэтому сигнал — НЕСКОЛЬКО подряд идущих подчинённых номеров,
+    ровно как у КР401_2 (в 1.4 сидят 1.5, 1.6, 2). Возвращает их количество."""
+    num = section.get("number")
+    text = section.get("text") or ""
+    if not num or "." not in num or len(text) < COLLAPSE_HEADING_TAIL + 5:
+        return 0
+    prefix, last = num.rsplit(".", 1)
+    if not last.isdigit():
+        return 0
+    found = 0
+    for k in range(int(last) + 1, int(last) + 6):     # N.k+1 .. N.k+5
+        succ = "%s.%d" % (prefix, k)
+        pat = re.compile(r"(?:^|[.!?)\s])" + re.escape(succ) + r"\s+[А-ЯЁA-Z]")
+        m = pat.search(text)
+        if m and len(text) - m.start() > COLLAPSE_HEADING_TAIL:
+            found += 1
+        else:
+            break                                     # номера идут подряд — разрыв = конец
+    return found
+
+
+def _has_embedded_heading(section: dict) -> bool:
+    """>=2 подряд несобранных подчинённых заголовка в одной секции (сигнатура КР401_2)."""
+    return _embedded_heading_count(section) >= 2
+
+
+def _canonical_recall(doc: dict) -> int:
+    """Сколько из 7 канонических глав представлено в дереве секций. Понимает И
+    арабскую нумерацию (первый компонент номера 1..7), И заголовок канонической
+    главы (роман/именованная глава без арабского номера) — иначе роман-документы
+    (КР66_4/876_1, где парсер перенумеровал в арабские) ложно теряли бы recall."""
+    canon = _canonical_chapters()          # префикс -> {номера}
+    present: set = set()
+    for s, _ in walk(doc.get("sections", [])):
+        num = s.get("number")
+        if num:
+            head = num.split(".")[0]
+            if head.isdigit() and 1 <= int(head) <= 7:
+                present.add(int(head))
+        low = norm(s.get("title") or "")
+        if low:
+            for prefix, numbers in canon.items():
+                singles = {n for n in numbers if 1 <= n <= 7}
+                if len(numbers) == 1 and singles and low.startswith(prefix):
+                    present |= singles
+    return len(present)
+
+
+def _pin_hits(text: str, base) -> int:
+    """Точные попадания ключей активной базы пинов (нормализация как в anchor_hit)."""
+    n = 0
+    for tok in text.split():
+        core = tok.strip(_PIN_PUNCT).lower()
+        if len(core) >= 3 and core in base:
+            n += 1
+    return n
+
+
+def _mixed_script_words(text: str) -> int:
+    """Число ТОКЕНОВ с кирилло-латинской мешаниной (широкий детектор, для триажа)."""
+    n = 0
+    for tok in text.split():
+        has_cyr = any("а" <= c.lower() <= "я" or c in "ёЁ" for c in tok)
+        has_lat = any("a" <= c.lower() <= "z" for c in tok)
+        if has_cyr and has_lat:
+            n += 1
+    return n
+
+
+def _residual_pin_gate(rep: "Report", doc: dict) -> None:
+    """ГЕЙТ 4: остаточные пины по зонам. ТЕЛО>=1 -> REVIEW; только БИБЛИО/СЛУЖЕБНОЕ
+    -> warning. База — v2 map через ocr_pins.load_base (не верхний уровень словаря)."""
+    from crparser.engine import ocr_pins
+    base = ocr_pins.load_base()
+    if not base:
+        return
+    exc = doc.get("excluded", {}) or {}
+    body = []
+    for s, _ in walk(doc.get("sections", [])):
+        body.append(s.get("title") or "")
+        body.append(s.get("text") or "")
+    for t in doc.get("tables", []) or []:
+        body.append(t.get("raw_text") or "")
+        body.append(t.get("caption") or "")
+    for v in (doc.get("metadata") or {}).values():
+        if isinstance(v, str):
+            body.append(v)
+    for item in exc.get("appendices", []):
+        body.append(item.get("title", ""))
+        body.append(item.get("text", ""))
+    biblio = " ".join(item.get("title", "") + " " + item.get("text", "")
+                      for item in exc.get("references", []))
+    service = " ".join(item.get("title", "") + " " + item.get("text", "")
+                       for k in ("toc", "front_matter", "other")
+                       for item in exc.get(k, []))
+    body_hits = _pin_hits(" ".join(body), base)
+    if body_hits >= 1:
+        rep.review("RESIDUAL_PIN",
+                   "%d точных попаданий пинов в ТЕЛЕ (sections/tables/metadata/"
+                   "appendices) — остаточная кирилло-латинская порча" % body_hits)
+    else:
+        bh, sh = _pin_hits(biblio, base), _pin_hits(service, base)
+        if bh or sh:
+            rep.warn("RESIDUAL_PIN",
+                     "пины только в БИБЛИО(%d)/СЛУЖЕБНОМ(%d) — эти зоны вырезаются "
+                     "контрактом обучения" % (bh, sh))
+    mixed = _mixed_script_words(_all_text(doc))
+    if mixed:
+        rep.warn("MIXED_SCRIPT",
+                 "%d слов с кирилло-латинской мешаниной (широкий детектор, для "
+                 "триажа — НЕ REVIEW)" % mixed)
+
+
+def _tables_suspect_gate(rep: "Report", doc: dict, nodes: List[dict]) -> None:
+    """ГЕЙТ 5: TABLE_STUB (warning, по плотности) + TABLES_MISSING (REVIEW)."""
+    tables = doc.get("tables", []) or []
+    dens = []
+    for t in tables:
+        x0, y0, x1, y1 = (t.get("bbox") or [0, 0, 0, 0])[:4]
+        area = max((x1 - x0) * (y1 - y0), 1.0)
+        dens.append(len(t.get("raw_text") or "") / area)
+    p10 = None
+    if len(tables) >= TABLE_MIN_FOR_PCT and dens:
+        sd = sorted(dens)
+        p10 = sd[min(len(sd) - 1, int(len(sd) * 0.10))]
+    stubs = sum(1 for t, dv in zip(tables, dens)
+                if len(t.get("raw_text") or "") < TABLE_STUB_MAX_CHARS
+                and dv < (p10 if p10 is not None else TABLE_DENSITY_MIN))
+    if stubs:
+        rep.warn("TABLE_STUB",
+                 "%d таблиц: raw_text<%d и низкая плотность (вырезана шапка, тело "
+                 "потеряно) — проверить извлечение" % (stubs, TABLE_STUB_MAX_CHARS))
+    mentioned = set()
+    for s in nodes:
+        for m in _RE_TABLE_REF.finditer(s.get("text") or ""):
+            mentioned.add(m.group(1))
+    if len(mentioned) > len(tables):
+        rep.review("TABLES_MISSING",
+                   "в тексте упомянуто %d уникальных номеров таблиц, извлечено %d "
+                   "объектов" % (len(mentioned), len(tables)))
+
+
+def _structural_gates(rep: "Report", doc: dict, stats: dict) -> None:
+    """Пять независимых семантических гейтов структуры (промпт 04). Каждый — свой
+    kind, чтобы дельту можно было разложить по причинам."""
+    nodes = [s for s, _ in walk(doc.get("sections", []))]
+    total = stats.get("total_chars", 0) or 0
+    inc = stats.get("included_chars", 0) or 0
+    sec = len(nodes)
+
+    # ГЕЙТ 1. COLLAPSE
+    if sec <= COLLAPSE_MIN_SECTIONS and total > COLLAPSE_MIN_CHARS:
+        rep.review("COLLAPSE",
+                   "sections_found=%d при total_chars=%d — документ такого размера "
+                   "не может иметь столько разделов" % (sec, total))
+    elif sec > 3 and inc > 0:
+        biggest = max((len(s.get("title") or "") + len(s.get("text") or "")
+                       for s in nodes), default=0)
+        if biggest / inc > COLLAPSE_DOMINANCE:
+            rep.review("COLLAPSE",
+                       "крупнейшая секция держит %.0f%% текста разделов (>%.0f%%) — "
+                       "остальное свалено в один узел"
+                       % (biggest / inc * 100, COLLAPSE_DOMINANCE * 100))
+    for s in nodes:
+        if _has_embedded_heading(s):
+            rep.review("COLLAPSE",
+                       "заголовок следующего уровня внутри text секции %r — "
+                       "несобранный раздел" % s.get("number"))
+            break
+
+    # ГЕЙТ 2. CANONICAL_RECALL
+    recall = _canonical_recall(doc)
+    if recall == 0 and inc > 0:
+        rep.fail("CANONICAL_RECALL",
+                 "0 из 7 канонических глав в дереве при непустом тексте")
+    elif recall < CANONICAL_RECALL_MIN:
+        rep.review("CANONICAL_RECALL",
+                   "%d из 7 канонических глав распознано (<%d) — потеряны главы"
+                   % (recall, CANONICAL_RECALL_MIN))
+
+    # ГЕЙТ 3. OCR_REQUIRED — needs_ocr никогда не corpus-ready
+    cor = stats.get("corruption", {}) or {}
+    ocr_warn = any("ocr" in (w or "").lower() for w in doc.get("warnings", []))
+    if (int(cor.get("glyph_tokens", 0)) > 0
+            or int(cor.get("pseudo_ascii_tokens", 0)) > 0 or ocr_warn):
+        rep.review("OCR_REQUIRED",
+                   "нужен OCR (glyph_tokens=%s, pseudo_ascii=%s) — файл не может быть "
+                   "corpus-ready" % (cor.get("glyph_tokens"),
+                                     cor.get("pseudo_ascii_tokens")))
+
+    # ГЕЙТ 4. RESIDUAL_PIN / MIXED_SCRIPT
+    _residual_pin_gate(rep, doc)
+
+    # ГЕЙТ 5. TABLES_SUSPECT
+    _tables_suspect_gate(rep, doc, nodes)
+
+
 def validate_doc(name: str, doc: dict, toc: Optional[Toc]) -> Report:
     rep = Report(name)
     # ---- ПРАВКА 1: JSON Schema (fail-closed). Пустой {} и любой не-контрактный
@@ -501,6 +749,11 @@ def validate_doc(name: str, doc: dict, toc: Optional[Toc]) -> Report:
     # только обнаружил (на OCR). Если порчи выше порога — файл НЕ должен молча
     # проходить как PASS: поднимаем REVIEW с разбивкой по типам.
     _corruption_review(rep, stats, all_text)
+
+    # ---- структурные гейты (промпт 04): COLLAPSE / CANONICAL_RECALL / OCR_REQUIRED
+    # / RESIDUAL_PIN / TABLES_SUSPECT. Ловят «структура развалилась» там, где честный
+    # 03 (схема/exit/stats) молчит. Независимые kinds — дельта раскладывается по причинам.
+    _structural_gates(rep, doc, stats)
 
     # индекс оглавления (для проверок «подтверждён ли раздел оглавлением»)
     tindex = TocIndex(toc.entries) if toc else None

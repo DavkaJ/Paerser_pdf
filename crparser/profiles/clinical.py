@@ -632,6 +632,19 @@ class ClinicalRecommendationProfile(DocumentProfile):
     # 3. РЕГИОНЫ-ИСКЛЮЧЕНИЯ
     # ======================================================================
 
+    def canonical_chapters(self) -> Dict[str, set]:
+        """Канонические главы шаблона КР: {название-префикс: {номера}}.
+        Единый источник для гейта CANONICAL_RECALL валидатора — константы не
+        дублируются в validate.py (промпт 04)."""
+        return {k: set(v) for k, v in _MAIN_SECTION_NUMBERS.items()}
+
+    def canonical_chapter_numbers(self) -> set:
+        """Множество канонических номеров глав верхнего уровня (1..7)."""
+        nums: set = set()
+        for numbers in _MAIN_SECTION_NUMBERS.values():
+            nums |= {n for n in numbers if 1 <= n <= 7}
+        return nums
+
     def excluded_regions(self) -> ExcludedSpec:
         return ExcludedSpec(
             toc=re.compile(r"^\s*(оглавление|содержание)\s*$", re.IGNORECASE),
