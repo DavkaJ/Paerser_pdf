@@ -285,9 +285,9 @@ def test_D_pins_change_breaks_integrity():
 # ГРУППА G — скрытая связанность (промпт 11): D21 xfail
 # ============================================================================
 
-@pytest.mark.xfail(strict=True, reason="дефект аудита §1.2; heading_order_valid не вызывается — промпт 11")
 def test_D21_heading_order_valid_is_called():
-    """heading_order_valid объявлен в base.py, но не вызывается из движка."""
+    """ЗАКРЫТ промптом 11b: сегментер вызывает NumberingPolicy.heading_order_valid
+    (монотонность номеров). Нарушение не отбрасывает раздел молча — пишет warning."""
     import glob
     calls = 0
     for f in glob.glob(os.path.join(ROOT, "crparser", "engine", "*.py")):

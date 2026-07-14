@@ -51,6 +51,13 @@ def _top_int(number: Optional[str]) -> int:
     return int(head) if head.isdigit() else 0
 
 
+def _walk_tree(sections: List[Section]):
+    """Обход дерева разделов в ДОКУМЕНТНОМ порядке (узел, затем его дети)."""
+    for s in sections:
+        yield s
+        yield from _walk_tree(s.children)
+
+
 class Segmenter:
     """
     Превращает страницы со строками в дерево разделов + бакеты исключений.
@@ -124,8 +131,35 @@ class Segmenter:
             for item in bucket:
                 item.span_uids = self._dedupe(item.span_uids)
         tree = self._build_hierarchy(sections)
+        self._check_heading_order(tree)
 
         return {"sections": tree, "excluded": excluded}
+
+    def _check_heading_order(self, tree: List[Section]) -> None:
+        """Промпт 11b: подключить NumberingPolicy.heading_order_valid (монотонность
+        номеров 1<1.1<1.2<2). Проходим дерево в ДОКУМЕНТНОМ порядке (DFS) и сверяем
+        каждый нумерованный узел с предыдущим.
+
+        Нарушение НЕ отбрасывает раздел молча (guard 11b): реальный отсев фантомов
+        уже делают order_ok (level-1 по max_top), toc_reject и _drop_phantom_duplicates
+        (конкурирующий кандидат, подтверждённый оглавлением) — дублировать отбрасывание
+        значило бы прятать проблемы (PASS не должен расти). Здесь проверка делает
+        строго-ОБРАТНЫЙ шаг нумерации ВИДИМЫМ через warning. Равные номера (дубли)
+        пропускаем — их уже отмечает отдельный warning «коллизия номера». Формулировка
+        БЕЗ подстроки «ocr» (иначе ложно сработал бы гейт OCR_REQUIRED валидатора)."""
+        last: Optional[str] = None
+        flagged: set = set()
+        for s in _walk_tree(tree):
+            num = s.number
+            if not num:
+                continue
+            if last and num != last and not self._numbering.heading_order_valid(num, last):
+                if num not in flagged:
+                    flagged.add(num)
+                    self._warnings.append(
+                        "порядок номеров: %s идёт после %s — обратный шаг нумерации "
+                        "(heading_order_valid, промпт 11b)" % (num, last))
+            last = num
 
     @staticmethod
     def _dedupe(uids: List[str]) -> List[str]:
