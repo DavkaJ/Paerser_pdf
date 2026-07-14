@@ -101,7 +101,28 @@
         "excluded_chars": {"type": "integer"},
         "table_chars": {"type": "integer"},
         "accounted_chars": {"type": "integer"},
-        "coverage_percent": {"type": "number"},
+        "coverage_percent": {
+          "type": "number",
+          "deprecated": true,
+          "description": "Бухгалтерия символов с обрезкой min() до 100%. Дубли между buckets и текст не в том разделе засчитываются как покрытые. Оставлено для downstream; честная метрика — coverage_v2 (промпт 10)."
+        },
+        "coverage_v2": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Сохранность структуры по span-union (промпт 08/10): каждый исходный span учитывается ровно один раз.",
+          "properties": {
+            "source_retention": {"type": "number"},
+            "structured_coverage": {"type": "number"},
+            "garbage_ratio": {"type": "number"},
+            "overlap_spans": {"type": "integer"},
+            "overlap_chars": {"type": "integer"},
+            "lost_spans": {"type": "integer"},
+            "page_furniture": {"type": "integer"},
+            "overcount_ratio": {"type": "number"},
+            "total_spans": {"type": "integer"},
+            "lost_span_uids": {"type": "array", "items": {"type": "string"}}
+          }
+        },
         "corruption": {
           "type": "object",
           "additionalProperties": true,

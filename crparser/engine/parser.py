@@ -125,8 +125,8 @@ class DocumentParser:
         page_ir = build_page_ir(pages)
         self._ownership_check(sections, tables, excluded, page_ir, warnings_list)
 
-        # 5. статистика покрытия
-        stats = self._stats.compute(full_text, sections, excluded, tables)
+        # 5. статистика покрытия (coverage_v2 по span-union — из page_ir)
+        stats = self._stats.compute(full_text, sections, excluded, tables, page_ir)
         # счётчики порчи текста: разрядка/удвоение (починены) + глиф-токены
         # (обнаружены, на OCR) — валидатор по ним поднимает статус CORRUPTION.
         glyph_regions = getattr(extractor, "corrupt_count", 0)

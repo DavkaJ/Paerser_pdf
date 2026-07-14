@@ -63,6 +63,7 @@ def validate_base():
 
 
 def _consistent_stats(sections, excluded, tables, total_chars=None):
+    from crparser.engine.stats import coverage_v2_from_doc
     inc = sum(len(s.get("title", "")) + len(s.get("text", "")) for s in sections)
     exc = sum(len(i.get("title", "")) + len(i.get("text", ""))
               for b in excluded.values() for i in b)
@@ -70,12 +71,20 @@ def _consistent_stats(sections, excluded, tables, total_chars=None):
     total = total_chars if total_chars is not None else (inc + exc + tab)
     accounted = min(inc + exc + tab, total)
     cov = round(accounted / total * 100, 2) if (total and inc) else 0.0
-    return {"total_chars": total, "total_words": max(1, total // 6),
-            "sections_found": len(sections), "tables_found": len(tables),
-            "included_chars": inc, "excluded_chars": exc, "table_chars": tab,
-            "accounted_chars": accounted, "coverage_percent": cov,
-            "corruption": {"spacing_fixed": 0, "doubling_fixed": 0, "glyph_tokens": 0,
-                           "glyph_regions": 0, "pseudo_ascii_tokens": 0}}
+    stats = {"total_chars": total, "total_words": max(1, total // 6),
+             "sections_found": len(sections), "tables_found": len(tables),
+             "included_chars": inc, "excluded_chars": exc, "table_chars": tab,
+             "accounted_chars": accounted, "coverage_percent": cov,
+             "corruption": {"spacing_fixed": 0, "doubling_fixed": 0, "glyph_tokens": 0,
+                            "glyph_regions": 0, "pseudo_ascii_tokens": 0}}
+    # coverage_v2 по синтетике: без provenance каждый unit — один псевдо-span весом
+    # в свои символы (тот же путь, что использует парсер при пустом page_ir).
+    # sections здесь УЖЕ плоский (make_doc передаёт _flat) — детей обнуляем, чтобы
+    # рекурсивный обход coverage_v2_from_doc не посчитал узлы дважды.
+    flat_nodes = [{**s, "children": []} for s in sections]
+    stats["coverage_v2"] = coverage_v2_from_doc(
+        {"sections": flat_nodes, "excluded": excluded, "tables": tables, "stats": stats})
+    return stats
 
 
 @pytest.fixture

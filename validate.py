@@ -87,6 +87,27 @@ TABLE_DENSITY_MIN = 0.002       # симв/pt^2 при <3 таблицах в д
 #                                 low-text таблиц p10=0.0016, p25=0.0023 -> 0.002 между.
 TABLE_MIN_FOR_PCT = 3           # >= стольких таблиц -> порог = 10-й перцентиль ДОКУМЕНТА.
 
+# --- coverage_v2 гейты (промпт 10): span-union, а не бухгалтерия символов. Пороги
+# откалиброваны по КОРПУСУ (722, замер `_corpus/measure_cov_v2.py`), triage, не
+# аттестация — до промпта 14 ничего не доказывают, перекалибровать на gold-dev. ---
+# structured_coverage — доля символов, легших в TRAINING-структуру (span-union, дубли
+# считаются один раз). Замер: p10=0.998, ВСЕ 529 PASS >= 0.90; единственный обвал —
+# КР848_1 (0.41, уже FAIL). Порог 0.70 ловит катастрофу структуры («1 символ в разделе,
+# 99 в excluded.other»), не задевая ни одного PASS.
+STRUCTURED_COVERAGE_MIN = 0.70
+# garbage_ratio — доля символов в excluded.other (корзина «сегментер не понял документ»).
+# Замер: PASS p99=0.007, max по корпусу 0.86 (КР848_1). 0.30 — между шумом и обвалом.
+GARBAGE_RATIO_MAX = 0.30
+# lost_spans/total_spans — доля span'ов, не сохранившихся НИГДЕ (не служебная обвязка).
+# Замер: max по корпусу 1.84% (<2%); реального потерянного тела нет (I12). >0.02 -> REVIEW
+# (tripwire для будущих регрессий, сейчас не срабатывает), >0 -> warning (доказуемый список).
+LOST_SPANS_REVIEW = 0.02
+# overlap_chars/total — доля символов в span'ах с >1 владельцем (span-дубли). Замер:
+# overlap_spans>0 у 80% PASS и ВСЕЙ контрольной группы (структурный table↔appendices/
+# section↔table) -> REVIEW по нему утопил бы здоровое (Р3). Материальный char-переучёт
+# уже ловит OVERCOUNT>1.02; здесь — warning только на ЗАМЕТНОМ дубле, чтобы не шуметь.
+DUPLICATION_WARN_RATIO = 0.005
+
 _PIN_PUNCT = ".,;:()[]«»\"'-—%<>±*"
 # ссылка на таблицу в тексте: «Таблица N», «табл. N», «в таблице N.M» (N может быть
 # приложенческим «П1» или дефис/слэш-составным).
@@ -658,6 +679,47 @@ def _structural_gates(rep: "Report", doc: dict, stats: dict) -> None:
 
     # ГЕЙТ 5. TABLES_SUSPECT
     _tables_suspect_gate(rep, doc, nodes)
+
+    # ГЕЙТ 6. COVERAGE_V2 (промпт 10) — сохранность структуры по span-union
+    _coverage_v2_gate(rep, stats)
+
+
+def _coverage_v2_gate(rep: "Report", stats: dict) -> None:
+    """ГЕЙТ 6 (промпт 10). Читает stats.coverage_v2 (его считает stats.py по span-union
+    из page_ir — валидатор не пересчитывает, S/сироты из JSON не восстановить). Обвал
+    структуры (structured/garbage) -> REVIEW; потеря span'ов -> REVIEW при >2% / warning
+    при >0; span-дубли -> warning (REVIEW утопил бы контрольную группу, см. константы)."""
+    v2 = stats.get("coverage_v2")
+    if not v2:
+        return                         # старый JSON без provenance — гейт пропускаем
+    sc = v2.get("structured_coverage")
+    if sc is not None and sc < STRUCTURED_COVERAGE_MIN:
+        rep.review("LOW_STRUCTURED_COVERAGE",
+                   "structured_coverage=%.3f < %.2f — содержательный текст не лёг в "
+                   "структуру (span-union; coverage_percent при этом может быть 100)"
+                   % (sc, STRUCTURED_COVERAGE_MIN))
+    gr = v2.get("garbage_ratio")
+    if gr is not None and gr > GARBAGE_RATIO_MAX:
+        rep.review("HIGH_GARBAGE",
+                   "garbage_ratio=%.3f > %.2f — сегментер свалил текст в excluded.other"
+                   % (gr, GARBAGE_RATIO_MAX))
+    lost = int(v2.get("lost_spans", 0) or 0)
+    total = int(v2.get("total_spans", 0) or 0)
+    uids = ", ".join(v2.get("lost_span_uids", []) or [])
+    if total and lost / total > LOST_SPANS_REVIEW:
+        rep.review("LOST_CONTENT",
+                   "lost_spans=%d/%d (%.1f%%) не сохранились нигде: %s"
+                   % (lost, total, 100 * lost / total, uids))
+    elif lost > 0:
+        rep.warn("LOST_CONTENT",
+                 "%d span'ов не сохранились нигде (не обвязка), первые: %s" % (lost, uids))
+    overlap = int(v2.get("overlap_spans", 0) or 0)
+    ochars = int(v2.get("overlap_chars", 0) or 0)
+    tot_chars = int(stats.get("total_chars", 0) or 0)
+    if overlap > 0 and tot_chars and ochars / tot_chars > DUPLICATION_WARN_RATIO:
+        rep.warn("DUPLICATION",
+                 "%d span'ов заявлены >1 владельцем (%d симв, %.1f%% документа) — "
+                 "дубль между buckets" % (overlap, ochars, 100 * ochars / tot_chars))
 
 
 def validate_doc(name: str, doc: dict, toc: Optional[Toc]) -> Report:

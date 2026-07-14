@@ -132,16 +132,18 @@ def test_D9_kr1_4_residual_pin_fixed_by_09(outout_doc):
 # ГРУППА B — coverage v2 (промпт 10): D10 xfail
 # ============================================================================
 
-@pytest.mark.xfail(strict=True, reason="дефект аудита §1.1 P0-2; coverage v2 — промпт 10")
-def test_D10_structured_coverage_absent(make_doc):
-    """1 символ в sections + 99 в excluded: source_retention=100%, но structured_coverage
-    ~1% — метрики пока НЕТ (единственная coverage_percent=100 выдаёт провал за успех)."""
+def test_D10_structured_coverage(make_doc):
+    """ЗАКРЫТ промптом 10: 1 символ в sections + 99 в excluded: coverage_percent=100
+    выдавал провал за успех; теперь structured_coverage ~1% обнажает дефект, а
+    source_retention=100% подтверждает, что физически ничего не потеряно."""
     doc = make_doc(
         sections=[{"number": "1", "title": "", "text": "x", "level": 1, "children": []}],
         excluded={"other": [{"title": "", "text": "y" * 99}]},
         total_chars=100)
-    assert "coverage_v2" in doc["stats"] and \
-        doc["stats"]["coverage_v2"]["structured_coverage"] < 0.1
+    v2 = doc["stats"].get("coverage_v2")
+    assert v2 is not None
+    assert v2["structured_coverage"] < 0.1
+    assert v2["source_retention"] >= 0.99
 
 
 # ============================================================================
