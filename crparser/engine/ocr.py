@@ -858,9 +858,12 @@ class OcrRecoverer:
 
     # ---- низкоуровневый вызов Tesseract ------------------------------------
 
-    def _run(self, png: bytes, psm: int, tsv: bool = False) -> str:
-        """Прогнать растр (PNG-байты) через Tesseract со stdin. «» при ошибке."""
-        args = [self._cmd, "-", "stdout", "-l", self._langs, "--psm", str(psm)]
+    def _run(self, png: bytes, psm: int, tsv: bool = False,
+             langs: Optional[str] = None) -> str:
+        """Прогнать растр (PNG-байты) через Tesseract со stdin. «» при ошибке.
+        `langs` (промпт 13b) переопределяет язык прохода: `-l eng` по кропу
+        подозрительного span'а читает латиницу без притяжения к кириллице."""
+        args = [self._cmd, "-", "stdout", "-l", langs or self._langs, "--psm", str(psm)]
         if self._tessdata:
             args += ["--tessdata-dir", self._tessdata]
         if tsv:
@@ -942,18 +945,21 @@ class OcrRecoverer:
         return tsv
 
     def _clip_text(self, fpage: "fitz.Page", page_no: int, bbox,
-                   psm: int = 7, scale: float = 1.5) -> str:
+                   psm: int = 7, scale: float = 1.5,
+                   langs: Optional[str] = None) -> str:
         """Построчный OCR клипа строки (`--psm 7`, апскейл) с дисковым кэшем по bbox.
         Для плотного/курсивного глоссария page-`--psm 6` читает мусорно (ТNМ->ТММ),
-        клип-`--psm 7` — чисто (ТNМ->TNM). «» при сбое/недоступном PIL/рендере."""
+        клип-`--psm 7` — чисто (ТNМ->TNM). «» при сбое/недоступном PIL/рендере.
+        `langs` (промпт 13b): eng-only проход по кропу для латинских сущностей."""
         x0, y0, x1, y1 = bbox
         if x1 <= x0 or y1 <= y0:
             return ""
+        lg = langs or self._langs
         path = None
         if self._pdf_sha:
-            key = "%s_clip_p%d_%d_%d_%d_%d_s%s_%s_psm%d.json" % (
+            key = "%s_clip_p%d_%d_%d_%d_%d_s%s_%s_l%s_psm%d.json" % (
                 self._pdf_sha[:12], page_no, round(x0), round(y0), round(x1), round(y1),
-                str(scale).replace(".", "-"), self._stack12(), psm)
+                str(scale).replace(".", "-"), self._stack12(), lg.replace("+", "-"), psm)
             path = os.path.join(
                 _OCR_CACHE_DIR, re.sub(r"[^0-9A-Za-z_.-]", "_", key))
             try:
@@ -969,7 +975,7 @@ class OcrRecoverer:
         except Exception as exc:  # noqa: BLE001
             self.warnings.append(f"OCR: рендер клипа не удался ({exc!r})")
             return ""
-        text = " ".join(self._run(png, psm=psm).split())
+        text = " ".join(self._run(png, psm=psm, langs=lg).split())
         if path and text:
             try:
                 os.makedirs(_OCR_CACHE_DIR, exist_ok=True)
