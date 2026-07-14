@@ -38,11 +38,9 @@ if TYPE_CHECKING:  # импорт только для типов — без ра
 _RE_PAGE_NUMBER = re.compile(r"^\d{1,3}$")
 # лидеры оглавления: точки/подчёркивания/юникод-многоточие («.....» / «_____» / «…»)
 _RE_LEADER = re.compile(r"\.{3,}|_{3,}|…+|‥+|․{2,}")
-# Предел длины заголовка подраздела. Кандидат длиннее — это абзац прозы с номером
-# (нумерованный список «исходов»/«форм» в теле), а не раздел: отвергаем, если он не
-# подтверждён оглавлением. Канонические длинные названия КР короче (1.4 ≈ 188), а
-# фантомные абзацы заметно длиннее (≥230), поэтому 200 разделяет их без потерь.
-_MAX_SUB_TITLE = 200
+# Предел длины заголовка подраздела теперь задаёт NumberingPolicy профиля
+# (промпт 11): self._numbering.max_subtitle_len. Кандидат длиннее — это абзац прозы
+# с номером, а не раздел (отвергается, если не подтверждён оглавлением).
 
 
 def _top_int(number: Optional[str]) -> int:
@@ -63,7 +61,10 @@ class Segmenter:
     def __init__(self, profile: "DocumentProfile", body_size: float) -> None:
         self._profile = profile
         self._body = body_size
-        self._spec: ExcludedSpec = profile.excluded_regions()
+        # доменные политики (промпт 11): движок спрашивает профиль, а не хардкодит
+        self._regions = profile.regions
+        self._numbering = profile.numbering
+        self._spec: ExcludedSpec = self._regions.excluded_spec()
         self._warnings: List[str] = []
         self._blank_gap: float = 1e9  # порог «пустой строки», считается на segment()
         self._toc: Optional[TocIndex] = None  # оглавление как арбитр заголовков (баг 4)
@@ -93,7 +94,11 @@ class Segmenter:
             [ln.text for page in pages for ln in page.lines], self._spec.toc)
 
         lines = self._collect_lines(pages, subtraction_map)
-        self._roman_ok = self._roman_chapters_safe(lines)
+        # римские главы включаем только если ПОЛИТИКА профиля их использует (промпт 11)
+        # И структура документа безопасна (нет одиночно-арабских подпунктов). Профиль
+        # без римских глав (uses_roman_chapters=False) их вовсе не эмитит — гейт инертен.
+        self._roman_ok = (self._numbering.uses_roman_chapters
+                          and self._roman_chapters_safe(lines))
         self._blank_gap = self._compute_blank_gap(lines)
         start = self._find_content_start(lines)
 
@@ -449,7 +454,7 @@ class Segmenter:
             if self._profile.title_is_body_label(title):
                 return True
             # (1) длина — работает и с оглавлением, и без него
-            if len(title) > _MAX_SUB_TITLE:
+            if len(title) > self._numbering.max_subtitle_len:
                 return True
             # (2) арбитраж по оглавлению
             if self._toc is not None:

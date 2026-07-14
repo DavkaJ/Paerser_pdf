@@ -104,13 +104,14 @@ class DocumentParser:
             full_text=full_text,
             first_page_text=first_page_text,
             pages=pages,
-            registry=getattr(self._profile, "registry", None),
+            registry=self._profile.registry,   # часть контракта профиля (промпт 11)
         )
-        metadata = self._profile.extract_metadata(ctx)
+        # явный контракт вместо ключа-призрака metadata["_warnings"] (промпт 11)
+        meta_res = self._profile.metadata_result(ctx)
+        metadata = meta_res.metadata
         metadata.setdefault("source_file", source_file)
         metadata.setdefault("document_type", self._profile.document_type)
-        # профиль мог записать предупреждения
-        warnings_list.extend(metadata.pop("_warnings", []))
+        warnings_list.extend(meta_res.warnings)
 
         # 4. нарезка на разделы/исключения (через профиль)
         segmenter = Segmenter(self._profile, body_size)

@@ -19,8 +19,10 @@
 
 from __future__ import annotations
 
+import re
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional, Pattern, Tuple
 
 from crparser.engine.models import (
     ExcludedSpec,
@@ -30,6 +32,108 @@ from crparser.engine.models import (
 )
 
 
+# --------------------------------------------------------------------------- #
+# Явный контракт метаданных (промпт 11): вместо ключа-призрака `_warnings`      #
+# в словаре метаданных профиль возвращает пару (metadata, warnings).           #
+# --------------------------------------------------------------------------- #
+@dataclass
+class MetadataResult:
+    """Результат извлечения метаданных: сам словарь + предупреждения профиля.
+    Заменяет магический `metadata.pop("_warnings")` явным контрактом."""
+    metadata: Dict[str, Any]
+    warnings: List[str] = field(default_factory=list)
+
+
+# --------------------------------------------------------------------------- #
+# Пять доменных политик (промпт 11). Дефолты доменно-НЕЙТРАЛЬНЫ (латиница,      #
+# арабские номера, английские якоря) — КР-специфику переопределяет clinical.py. #
+# Движок спрашивает политику вместо хардкода. Это разрывает скрытую связанность: #
+# «общий» движок больше не знает про КР там, где связанность концентрирована.   #
+# --------------------------------------------------------------------------- #
+
+# нейтральный заголовок подраздела: дотированный номер + заглавная (лат/кир/цифра)
+_DEFAULT_SUBSEC_HEAD = re.compile(r"^\s*\d{1,2}(?:\.\d{1,3})+\.?\s+[A-ZА-ЯЁ]")
+# нейтральная подпись таблицы/рисунка (английская)
+_DEFAULT_TABLE_CAPTION = re.compile(r"^(Table|Figure|Tab\.|Fig\.)\b", re.IGNORECASE)
+
+
+class NumberingPolicy:
+    """Что считать номером раздела и как проверять порядок. Дефолт — арабские
+    дотированные номера, латиница/кириллица в заголовке."""
+
+    #: предел длины заголовка подраздела (длиннее — это абзац прозы с номером).
+    max_subtitle_len: int = 200
+
+    #: паттерн строки-заголовка подраздела (дотированный номер + заглавная).
+    subsection_head: Pattern[str] = _DEFAULT_SUBSEC_HEAD
+
+    #: использует ли профиль главы с РИМСКОЙ нумерацией (механизм в сегментере
+    #: активируется только если classify_heading отдаёт roman=True).
+    uses_roman_chapters: bool = False
+
+    @staticmethod
+    def heading_order_valid(new_number: Optional[str], last_number: Optional[str]) -> bool:
+        """Номера разделов должны монотонно расти (1 < 1.1 < 1.2 < 2 ...).
+        Перенесён из DocumentProfile (промпт 11); ПОДКЛЮЧЕНИЕ — отдельным шагом 11b
+        (сейчас не вызывается ниоткуда — байт-в-байт требует, чтобы поведение не менялось)."""
+        if not new_number or not last_number:
+            return True
+
+        def as_tuple(num: str):
+            return tuple(int(p) for p in num.split(".") if p.isdigit())
+
+        try:
+            return as_tuple(new_number) > as_tuple(last_number)
+        except Exception:
+            return True
+
+
+class RegionPolicy:
+    """Имена и якоря регионов-исключений. `excluded_spec` — маркеры ToC/литературы/
+    приложений (конечный автомат сегментера). `body_start_markers` — заголовки, чьё
+    ВТОРОЕ (телесное) вхождение закрывает оглавление без точек-лидеров."""
+
+    def excluded_spec(self) -> ExcludedSpec:
+        # нейтральные английские якоря
+        return ExcludedSpec(
+            toc=re.compile(r"^\s*(contents|table\s+of\s+contents)\s*$", re.IGNORECASE),
+            references=re.compile(r"^\s*references\s*[.:]?\s*$", re.IGNORECASE),
+            appendices=re.compile(r"^\s*appendix\b", re.IGNORECASE),
+        )
+
+    def body_start_markers(self) -> Tuple[Pattern[str], ...]:
+        return ()
+
+
+class ContentBoundaryPolicy:
+    """Где начинается тело документа, что считать front matter. Дом для
+    `_find_content_start` (промпт 12 будет чинить именно эту политику). В прагматичном
+    объёме 11 сам метод остаётся в сегментере (перенос — дороже в разборе, чем в жизни,
+    записано в inventory); политика существует как типизированный дом для 12."""
+
+    #: минимальное число строк прозы после заголовка, чтобы счесть его началом тела.
+    prose_run_min: int = 3
+
+
+class OcrPolicy:
+    """Когда включать OCR и какие зоны/якоря использовать. `region_anchors` —
+    словарь якорей регионов для гибрид-OCR (сокращения/термины/литература). В
+    прагматичном объёме 11 глубина ocr.py (алгоритм починки) остаётся, якоря
+    доступны через политику (record в inventory)."""
+
+    def region_anchors(self) -> Dict[str, Pattern[str]]:
+        return {}
+
+
+class TablePolicy:
+    """Паттерны подписей таблиц и пороги reconcile (промпт 09). Дефолт —
+    английская подпись, пороги как в движке."""
+
+    caption_pattern: Pattern[str] = _DEFAULT_TABLE_CAPTION
+    reconcile_min: float = 0.80
+    reconcile_min_lowconf: float = 0.90
+
+
 class DocumentProfile(ABC):
     """База для всех профилей. Инкапсулирует знание о структуре типа документа."""
 
@@ -37,6 +141,32 @@ class DocumentProfile(ABC):
 
     #: ключ профиля для CLI (`--profile cr`). Переопределяется в наследниках.
     key: str = "base"
+
+    #: источник реестра метаданных (часть контракта профиля; может быть None).
+    #: Объявлено здесь, чтобы движок брал `profile.registry`, а не гадал getattr'ом.
+    registry: Any = None
+
+    # ---- доменные политики (промпт 11): дефолты нейтральны, КР — в clinical ----
+
+    @property
+    def numbering(self) -> NumberingPolicy:
+        return NumberingPolicy()
+
+    @property
+    def regions(self) -> RegionPolicy:
+        return RegionPolicy()
+
+    @property
+    def content_boundary(self) -> ContentBoundaryPolicy:
+        return ContentBoundaryPolicy()
+
+    @property
+    def ocr(self) -> OcrPolicy:
+        return OcrPolicy()
+
+    @property
+    def tables(self) -> TablePolicy:
+        return TablePolicy()
 
     @property
     @abstractmethod
@@ -64,6 +194,13 @@ class DocumentProfile(ABC):
         (например, реестр > титульный лист) и добавляет warnings в ctx при нужде.
         """
         raise NotImplementedError
+
+    def metadata_result(self, ctx: MetadataContext) -> MetadataResult:
+        """Явный контракт (промпт 11): (metadata, warnings) вместо ключа-призрака.
+        Дефолт — извлечь метаданные и снять из словаря legacy-ключ `_warnings`; профиль
+        может переопределить и строить MetadataResult напрямую (без ключа-призрака)."""
+        meta = dict(self.extract_metadata(ctx))
+        return MetadataResult(meta, meta.pop("_warnings", []))
 
     @abstractmethod
     def excluded_regions(self) -> ExcludedSpec:
@@ -136,14 +273,6 @@ class DocumentProfile(ABC):
 
     @staticmethod
     def heading_order_valid(new_number: Optional[str], last_number: Optional[str]) -> bool:
-        """Номера разделов должны монотонно расти (1 < 1.1 < 1.2 < 2 ...)."""
-        if not new_number or not last_number:
-            return True
-
-        def as_tuple(num: str):
-            return tuple(int(p) for p in num.split(".") if p.isdigit())
-
-        try:
-            return as_tuple(new_number) > as_tuple(last_number)
-        except Exception:
-            return True
+        """Монотонность номеров — теперь живёт в NumberingPolicy (промпт 11). Тонкий
+        делегат оставлен для обратной совместимости; ПОДКЛЮЧЕНИЕ проверки — шаг 11b."""
+        return NumberingPolicy.heading_order_valid(new_number, last_number)

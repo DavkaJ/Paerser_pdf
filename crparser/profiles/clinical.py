@@ -27,7 +27,12 @@ from crparser.engine.models import (
     Line,
     MetadataContext,
 )
-from crparser.profiles.base import DocumentProfile
+from crparser.profiles.base import (
+    DocumentProfile,
+    MetadataResult,
+    NumberingPolicy,
+    RegionPolicy,
+)
 from crparser.profiles.registry import ClinicalRegistry
 
 # Канонические разделы верхнего уровня КР: префикс названия -> допустимые номера.
@@ -203,6 +208,38 @@ def _is_upper_run(s: str) -> bool:
     return has_alpha
 
 
+# --------------------------------------------------------------------------- #
+# КР-политики (промпт 11): доменная (тип-документа) специфика, которую движок    #
+# спрашивает у профиля вместо хардкода. Значения — ровно те, что были в движке,  #
+# поэтому вывод байт-в-байт не меняется.                                          #
+#                                                                                #
+# ГРАНИЦА (Р1 inventory): здесь — знание о ТИПЕ ДОКУМЕНТА (канонические главы,    #
+# предел/глубина номера, семантика регионов, реестр). ЯЗЫКОВЫЕ соглашения        #
+# русского (подпись «Таблица», якоря «Список литературы/сокращений», классы       #
+# кириллицы в textnorm/ocr) СОЗНАТЕЛЬНО оставлены в движке: он честно             #
+# русско-язычный (не КР-специфичный), их вынос — фиктивная нейтральность.         #
+# --------------------------------------------------------------------------- #
+
+class _ClinicalNumbering(NumberingPolicy):
+    #: предел длины заголовка подраздела (был segmenter._MAX_SUB_TITLE). Канонические
+    #: названия КР короче (1.4 ≈ 188), фантомные абзацы ≥230 — 200 разделяет их.
+    max_subtitle_len = 200
+    #: КР использует главы с римской нумерацией (I. Краткая…); механизм включения
+    #: — в сегментере (гейтится этим флагом), сам номер — из канонического названия.
+    uses_roman_chapters = True
+
+
+class _ClinicalRegions(RegionPolicy):
+    """Регионы-исключения КР. excluded_spec делегирует профилю (единый источник
+    якорей ToC/литературы/приложений)."""
+
+    def __init__(self, spec):
+        self._spec = spec
+
+    def excluded_spec(self):
+        return self._spec
+
+
 def _sentence_closed(s: str) -> bool:
     """Накопленный заголовок «закрыт» концом предложения (. ! ?)."""
     s = s.rstrip()
@@ -221,6 +258,19 @@ class ClinicalRecommendationProfile(DocumentProfile):
     @property
     def document_type(self) -> str:
         return "clinical_recommendation"
+
+    # ---- доменные политики (промпт 11): КР-значения вместо хардкода в движке ----
+    # numbering/regions — переопределены (тип-документа). tables/ocr/content_boundary
+    # берут нейтральный дефолт из base: русско-ЯЗЫКОВЫЕ якоря таблиц/OCR остаются в
+    # движке сознательно (Р1 inventory), а не дублируются мёртвой политикой здесь.
+
+    @property
+    def numbering(self) -> NumberingPolicy:
+        return _ClinicalNumbering()
+
+    @property
+    def regions(self) -> RegionPolicy:
+        return _ClinicalRegions(self.excluded_regions())
 
     # ======================================================================
     # 1. КЛАССИФИКАЦИЯ ЗАГОЛОВКОВ
@@ -662,6 +712,11 @@ class ClinicalRecommendationProfile(DocumentProfile):
     # ======================================================================
 
     def extract_metadata(self, ctx: MetadataContext) -> Dict[str, Any]:
+        """Обратная совместимость: словарь метаданных (без ключа-призрака warnings).
+        Движок ходит через metadata_result — явный контракт (промпт 11)."""
+        return self.metadata_result(ctx).metadata
+
+    def metadata_result(self, ctx: MetadataContext) -> MetadataResult:
         warnings: List[str] = []
 
         meta: Dict[str, Any] = {
@@ -709,8 +764,7 @@ class ClinicalRecommendationProfile(DocumentProfile):
         meta["url"] = (f"https://cr.minzdrav.gov.ru/view-cr/{cr_final_id}"
                        if cr_final_id else None)
 
-        meta["_warnings"] = warnings
-        return meta
+        return MetadataResult(meta, warnings)
 
     # ---- титульный лист (fallback) ---------------------------------------
 
