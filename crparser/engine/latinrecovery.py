@@ -29,6 +29,7 @@ excluded.appendices). Работает ЗА ФЛАГОМ `--latin-recovery` (п�
 
 from __future__ import annotations
 
+import json
 import os
 import re
 from typing import Any, Dict, List, Optional, Tuple
@@ -100,6 +101,102 @@ _RX_ROMAN_VALID = re.compile(r"^[IVX]{1,4}[-–][IVX]{1,4}$")
 
 def _is_roman_stage(core: str) -> bool:
     return bool(_RX_ROMAN_STAGE.match(core)) and bool(_CYR_ANY.search(core))
+
+
+# ============================ КАНАЛ C5 — АРХИТЕКТУРА ============================
+# Класс C5 = ЛАТИНСКОЕ СЛОВО, ОТРЕНДЕРЕННОЕ ЦЕЛИКОМ КИРИЛЛИЦЕЙ (`рока`->portal,
+# `йуег`->liver, `уапсез`->varices, `ШСС`->UICC). Замер recall показал: это 88% ВСЕХ
+# пропусков детектора. Структурной аномалии у них НЕТ — от русского слова они неотличимы,
+# поэтому anomaly-детекторы (Ы-старт/camelCase/цифра-внутри) их не видят ПО ПОСТРОЕНИЮ.
+#
+# ДВА ГЕЙТА. Роли РАЗДЕЛЕНЫ ЖЁСТКО — не смешивать:
+#
+#   ГЕЙТ 1 — ГЕНЕРАТОР КАНДИДАТОВ (отвечает за RECALL): **БИТЫЙ ШРИФТ**.
+#       Согласие контурной карты и /ToUnicode: здоровый шрифт 0.97-1.0, битый 0.00-0.01
+#       (разрыв огромен, промежутка нет — I17). Спан в БИТОМ шрифте = кандидат. Аномалия
+#       НЕ требуется -> C5 становится видимым. Замер: 68% документов имеют ВСЕ шрифты
+#       честными -> у них НОЛЬ кандидатов и НОЛЬ вызовов OCR (Group B по построению,
+#       здоровый корпус физически не может быть тронут).
+#
+#   ГЕЙТ 2 — РЕШЕНИЕ (отвечает за PRECISION, и ИМЕННО НА НЁМ ДЕРЖИТСЯ GROUP B):
+#       **eng-OCR vs ВИЗУАЛЬНАЯ ТРАНСЛИТЕРАЦИЯ native-токена**.
+#       eng-OCR ВСЕГДА читает кириллицу латиницей («Клинические»->«KimHu4ecKue»). Если
+#       OCR ≈ транслитерация -> OCR просто прочитал кириллицу = АРТЕФАКТ, НЕ ТРОГАЕМ.
+#       Если OCR ОТЛИЧАЕТСЯ от транслитерации -> на странице реально латинские глифы = ЧИНИМ.
+#
+# ПОЧЕМУ GROUP B НЕ МОЖЕТ ДЕРЖАТЬСЯ НА ГЕЙТЕ 1 (проверено, КР1_4): в битом документе
+# ЧЕСТНОГО шрифта НЕТ — русский текст («Клинические», «печени», «стеатогепатита») лежит
+# в ТОМ ЖЕ битом шрифте, что и порченая латиница. Флагать «всё в битом шрифте» = флагать
+# весь русский. Поэтому русский спасает ТОЛЬКО гейт 2.
+#
+# ПОЧЕМУ ГЕЙТ 2 НЕУЯЗВИМ ДЛЯ МОРФОЛОГИИ (и почему СЛОВАРЬ РУССКОГО ЗДЕСЬ НЕ НУЖЕН):
+# он сравнивает OCR не со словарём, а с ВИЗУАЛЬНЫМ ЧТЕНИЕМ ЭТОГО ЖЕ ТОКЕНА. Ему всё равно,
+# `гепатоцеллюлярный` или `гепатоцеллюлярного`, частотная форма или встретившаяся ОДИН раз —
+# редкая словоформа защищена ровно так же, как частотная. Словарь этого дать не может
+# ПРИНЦИПИАЛЬНО (редкая форма в словарь не попадает -> была бы латинизирована).
+#
+# НЕ «ОПТИМИЗИРОВАТЬ»: убрать гейт 2 или заменить его словарём/частотой = снять защиту
+# Group B и начать латинизировать русскую морфологию. Гейт 1 без гейта 2 НЕ безопасен.
+# ==============================================================================
+# Визуальная транслитерация: что eng-OCR выдаёт, читая кириллический глиф латиницей.
+_TRANSLIT = {
+    "А": "A", "Б": "b", "В": "B", "Г": "r", "Д": "A", "Е": "E", "Ё": "E", "Ж": "x",
+    "З": "3", "И": "u", "Й": "u", "К": "K", "Л": "n", "М": "M", "Н": "H", "О": "O",
+    "П": "n", "Р": "P", "С": "C", "Т": "T", "У": "Y", "Ф": "o", "Х": "X", "Ц": "u",
+    "Ч": "4", "Ш": "w", "Щ": "w", "Ъ": "b", "Ы": "bl", "Ь": "b", "Э": "3", "Ю": "10",
+    "Я": "R",
+    "а": "a", "б": "6", "в": "b", "г": "r", "д": "a", "е": "e", "ё": "e", "ж": "x",
+    "з": "3", "и": "u", "й": "u", "к": "k", "л": "n", "м": "m", "н": "h", "о": "o",
+    "п": "n", "р": "p", "с": "c", "т": "t", "у": "y", "ф": "o", "х": "x", "ц": "u",
+    "ч": "4", "ш": "w", "щ": "w", "ъ": "b", "ы": "bl", "ь": "b", "э": "3", "ю": "10",
+    "я": "r",
+}
+# OCR ≈ транслит -> артефакт чтения кириллицы (ГЕЙТ 2 не пропускает).
+C5_TRANSLIT_SIM = 0.62
+# OCR совсем не похож на чтение native -> выравнивание сбилось, не улика.
+C5_ALIGN_MIN = 0.30
+# rus-OCR подтвердил родной токен -> русское слово, НЕ ТРОГАЕМ (главная защита Group B).
+C5_RUS_CONFIRM = 0.62
+
+# ============================ C5: NO-GO (канал ОТКЛЮЧЁН) ============================
+# Гейт 1 (битый шрифт) РАБОТАЕТ: находит весь класс C5 (UICC/portal/liver/varices/Network),
+# 68% корпуса отсекает по построению. Гейт 2 (precision) ПРОВАЛИЛСЯ ДВАЖДЫ:
+#   попытка 1 — рукодельная карта транслитерации: пропустила 196 рус. словоформ
+#               (пациентов->nayuenmoe, Уровень->ypoBeHb): карта — плохая модель того, что
+#               Tesseract делает с глифом (ц->«y», не «u»);
+#   попытка 2 — второе мнение движка `-l rus`: НЕ помогло (боль->bone, пациентов->nayuenmoe).
+# ПРИЧИНА ФУНДАМЕНТАЛЬНА, А НЕ В РЕАЛИЗАЦИИ: в битом документе порча сидит в /ToUnicode, а
+# ГЛИФЫ РУССКОГО ТЕКСТА РЕНДЕРЯТСЯ ВЕРНО. Значит на странице ВИЗУАЛЬНО лежит правильный
+# русский — и отличить его от правильной латиницы визуальным методом НЕЧЕМ. Отличает только
+# ЯЗЫК (словарь/морфология), от которого мы отказались ради редких словоформ.
+# ЦЕНА ОШИБКИ: `боль`->`bone` в медицинском корпусе. Это хуже, чем 40% непокрытого recall.
+# Канал оставлен как фундамент (гейт 1 верен и переиспользуем); включение — только когда
+# появится ЯЗЫКОВОЙ арбитр (морфоанализатор/LLM-ранкер по кропу, промпт 13b ШАГ 7 / 15).
+# Тест tests/test_latin_c5_morphology.py — страж: включение без арбитра его уронит.
+C5_ENABLED = False
+
+
+def _translit(s: str) -> str:
+    """Визуальное чтение кириллицы латинским алфавитом (то, что делает eng-OCR)."""
+    return "".join(_TRANSLIT.get(c, c) for c in s).lower()
+
+
+_LAT_VOCAB: Optional[frozenset] = None
+
+
+def latin_vocab() -> frozenset:
+    """Корпусный словарь ЧИСТОЙ латиницы (построен по baseline ДО восстановления).
+    Роль: PRECISION-подпорка гейта 2 — отсекает OCR-мусор, который случайно разошёлся
+    с транслитерацией. НЕ является защитой Group B (её держит транслит-гейт)."""
+    global _LAT_VOCAB
+    if _LAT_VOCAB is None:
+        try:
+            p = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                             "data", "latin_vocab.json")
+            _LAT_VOCAB = frozenset(json.load(open(p, encoding="utf-8"))["words"])
+        except Exception:  # noqa: BLE001
+            _LAT_VOCAB = frozenset()
+    return _LAT_VOCAB
 
 
 def _strip_edges(tok: str) -> Tuple[str, str, str]:
@@ -312,6 +409,7 @@ class LatinRecoverer:
         self._line_index: Dict[int, List[Tuple[Tuple[float, float, float, float], str]]] = {}
         self._trace_index: Dict[int, List[dict]] = {}
         self._doc_latin_vocab: Optional[set] = None
+        self._corrupt_fonts: Optional[set] = None   # ГЕЙТ 1 канала C5 (лениво)
         self._eng_line_cache: Dict[Tuple[int, tuple], str] = {}
         self.prov: List[Dict[str, Any]] = []   # блок latin_recovery
         self.queue: List[Dict[str, Any]] = []  # неуверенные -> verify_queue
@@ -428,8 +526,10 @@ class LatinRecoverer:
             return None
         return None
 
-    def _eng_line(self, pno: int, bbox) -> str:
-        ck = (pno, tuple(round(x) for x in bbox))
+    def _eng_line(self, pno: int, bbox, langs: str = "eng") -> str:
+        """OCR кропа строки. `langs='rus'` — ВТОРОЕ МНЕНИЕ для гейта 2 канала C5: спросить
+        движок, читается ли это как РУССКИЙ (см. архитектуру C5)."""
+        ck = (pno, tuple(round(x) for x in bbox), langs)
         if ck in self._eng_line_cache:
             return self._eng_line_cache[ck]
         if not self._ensure_ocr():
@@ -437,7 +537,7 @@ class LatinRecoverer:
             return ""
         try:
             page = self._ensure_doc()[pno]
-            txt = self._ocr._clip_text(page, pno, bbox, psm=7, scale=2.5, langs="eng")
+            txt = self._ocr._clip_text(page, pno, bbox, psm=7, scale=2.5, langs=langs)
         except Exception:  # noqa: BLE001
             txt = ""
         self._eng_line_cache[ck] = txt
@@ -528,6 +628,14 @@ class LatinRecoverer:
         # LINE-SWEEP: сгруппировать визуальные кандидаты по native-строке, один eng-OCR
         # на строку, выровнять и починить (+ соседей строки — контекст ловит хап->van).
         self._line_sweep(visual, core_tnm)
+        # КАНАЛ C5: генератор = битый шрифт (не аномалия). Решение = OCR vs транслит.
+        # Здоровый документ -> ноль кандидатов, ноль OCR (Group B по построению).
+        # NO-GO (замер + тест морфологии): канал C5 ОТКЛЮЧЁН, см. C5_ENABLED ниже.
+        if C5_ENABLED:
+            all_zone_tokens = set()
+            for z in zones:
+                all_zone_tokens.update(_iter_segments(z["text"]))
+            self._font_sweep(all_zone_tokens)
         # применить карты по зонам
         for z in zones:
             new = self._apply(z["text"], z["page"], z["uids"], z["tnm"], z["where"])
@@ -608,6 +716,99 @@ class LatinRecoverer:
             if core not in self._g and core not in self._tnm:
                 pno, bbox = self._loc.get(core, (None, None))
                 self._mark_unresolved(core, self._page_hint.get(core), bbox, pno)
+
+    def _corrupt_font_names(self) -> set:
+        """ГЕЙТ 1: имена шрифтов документа, чья контурная карта РАСХОДИТСЯ с /ToUnicode
+        (agreement < 0.85 при sample >= 12). Пустое множество -> документ ЗДОРОВ, канал C5
+        не делает НИ ОДНОГО вызова OCR (68% корпуса; Group B по построению)."""
+        if self._corrupt_fonts is not None:
+            return self._corrupt_fonts
+        names: set = set()
+        try:
+            doc = self._ensure_doc()
+            fr = self._ensure_fr()
+            for pno in range(len(doc)):
+                for f in doc[pno].get_fonts(full=True):
+                    r = fr.font_report(f[0])
+                    if r and r["corrupt"]:
+                        names.add(f[3].split("+")[-1])
+        except Exception:  # noqa: BLE001
+            names = set()
+        self._corrupt_fonts = names
+        return names
+
+    def _font_sweep(self, zone_tokens: set) -> None:
+        """КАНАЛ C5 (см. «КАНАЛ C5 — АРХИТЕКТУРА» вверху модуля).
+        ГЕЙТ 1 (recall): строки в БИТОМ шрифте -> кандидаты (аномалия НЕ нужна).
+        ГЕЙТ 2 (precision, ДЕРЖИТ GROUP B): OCR != визуальная транслитерация native."""
+        bad = self._corrupt_font_names()
+        if not bad or not self._ensure_ocr():
+            return                       # здоровый шрифт -> ноль кандидатов, ноль OCR
+        vocab = latin_vocab()
+        doc = self._ensure_doc()
+        for pno in range(len(doc)):
+            page = doc[pno]
+            try:
+                blocks = page.get_text("dict").get("blocks", [])
+            except Exception:  # noqa: BLE001
+                continue
+            for blk in blocks:
+                for ln in blk.get("lines", []):
+                    spans = ln.get("spans", [])
+                    fonts = {sp.get("font", "").split("+")[-1] for sp in spans}
+                    if not (fonts & bad):
+                        continue          # ГЕЙТ 1: честный шрифт -> не трогаем
+                    native = "".join(sp.get("text", "") for sp in spans)
+                    if not native.strip() or not _CYR_ANY.search(native):
+                        continue
+                    nat = [c for c in (_strip_edges(w)[1] for w in native.split()) if c]
+                    if not nat:
+                        continue
+                    # только строки обучаемой зоны (references/toc не трогаем)
+                    hit = sum(1 for c in nat if c in zone_tokens or c in self._g)
+                    if hit / len(nat) < 0.5:
+                        continue
+                    eng = self._eng_line(pno, tuple(ln["bbox"]))
+                    if not eng:
+                        continue
+                    ew = [c for c in (_strip_edges(w)[1] for w in eng.split()) if c]
+                    al = _align_line(nat, ew)
+                    # ГЕЙТ 2: ВТОРОЕ МНЕНИЕ ДВИЖКА — прочитать ту же строку как РУССКУЮ.
+                    # Спрашиваем OCR, а не рукодельную карту транслитерации: карта — плохая
+                    # модель того, что Tesseract реально делает с глифом (ц->«y», не «u»),
+                    # и она пропустила 196 рус. словоформ (пациентов->nayuenmoe).
+                    rus = self._eng_line(pno, tuple(ln["bbox"]), langs="rus")
+                    rw = [c for c in (_strip_edges(w)[1] for w in rus.split()) if c]
+                    al_rus = _align_line(nat, rw)
+                    for i, core in enumerate(nat):
+                        if (core in self._g or core in self._tnm or len(core) < 2
+                                or not _CYR_ANY.search(core) or core not in zone_tokens):
+                            continue
+                        oc = al.get(i)
+                        if not oc or _CYR_ANY.search(oc) or not _plausible_latin(oc):
+                            continue
+                        # ГЕЙТ 2 — ЗДЕСЬ И ТОЛЬКО ЗДЕСЬ ДЕРЖИТСЯ GROUP B.
+                        # (а) rus-OCR ПОДТВЕРДИЛ родной токен -> на странице русское слово,
+                        #     текст верен -> НЕ ТРОГАЕМ. Морфология неуязвима: подтверждение
+                        #     визуальное, для ЛЮБОЙ словоформы, без словаря и частоты.
+                        rc = al_rus.get(i)
+                        if rc and _similar(rc.lower(), core.lower()) >= C5_RUS_CONFIRM:
+                            continue
+                        # (б) подстраховка: eng-вывод ≈ визуальное чтение кириллицы -> артефакт
+                        tr_sim = _similar(oc.lower(), _translit(core))
+                        if tr_sim >= C5_TRANSLIT_SIM:
+                            continue
+                        if tr_sim < C5_ALIGN_MIN:
+                            continue      # выравнивание сбилось -> не улика
+                        if oc.lower() not in vocab and oc not in (self._doc_latin_vocab or set()):
+                            continue      # OCR-мусор (precision-подпорка)
+                        e3 = oc in (self._doc_latin_vocab or set())
+                        self._g[core] = _mkrec(
+                            core, oc, "ocr_eng",
+                            "C5:corrupt-font+eng-crop(tr=%.2f)%s" % (tr_sim, "+E3" if e3 else ""),
+                            round(min(0.9, 0.6 + 0.2 * (1 - tr_sim) + (0.1 if e3 else 0)), 2),
+                            "term", False, "needs_review", ["c5_corrupt_font"],
+                            bbox=tuple(ln["bbox"]), pno=pno, candidates=[oc])
 
     def _resolve_roman(self, roman: set) -> None:
         """Римские стадии (Н-Ш->II-III, П-1У->II-IV): eng-OCR по кропу строки, принять
