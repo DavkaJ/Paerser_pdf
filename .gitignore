@@ -30,6 +30,13 @@ _*.py
 # локальное описание проекта (рабочие заметки, не для репозитория)
 ОПИСАНИЕ_ПРОЕКТА.md
 
+# ночной прогон latin recovery (13b): артефакты на диске для утренней проверки, не в git
+_corpus/batch_latin.log
+_corpus/batch_latin_full.log
+_corpus/report_latin.json
+_corpus/verify_queue/crops/
+_corpus/verify_queue/tasks.json
+
 # python
 __pycache__/
 *.pyc

@@ -1,0 +1,54 @@
+<!--
+  Label Studio конфиг для очереди верификации латинского восстановления (промпт 13b/14).
+  Импорт: tasks.json (список задач). Каждая задача несёт crop_png (рендер места ~400 DPI),
+  исходный текст, предложенную замену и список кандидатов. Разметчик подтверждает/правит.
+
+  Запуск (одна команда, из корня проекта):
+    label-studio start latin_verify --init \
+      --input-path _corpus/verify_queue/tasks.json \
+      --label-config _corpus/verify_queue/labeling_config.xml \
+      --input-format json-task
+  Затем открыть http://localhost:8080 и размечать. Экспорт решений -> reviewed rules (14).
+-->
+<View>
+  <Header value="Проверка восстановления латиницы (медицинский текст)"/>
+  <Style>.lsf-main-content { max-width: 900px; }</Style>
+
+  <View style="display:flex; gap:16px;">
+    <View style="flex:1;">
+      <Header value="Изображение места (crop из PDF)" size="4"/>
+      <Image name="crop" value="$crop_png" zoom="true" maxWidth="100%"/>
+    </View>
+    <View style="flex:1;">
+      <Header value="Контекст" size="4"/>
+      <Text name="doc" value="Документ: $doc  •  стр. $page  •  тип: $entity_kind  •  критичность: $is_critical"/>
+      <Text name="src" value="Исходный текст (native):"/>
+      <Text name="source_text" value="$source_text"/>
+      <Text name="prop" value="Предложено системой:"/>
+      <Text name="resolved_text" value="$resolved_text"/>
+      <Text name="cand" value="Кандидаты: $candidates"/>
+      <Text name="why" value="Почему спорно: $why_uncertain  ($method, conf=$confidence)"/>
+    </View>
+  </View>
+
+  <Header value="Решение" size="4"/>
+  <Choices name="decision" toName="crop" choice="single" showInLine="false" required="true">
+    <Choice value="accept" hint="Предложенная замена верна — принять"/>
+    <Choice value="pick_candidate" hint="Верен ДРУГОЙ кандидат из списка"/>
+    <Choice value="enter_own" hint="Ввести правильный вариант вручную (поле ниже)"/>
+    <Choice value="source_ok" hint="Исходный текст верен — НЕ менять"/>
+    <Choice value="illegible" hint="Неразборчиво даже по картинке"/>
+    <Choice value="need_expert" hint="Нужен медицинский эксперт"/>
+  </Choices>
+
+  <Header value="Свой вариант / выбранный кандидат" size="5"/>
+  <TextArea name="corrected_text" toName="crop" rows="1" maxSubmissions="1"
+            placeholder="Правильная форма (если 'ввести свой' или 'выбрать кандидата')"/>
+
+  <Header value="Тип сущности (если система ошиблась)" size="5"/>
+  <Choices name="entity_kind_fix" toName="crop" choice="single" showInLine="true">
+    <Choice value="icd"/><Choice value="atc"/><Choice value="tnm"/>
+    <Choice value="gene"/><Choice value="drug"/><Choice value="dose"/>
+    <Choice value="term"/><Choice value="not_entity"/>
+  </Choices>
+</View>
