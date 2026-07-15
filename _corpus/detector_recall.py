@@ -87,32 +87,38 @@ _RX_RU_WORD = re.compile(r"^[А-Яа-яЁё][А-Яа-яЁё\-]{1,}$")
 
 
 def build_vocab():
-    """Два корпусных словаря по BASELINE outout/ (ДО восстановления, не загрязнён правками):
-      * LAT — чистая латиница (реальное лат. слово, если чисто в >=MIN_DOCS док.);
-      * RU  — чистая кириллица (реальное РУС. слово).
+    """Два корпусных словаря ИЗ ДОВЕРЕННОГО ИСТОЧНИКА (born-digital + честные шрифты),
+    собранные `_corpus/build_latin_vocab.py`:
+      * LAT — реальное лат. слово (>=3 ДОВЕРЕННЫХ док.)  -> crparser/data/latin_vocab.json;
+      * RU  — реальное рус. слово (>=3 ДОВЕРЕННЫХ док.)  -> _corpus/corpus_ru_vocab.json.
+
     RU-словарь — ГЛАВНЫЙ фильтр артефактов: если native-токен есть реальное рус. слово, то
     любая латиница, которую «увидел» eng-OCR, — это ЧТЕНИЕ КИРИЛЛИЦЫ ЛАТИНСКИМ АЛФАВИТОМ
-    («АЛТ»->«AJIT», «печени»->«Child» при сбое выравнивания), а НЕ дефект текста. Симметричен
-    LAT-словарю и так же независим от детектора."""
-    df_lat, df_ru = Counter(), Counter()
-    for p in glob.glob(os.path.join(BASE_OUT, "*.json")):
-        try:
-            doc = json.load(open(p, encoding="utf-8"))
-        except Exception:  # noqa: BLE001
-            continue
-        lat, ru = set(), set()
-        for w in _WORD.findall(zone_text(doc)):
-            core = w.strip('".,:;()[]«»/\\*!?')
-            if _RX_LAT_WORD.match(core) and _RX_VOWEL.search(core):
-                lat.add(core.lower())
-            elif _RX_RU_WORD.match(core):
-                ru.add(core.lower())
-        for w in lat:
-            df_lat[w] += 1
-        for w in ru:
-            df_ru[w] += 1
-    return ({w for w, n in df_lat.items() if n >= MIN_DOCS_VOCAB},
-            {w for w, n in df_ru.items() if n >= MIN_DOCS_VOCAB})
+    («АЛТ»->«AJIT»), а НЕ дефект текста. Симметричен LAT-словарю, независим от детектора.
+
+    ПОЧЕМУ ИСТОЧНИК СМЕНЁН НА ДОВЕРЕННЫЙ (правка инструмента, I23; прежний замер 60.2%
+    сделан на словарях по ВСЕМУ baseline). Оба словаря собирались по всему корпусу, включая
+    39 сканов (текст = вывод full-OCR) и 137 док. с битыми шрифтами, и потому содержали
+    АРТЕФАКТЫ как «слова корпуса»:
+      * LAT нёс `nayuenmoe`(=пациентов), `ypobehb`(=Уровень) -> транслит-мусор считался
+        «реальным лат. словом» -> пропуски детектора засчитывались там, где их нет;
+      * RU нёс `уегзиз`(=versus), `рпшагу`(=primary), `йозе`(=dose), `уап`(=Wang) ->
+        РЕАЛЬНАЯ порча объявлялась «реальным рус. словом» и уходила в ocr_fp, т.е.
+        ВЫПАДАЛА ИЗ ЗНАМЕНАТЕЛЯ: дефект не считался ни найденным, ни пропущенным.
+    Замер по грязным словарям систематически искажён В ОБЕ СТОРОНЫ. Числа этого прогона
+    сравнивать с 60.2% НАПРЯМУЮ нельзя — сменился инструмент, а не только детектор."""
+    lat_p = os.path.join("crparser", "data", "latin_vocab.json")
+    ru_p = os.path.join("_corpus", "corpus_ru_vocab.json")
+    try:
+        lat = set(json.load(open(lat_p, encoding="utf-8")).get("words", []))
+        ru = set(json.load(open(ru_p, encoding="utf-8")).get("words", []))
+    except Exception as exc:  # noqa: BLE001
+        raise SystemExit(
+            "нет словарей доверенного источника (%r).\n"
+            "Собери: python _corpus/build_latin_vocab.py" % (exc,))
+    if not lat or not ru:
+        raise SystemExit("словари пусты — пересобери: python _corpus/build_latin_vocab.py")
+    return lat, ru
 
 
 def zone_text(doc) -> str:
@@ -145,6 +151,34 @@ def _init(vocab, ru_vocab):
     _RU_VOCAB = ru_vocab
 
 
+_QUEUE_BY_DOC = None
+
+
+def _queued_tokens(base):
+    """Токены, которые детектор НАШЁЛ, но не разрешил -> положил В ОЧЕРЕДЬ на человека.
+
+    ВАЖНО ДЛЯ ЧЕСТНОСТИ ЗАМЕРА: очередь живёт НЕ в JSON документа
+    (`_corpus/verify_queue/tasks.json`), а блок `latin_recovery` несёт только
+    `corrections` и `unresolved_critical`. Пока эта функция не читала очередь, всякий
+    задетектированный-но-неразрешённый спан выглядел «пропуском детектора» — хотя
+    детектор его нашёл и отдал человеку с кропом (фикс B, f7a68f8). Это занижало recall
+    ровно на класс B. Определение метрики («found_queued — детектор нашёл, спан в
+    очереди») от этого НЕ меняется — меняется только способность инструмента его увидеть.
+    """
+    global _QUEUE_BY_DOC
+    if _QUEUE_BY_DOC is None:
+        _QUEUE_BY_DOC = {}
+        try:
+            q = json.load(open(os.path.join("_corpus", "verify_queue", "tasks.json"),
+                               encoding="utf-8"))
+            tasks = q if isinstance(q, list) else q.get("tasks", [])
+            for t in tasks:
+                _QUEUE_BY_DOC.setdefault(t.get("doc"), set()).add(t.get("source_text"))
+        except Exception:  # noqa: BLE001
+            _QUEUE_BY_DOC = {}
+    return _QUEUE_BY_DOC.get(base, set())
+
+
 def _doc_state(base):
     if base in _STATE:
         return _STATE[base]
@@ -163,6 +197,10 @@ def _doc_state(base):
         corr[c.get("source_text")] = c.get("decision")
     for u in (doc.get("latin_recovery", {}) or {}).get("unresolved_critical", []):
         corr.setdefault(u.get("source_text"), "unresolved")
+    # спаны, отданные человеку через ОЧЕРЕДЬ (вне JSON) — детектор их НАШЁЛ (см.
+    # `_queued_tokens`): без этого они ложно считались бы пропусками детектора.
+    for s in _queued_tokens(base):
+        corr.setdefault(s, "queued")
     pdf = fitz.open(os.path.join(RAW, base + ".pdf"))
     rec = OcrRecoverer()
     ok = rec.available()
@@ -294,7 +332,7 @@ def work(task):
                 dec = corr.get(nat_c)
                 if dec == "auto":
                     res["found_fixed"] += 1
-                elif dec in ("needs_review", "unresolved", "ambiguous"):
+                elif dec in ("needs_review", "unresolved", "ambiguous", "queued"):
                     res["found_queued"] += 1
                 elif (oc.lower() in _VOCAB and _RX_LAT_WORD.match(oc)
                         and not _CYR.search(oc) and nat_c in zone_tokens):
@@ -393,11 +431,21 @@ def write_report(sel, agg, misses, unaligned, vocab, ru_vocab, secs):
     L.append("- native-токены выравниваются на eng-OCR-токены по позиции; каждое расхождение "
              "классифицируется.")
     L.append("- **«Реальное лат. слово» vs «OCR-мусор» решается НЕЗАВИСИМО от детектора**: "
-             "корпусным словарём латиницы по **baseline `outout/`** (ДО восстановления, "
-             "не загрязнён нашими правками) — слово реально, если ЧИСТО встречается в >=%d док. "
-             "(len>=%d). LAT-словарь: **%d слов**. Транслит-мусор («кровотечения»->«kpoeomeyenus») "
-             "в извлечённом тексте не встречается никогда -> в словарь не попадает.\n"
-             % (MIN_DOCS_VOCAB, MIN_LEN_VOCAB, len(vocab)))
+             "корпусными словарями по **baseline `outout/`**, собранными ТОЛЬКО из "
+             "**ДОВЕРЕННЫХ** документов (born-digital + все шрифты честные, "
+             "`_corpus/build_latin_vocab.py`) — слово реально, если ЧИСТО встречается в "
+             ">=%d док. (len>=%d). LAT: **%d слов**, RU: **%d слов**.\n"
+             % (MIN_DOCS_VOCAB, MIN_LEN_VOCAB, len(vocab), len(ru_vocab)))
+    L.append("- **ИСПРАВЛЕНИЕ ИНСТРУМЕНТА (замер 60.2% делался НЕ ТАК).** Прежде оба словаря "
+             "строились по ВСЕМУ корпусу — включая 39 сканов (их текст = вывод full-OCR) и "
+             "137 док. с битыми шрифтами. Их артефакты становились «словами корпуса», и "
+             "прежнее утверждение «транслит-мусор в текст не попадает -> в словарь не "
+             "попадает» **ЛОЖНО**: в LAT-словаре лежали `nayuenmoe`(=пациентов) и "
+             "`ypobehb`(=Уровень), в RU-словаре — `уегзиз`(=versus), `рпшагу`(=primary), "
+             "`йозе`(=dose). Искажение шло В ОБЕ СТОРОНЫ: мусор в LAT давал ложные "
+             "«пропуски», а порча в RU объявлялась «реальным рус. словом» и ВЫПАДАЛА ИЗ "
+             "ЗНАМЕНАТЕЛЯ. **Поэтому число ниже НЕЛЬЗЯ вычитать из 60.2% — сменился и "
+             "детектор, и инструмент.**\n")
     L.append("## ИТОГ\n")
     L.append("| метрика | значение |")
     L.append("|---|---|")
@@ -418,6 +466,28 @@ def write_report(sel, agg, misses, unaligned, vocab, ru_vocab, secs):
                      "преждевременна.**" if recall < 0.80
                      else "**80-95% -> серая зона: очередь неполна; см. классы пропусков.**"))
     L.append("### Вердикт по порогу: %s\n" % verdict)
+
+    # ДВА РАЗНЫХ ЧИСЛА — НЕ СМЕШИВАТЬ (иначе отчёт врёт о состоянии корпуса).
+    total_real = found + miss
+    auto_share = (100.0 * tot["found_fixed"] / total_real) if total_real else 0.0
+    queue_share = (100.0 * tot["found_queued"] / total_real) if total_real else 0.0
+    miss_share = (100.0 * miss / total_real) if total_real else 0.0
+    L.append("### RECALL != ЧИСТОТА КОРПУСА. Два числа, которые нельзя путать\n")
+    L.append("| что это | доля РЕАЛЬНЫХ дефектов (%d) | смысл |" % total_real)
+    L.append("|---|---|---|")
+    L.append("| **RECALL детектора (увидел)** | **%.1f%%** | дефект найден и НЕ осядет молча: "
+             "либо починен, либо лежит в очереди с кропом. По нему порог >=85%%: он говорит "
+             "«очередь РЕПРЕЗЕНТАТИВНА, валидировать осмысленно» |" % (recall * 100))
+    L.append("| — из них ПОЧИНЕНО МОЛЧА (auto) | **%.1f%%** (%d) | и только это уже исправлено "
+             "в корпусе |" % (auto_share, tot["found_fixed"]))
+    L.append("| — из них ОТДАНО ЧЕЛОВЕКУ (очередь) | **%.1f%%** (%d) | ждёт глаз: работа "
+             "промпта 14, не сделана |" % (queue_share, tot["found_queued"]))
+    L.append("| **ПРОПУЩЕНО (не увидел)** | **%.1f%%** (%d) | осядет в корпусе |"
+             % (miss_share, miss))
+    L.append("\n**Корпус НЕ стал чист на %.1f%%.** Он стал ИЗМЕРЕН: автопочинка — %.1f%% "
+             "дефектов (только сильная улика: детерминированный шаблон или совпадение "
+             "скелета), остальное — представительная очередь на человека. Смешивать эти "
+             "числа в одно «качество корпуса» ЗАПРЕЩЕНО.\n" % (recall * 100, auto_share))
 
     L.append("## По документам\n")
     L.append("| док | строк зоны | found_fixed | found_queued | MISS | ocr_fp | recall |")
