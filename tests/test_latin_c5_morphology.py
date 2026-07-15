@@ -149,6 +149,54 @@ def test_gate2_lets_c5_corruption_through():
         assert not g._c5_protected(w), "гейт 2 заглушил ПОРЧУ %r -> recall падает" % w
 
 
+def test_alignment_is_global_not_greedy():
+    """ВЫРАВНИВАНИЕ — КОРЕНЬ ДВУХ ДЕФЕКТОВ СРАЗУ. Реальная строка КР1_4 стр.69 и её
+    реальный eng-OCR. Жадное окно давало `nat[10]=йуег -> it` (sim=0.00): отсюда И пропуск
+    `йуег`->liver, И — на соседних строках — ЛОЖНАЯ пара `Ыуег`->`the`, которую E3
+    разрешал применить МОЛЧА.
+
+    ПОЧЕМУ ЗДЕСЬ НЕЛЬЗЯ ПОРОГ ПОХОЖЕСТИ (замерено): у класса A1 маппинг произволен, скелет
+    теряет не-гомографы, и ВЕРНАЯ пара `йуег`~`liver`=0.20 ХУЖЕ ЛОЖНОЙ `Ыуег`~`the`=0.33.
+    Любой локальный порог рубит верную и пропускает ложную. Спасает только ГЛОБАЛЬНАЯ
+    структура: `The` занят токеном `ТЪе` -> `Ыуег` не может его получить."""
+    from crparser.engine.latinrecovery import _align_line, _strip_edges
+    native = ("СЬо1оп§каз Е. е1 а1. 8уз1етайс геУ1е\\у: ТЪе то<Зе1 Гог епс!-з1а§е "
+              "йуег сйзеазе - 8Ьои1с1 к")
+    eng = ("| Cholongitas E. et al. Systematic review: The model for end-stage "
+           "liver disease - Should it")
+    nat = [c for c in (_strip_edges(w)[1] for w in native.split()) if c]
+    ew = [c for c in (_strip_edges(w)[1] for w in eng.split()) if c]
+    al = _align_line(nat, ew)
+    for src, want in (("йуег", "liver"), ("то<Зе1", "model"), ("сйзеазе", "disease"),
+                      ("8уз1етайс", "Systematic"), ("ТЪе", "The")):
+        got = al.get(nat.index(src))
+        assert got == want, "выравнивание: %r -> %r (ждали %r)" % (src, got, want)
+    # ложная пара структурно невозможна: `The` уже занят
+    assert al.get(nat.index("йуег")) != "the"
+
+
+def test_alignment_anchors_on_russian_via_translit():
+    """РУССКИЕ токены обязаны быть ЯКОРЯМИ выравнивания. Реальная строка КР628_2 стр.17 и
+    её реальный eng-OCR: 10 native <-> 10 eng, идеальное 1:1.
+
+    РЕГРЕСС, который этот тест ловит (поймал на самом деле — `Shaffer`->`uau`): матрица
+    похожести считалась ТОЛЬКО по латинскому скелету, а скелет РОНЯЕТ не-гомографы ->
+    `_lat_skeleton('или') == ''`. Пустой якорь не совпадает ни с чем, NW предпочитал
+    разрывы, хвост уезжал на 2 токена. Лечится ВТОРОЙ гипотезой: русский токен eng-OCR
+    ТРАНСЛИТЕРИРУЕТ (`или`->`uau`), и `max(скелет, транслит)` возвращает якоря."""
+    from crparser.engine.latinrecovery import _align_line, _lat_skeleton
+    assert _lat_skeleton("или") == "", "скелет `или` перестал быть пустым — тест устарел"
+    nat = ["целесообразно", "использовать", "классификации", "хап", "Веитп§еп", "С",
+           "8рае1И", "или", "К", "8Иа//ег"]
+    ew = ["yenecooOpa3vo", "ucnonb30eamb", "Knaccuq@uKayuu", "van", "Beuningen", "G",
+          "Spaeth", "uau", "R", "Shaffer"]
+    al = _align_line(nat, ew)
+    for i, (t, want) in enumerate(zip(nat, ew)):
+        assert al.get(i) == want, (
+            "выравнивание уехало: %r -> %r (ждали %r); русские якоря сломаны"
+            % (t, al.get(i), want))
+
+
 def test_c5_is_fail_closed_without_arbiter(monkeypatch):
     """FAIL-CLOSED (I5): нет языкового арбитра -> канал ВЫКЛЮЧЕН ЦЕЛИКОМ. Трактовать
     «пакета нет» как «слово неизвестно» = латинизировать русский на машине без
@@ -294,18 +342,11 @@ def test_c5_recovers_known_class_positives():
         pytest.skip("КР1_4 не собран")
     fixed = {s: t for d, s, t in _c5_corrections() if d == "КР1_4.json"}
     for src, dst in (("уапсез", "varices"), ("КеПгогк", "Network"),
-                     ("оезорЬадиз", "oesophagus"), ("Огдашгайоп", "Organization")):
+                     ("оезорЬадиз", "oesophagus"), ("Огдашгайоп", "Organization"),
+                     # взяты ПОСЛЕ перехода на глобальное выравнивание (I26): раньше
+                     # `_align_line` жадным окном уводила `йуег` -> `it` (sim=0.00) и
+                     # кандидат отбрасывался как шум, хотя eng-OCR читает строку идеально
+                     ("йуег", "liver"), ("то<Зе1", "model")):
         assert fixed.get(src) == dst, (
             "C5 не восстановил %r->%r (получено %r) — канал деградировал"
             % (src, dst, fixed.get(src)))
-    # ЧЕСТНАЯ ГРАНИЦА (замерено, `_corpus/detector_recall.md`): `йуег`->liver, `то<Зе1`->
-    # model, `сйзеазе`->disease на стр.69 НЕ чинятся — и это НЕ гейт 2. Гейт 1 пропускает
-    # строку, eng-OCR читает её ИДЕАЛЬНО («...The model for end-stage liver disease...»),
-    # но `_align_line` (жадное окно 3) на длинной библиографической строке уводит
-    # выравнивание: nat[10]=`йуег` -> eng=`it`, sim=0.00 -> кандидат отброшен как шум.
-    # Информация ЕСТЬ в кропе, её теряет ВЫРАВНИВАНИЕ. Чинится глобальным выравниванием
-    # (Needleman-Wunsch) — отдельная работа: `_align_line` общий с term-каналом (4801
-    # замена), правка требует своего цикла верификации. Пин НЕ засчитан, см. отчёт.
-    assert "йуег" not in fixed, (
-        "`йуег` внезапно чинится — значит выравнивание переписали: перепроверить term-канал "
-        "(4801 замена на том же `_align_line`) и обновить этот комментарий")
