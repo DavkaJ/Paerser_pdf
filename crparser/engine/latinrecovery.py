@@ -478,6 +478,7 @@ class LatinRecoverer:
         self._g: Dict[str, dict] = {}
         self._tnm: Dict[str, dict] = {}
         self._whole: Dict[str, dict] = {}
+        self._loc: Dict[str, tuple] = {}   # core -> (pno,bbox): кроп для очереди (фикс B)
         self._resolve_roman(roman)
         self._meta: Dict[str, dict] = {}      # core -> {kind, crit, why}
         visual: List[str] = []
@@ -590,19 +591,23 @@ class LatinRecoverer:
         for core in cores:
             pno, bbox, ltext = self._locate(core, self._page_hint.get(core))
             if pno is None:
-                # не нашли в native -> оставить нерешённым (карантин если критическое)
-                self._mark_unresolved(core, None, None)
+                # не нашли в native -> оставить нерешённым (кроп невозможен)
+                self._mark_unresolved(core, None, None, None)
                 continue
+            # ЛОКАЦИЯ ЗАПОМИНАЕТСЯ: нужна, чтобы у НЕРАЗРЕШЁННОГО спана в очереди был КРОП
+            # (без картинки задача бесполезна человеку).
+            self._loc[core] = (pno, bbox)
             key = (pno, tuple(round(x) for x in bbox))
             e = lines.setdefault(key, {"pno": pno, "bbox": bbox, "native": ltext,
                                        "targets": set()})
             e["targets"].add(core)
         for e in lines.values():
             self._sweep_line(e, core_tnm)
-        # кандидаты, не решённые line-sweep -> карантин/очередь
+        # кандидаты, не решённые line-sweep -> очередь (+ карантин, если критический код)
         for core in cores:
             if core not in self._g and core not in self._tnm:
-                self._mark_unresolved(core, self._page_hint.get(core), None)
+                pno, bbox = self._loc.get(core, (None, None))
+                self._mark_unresolved(core, self._page_hint.get(core), bbox, pno)
 
     def _resolve_roman(self, roman: set) -> None:
         """Римские стадии (Н-Ш->II-III, П-1У->II-IV): eng-OCR по кропу строки, принять
@@ -722,11 +727,19 @@ class LatinRecoverer:
                 return cand
         return None
 
-    def _mark_unresolved(self, core: str, page, bbox) -> None:
-        """Нерешённый span. Блокирует релиз (unresolved_critical) ТОЛЬКО при СИЛЬНОЙ
-        улике кода — кириллический гомограф в ВАЛИДНОМ шаблоне ICD/ATC/TNM
-        (`code_alphabet_violation`). Слабые улики (ген-форма, ведущий цифро-глиф) —
-        неоднозначны (001/Уо1.22/ГЦР7): в очередь на человека, но НЕ карантин."""
+    def _mark_unresolved(self, core: str, page, bbox, pno=None) -> None:
+        """Нерешённый ЗАДЕТЕКТИРОВАННЫЙ спан.
+
+        ФИКС B (замер recall, `_corpus/detector_recall.md`): в очередь идёт **ЛЮБОЙ**
+        неразрешённый спан, а не только критический. Раньше некритический термин, который
+        детектор УВИДЕЛ, но резолюция не осилила (`8уз1етайс`->Systematic, `1МКТ`->IMRT),
+        исчезал БЕЗ СЛЕДА: ни правки, ни записи, ни задачи человеку — 12% всех пропусков.
+        Детектор обязан отдавать человеку всё, в чём усомнился.
+
+        РАЗДЕЛЕНИЕ: очередь (человек посмотрит) != карантин (документ не едет в обучение).
+        Блокирует релиз ТОЛЬКО СИЛЬНАЯ улика — кир. гомограф в ВАЛИДНОМ шаблоне ICD/ATC/TNM
+        (`code_alphabet_violation`). Слабые улики (ген-форма, ведущий глиф: 001/Уо1.22) и
+        термины — в очередь, но БЕЗ блокировки: иначе цитаты и числа топили бы документы."""
         m = self._meta.get(core, {})
         if not hasattr(self, "_unresolved_seen"):
             self._unresolved_seen = set()
@@ -734,16 +747,18 @@ class LatinRecoverer:
             return
         self._unresolved_seen.add(core)
         why = m.get("why", [])
-        strong_code = "code_alphabet_violation" in why and m.get("kind") in ("icd", "atc", "tnm")
+        kind = m.get("kind")
+        strong_code = "code_alphabet_violation" in why and kind in ("icd", "atc", "tnm")
         if m.get("crit") and strong_code:
             self.unresolved_critical.append(
-                {"source_text": core, "kind": m.get("kind"), "page": page})
-            self._enqueue(core, core, m.get("kind"), page, None, bbox, why, [],
-                          "none", 0.0, "критический код не разрешён (карантин)")
-        elif m.get("kind") in ("gene", "icd", "atc", "tnm") and m.get("crit"):
-            # слабая улика: неразрешённый ген/код-кандидат -> человеку, без блокировки
-            self._enqueue(core, core, m.get("kind"), page, None, bbox, why, [],
-                          "none", 0.0, "код/ген-кандидат не разрешён (проверить)")
+                {"source_text": core, "kind": kind, "page": page})
+            reason = "критический код не разрешён (карантин)"
+        elif kind in ("gene", "icd", "atc", "tnm"):
+            reason = "код/ген-кандидат не разрешён (проверить)"
+        else:
+            reason = "подозрительный спан не разрешён (проверить по кропу)"
+        # ЛЮБОЙ неразрешённый -> в очередь, с кропом если спан локализован (фикс B)
+        self._enqueue(core, core, kind, page, pno, bbox, why, [], "none", 0.0, reason)
 
     def _apply(self, text: str, page, span_uids, tnm_ok: bool, where: str) -> str:
         """Применить карты замен к тексту зоны НА УРОВНЕ СЕГМЕНТА (сплит по дефису):
