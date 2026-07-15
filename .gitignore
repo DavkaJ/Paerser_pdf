@@ -37,6 +37,20 @@ _corpus/report_latin.json
 _corpus/verify_queue/crops/
 _corpus/verify_queue/tasks.json
 
+# СЕКРЕТЫ. Токен LightLLM-роутера и любые ключи — НИКОГДА в git.
+# Проверено 2026-07-16: .env СУЩЕСТВОВАЛ и НЕ попадал ни под одно правило
+# (`git check-ignore -v .env` -> пусто, код 1), т.е. один `git add -A` унёс бы токен в
+# историю. В истории его нет (`git log --all -- .env` пуст) — успели. Коммит секрета не
+# откатывается: ключ считается скомпрометированным с момента пуша, и чистка истории не
+# отменяет того, что его уже видели. Комментарий — на ОТДЕЛЬНОЙ строке (inline gitignore
+# не поддерживает, см. правило !__init__.py выше).
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+secrets.json
+
 # python
 __pycache__/
 *.pyc
