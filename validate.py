@@ -722,6 +722,30 @@ def _coverage_v2_gate(rep: "Report", stats: dict) -> None:
                  "дубль между buckets" % (overlap, ochars, 100 * ochars / tot_chars))
 
 
+def _latin_gate(rep: "Report", doc: dict) -> None:
+    """ГЕЙТ latin recovery (промпт 13b, ШАГ 8). Читает top-level блок latin_recovery
+    (есть ТОЛЬКО при прогоне за флагом --latin-recovery). Документ с хотя бы ОДНОЙ
+    неразрешённой КРИТИЧЕСКОЙ латинской сущностью (ICD/ATC/TNM/ген/доза) в обучаемой зоне
+    -> REVIEW (карантин LATIN_UNRESOLVED): в обучение не едет. Замены needs_review НЕ
+    блокируют (лучший кандидат применён, спан в очереди на человека), но выводятся числом."""
+    lr = doc.get("latin_recovery")
+    if not lr:
+        return                          # флаг выключен / нет блока — гейт инертен
+    unresolved = lr.get("unresolved_critical") or []
+    if unresolved:
+        sample = ", ".join(
+            "%s(%s)" % (u.get("source_text"), u.get("kind")) for u in unresolved[:8])
+        rep.review("LATIN_UNRESOLVED",
+                   "%d неразрешённых КРИТИЧЕСКИХ латинских сущностей в обучаемой зоне "
+                   "(на карантин до ручной проверки): %s" % (len(unresolved), sample))
+    nr = sum(1 for c in (lr.get("corrections") or [])
+             if c.get("decision") == "needs_review")
+    if nr:
+        rep.warn("LATIN_REVIEW",
+                 "%d латинских замен помечены needs_review (лучший кандидат применён, "
+                 "спаны в очереди верификации)" % nr)
+
+
 def validate_doc(name: str, doc: dict, toc: Optional[Toc]) -> Report:
     rep = Report(name)
     # ---- ПРАВКА 1: JSON Schema (fail-closed). Пустой {} и любой не-контрактный
