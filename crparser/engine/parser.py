@@ -56,9 +56,14 @@ def _walk_sections(sections: List[Section]):
 class DocumentParser:
     """Парсит один PDF выбранным профилем в ParseResult."""
 
-    def __init__(self, profile: DocumentProfile) -> None:
+    def __init__(self, profile: DocumentProfile, latin_recovery: bool = False,
+                 latin_queue_dir: str = None) -> None:
         self._profile = profile
         self._stats = StatsCalculator()
+        # промпт 13b: восстановление латиницы за флагом. По умолчанию ВЫКЛ -> вывод
+        # байт-в-байт baseline (резолвер не вызывается).
+        self._latin_recovery = latin_recovery
+        self._latin_queue_dir = latin_queue_dir
 
     def parse(self, pdf_path: str) -> ParseResult:
         warnings_list: List[str] = []
@@ -148,6 +153,16 @@ class DocumentParser:
                 f"низкое покрытие ({stats['coverage_percent']}%) — текст мог уйти "
                 f"в исключения или не распознались заголовки")
 
+        # 6. latin recovery (промпт 13b, за флагом): чинит латиницу в обучаемой зоне
+        # (sections/tables/metadata/excluded.appendices) с провенансом. Мутирует текст
+        # ПО МЕСТУ; при выключенном флаге не вызывается -> вывод байт-в-байт baseline.
+        latin_recovery: List[Dict] = []
+        latin_unresolved: List[Dict] = []
+        latin_queue: List[Dict] = []
+        if self._latin_recovery:
+            latin_recovery, latin_unresolved, latin_queue = self._run_latin_recovery(
+                pdf_path, metadata, sections, tables, excluded, warnings_list)
+
         return ParseResult(
             metadata=metadata,
             sections=sections,
@@ -156,7 +171,29 @@ class DocumentParser:
             stats=stats,
             warnings=warnings_list,
             page_ir=page_ir,
+            latin_recovery=latin_recovery,
+            latin_unresolved_critical=latin_unresolved,
+            latin_queue=latin_queue,
         )
+
+    def _run_latin_recovery(self, pdf_path, metadata, sections, tables, excluded,
+                            warnings_list):
+        """Прогнать резолвер латиницы (промпт 13b). Изолировано; любая ошибка -> warning,
+        документ не падает (deградируем мягко, как остальной конвейер)."""
+        from crparser.engine.latinrecovery import LatinRecoverer
+        try:
+            doc_id = os.path.splitext(os.path.basename(pdf_path))[0]
+            rec = LatinRecoverer(pdf_path, doc_id, queue_dir=self._latin_queue_dir)
+            rec.recover(sections, tables, excluded, metadata)
+            rec.close()
+            if rec.unresolved_critical:
+                warnings_list.append(
+                    "latin: %d неразрешённых КРИТИЧЕСКИХ латинских сущностей "
+                    "(документ на карантин, промпт 13b)" % len(rec.unresolved_critical))
+            return rec.prov, rec.unresolved_critical, rec.queue
+        except Exception as exc:  # noqa: BLE001
+            warnings_list.append(f"latin recovery не выполнен ({exc!r})")
+            return [], [], []
 
     # ---- provenance: заявка таблиц и инвариант владения (промпт 08) -----------
 

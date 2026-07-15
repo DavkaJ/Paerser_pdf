@@ -300,3 +300,12 @@ class ParseResult:
     # provenance (промпт 08): промежуточное представление страниц (спаны/каналы).
     # Сериализуется в top-level блок "provenance"; на существующие поля не влияет.
     page_ir: List[PageIR] = field(default_factory=list)
+    # latin recovery (промпт 13b, за флагом --latin-recovery): список коррекций латиницы
+    # с провенансом; сериализуется в top-level блок "latin_recovery". Пусто по умолчанию.
+    latin_recovery: List[Dict[str, Any]] = field(default_factory=list)
+    # неразрешённые КРИТИЧЕСКИЕ латинские сущности (release-gate ШАГ 8): непустой список
+    # -> документ не едет в обучение (карантин LATIN_UNRESOLVED в validate.py).
+    latin_unresolved_critical: List[Dict[str, Any]] = field(default_factory=list)
+    # очередь верификации (ШАГ 5-bis): неуверенные замены -> Label Studio. НЕ сериализуется
+    # в JSON документа; батч собирает в _corpus/verify_queue/tasks.json.
+    latin_queue: List[Dict[str, Any]] = field(default_factory=list)

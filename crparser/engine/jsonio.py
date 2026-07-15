@@ -51,6 +51,13 @@ class JsonWriter:
         # provenance — top-level блок В КОНЦЕ (после warnings), аддитивно.
         if self._prov:
             doc["provenance"] = self._provenance(result.page_ir)
+        # latin_recovery (промпт 13b, за флагом) — top-level блок, ТОЛЬКО когда были
+        # коррекции (иначе схема/вывод байт-в-байт baseline при выключенном флаге).
+        if getattr(result, "latin_recovery", None):
+            doc["latin_recovery"] = {
+                "corrections": result.latin_recovery,
+                "unresolved_critical": list(getattr(result, "latin_unresolved_critical", []) or []),
+            }
         return doc
 
     def write(self, result: ParseResult, out_path: str) -> None:
