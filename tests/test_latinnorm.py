@@ -1,7 +1,25 @@
 # -*- coding: utf-8 -*-
 """A2-нормализация медкодов (промпт 13b, INVARIANTS I19). Главное — НЕГАТИВНЫЕ пины:
 false_substitution = 0 по построению (замена только внутри распознанного шаблона)."""
-from crparser.engine.latinnorm import normalize_code_token, normalize_text
+from crparser.engine.latinnorm import normalize_code_token, normalize_text, coerce_entity
+
+
+# --- гомограф ЦИФРЫ в цифровом слоте шаблона (МО->M0): следствие грамматики, fsr=0 ---
+def test_digit_slot_coercion_positive():
+    assert coerce_entity("МО", "tnm") == "M0"      # MO невалиден, M0 валиден -> O=0
+    assert coerce_entity("ТО", "tnm") == "T0"
+    assert coerce_entity("SOLEC", "atc") == "S01EC"  # eng-OCR O->0, L->1
+    assert coerce_entity("М1", "tnm") == "M1"
+
+
+def test_digit_slot_coercion_refuses_ambiguous_and_nonentity():
+    # буквенный слот с цифрой неоднозначен (0->D или 0->O) -> НЕ шаблон, eng-OCR решает
+    assert coerce_entity("501ЕС", "atc") is None
+    assert coerce_entity("037.6", "icd") is None
+    # не форма сущности -> None (МОСТ=MOST, Е8МО=ESMO не станут кодами)
+    assert coerce_entity("МОСТ", "tnm") is None
+    assert coerce_entity("Е8МО", "tnm") is None
+    assert coerce_entity("М3", "tnm") is None      # невалидное значение TNM
 
 
 # --- ПОЗИТИВНЫЕ: кириллический гомограф в латинском слоте кода -> латиница ---

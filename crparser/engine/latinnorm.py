@@ -61,6 +61,54 @@ def normalize_code_token(token: str) -> Optional[Tuple[str, str, str]]:
     return None
 
 
+# Гомографы ЦИФР: буква в позиции цифры -> цифра. Применять ТОЛЬКО в цифровом слоте
+# распознанного шаблона И только если результат — валидное значение (тогда fsr=0:
+# грамматика TNM после M допускает лишь 0/1/x, значит «MO» невалидно, а «M0» валидно →
+# O обязана быть нулём; это следствие шаблона, а не догадка).
+_L2D = {"O": "0", "o": "0", "l": "1", "I": "1", "i": "1", "L": "1", "S": "5", "s": "5",
+        "B": "8", "G": "6", "g": "6", "З": "3", "з": "3", "б": "6", "Б": "6",
+        "Ь": "6", "ь": "6"}
+_RX_TNM_C = re.compile(r"^p?(?:T(?:is|[0-4][a-d]?|[xX])|N[0-3xX]|M[01xX]|G[1-4xX])$")
+_RX_ICD_C = re.compile(r"^[A-Z]\d{2}(?:\.\d{1,2})?$")
+_RX_ATC_C = re.compile(r"^[A-Z]\d{2}[A-Z]{2}(?:\d{2})?$")
+
+
+def _to_digit(ch: str, allow: str = "") -> str:
+    if ch in allow or ch.isdigit():
+        return ch
+    return _L2D.get(ch, ch)
+
+
+def coerce_entity(text: str, kind: str) -> Optional[str]:
+    """Кир-буквы -> латиница + гомограф ЦИФРЫ в ЦИФРОВОМ слоте -> цифра, ВНУТРИ шаблона.
+    Буквенные слоты остаются буквами (цифра там неоднозначна: 0->D или 0->O — это зона
+    eng-OCR, не шаблона). Возврат: валидная форма или None. fsr=0 (только валидный итог)."""
+    t = "".join(_CYR2LAT.get(c, c) for c in text.strip("().,;:«»[] "))
+    if kind == "tnm":
+        m = re.match(r"^(p?)([TNMG])(.)([a-d]?)$", t)
+        if not m:
+            return None
+        pfx, L, d, suf = m.groups()
+        cand = pfx + L + _to_digit(d, "xX") + suf
+        return cand if _RX_TNM_C.match(cand) else None
+    if kind == "icd":
+        m = re.match(r"^([A-Za-z])(.)(.)((?:\.\d{1,2})?)$", t)
+        if not m:
+            return None
+        L, a, b, tail = m.groups()
+        cand = L.upper() + _to_digit(a) + _to_digit(b) + tail
+        return cand if _RX_ICD_C.match(cand) else None
+    if kind == "atc":
+        m = re.match(r"^([A-Za-z])(.)(.)([A-Za-z]{2})((?:.{2})?)$", t)
+        if not m:
+            return None
+        L, a, b, ll, dd = m.groups()
+        dd2 = "".join(_to_digit(c) for c in dd)
+        cand = L.upper() + _to_digit(a) + _to_digit(b) + ll.upper() + dd2
+        return cand if _RX_ATC_C.match(cand) else None
+    return None
+
+
 def normalize_text(text: str) -> Tuple[str, List[dict]]:
     """Пройти по токенам текста, A2-нормализовать медкоды. Вернуть (новый_текст,
     список коррекций для provenance). Разбиение сохраняет разделители."""

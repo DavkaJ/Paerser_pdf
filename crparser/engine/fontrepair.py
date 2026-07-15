@@ -131,6 +131,15 @@ class _FontInfo:
         self.corrupt = self.sample >= MIN_SAMPLE and self.agreement < AGREEMENT_HEALTHY
 
 
+# Кириллица, ВИЗУАЛЬНО ИДЕНТИЧНАЯ латинице (гомографы) — контур их НЕ различает.
+_HOMOGRAPH = set("АВЕКМНОРСТХаеорсухёЁІЈЅ")
+# Кириллица БЕЗ латинского двойника — если такой символ стоит в латинском токене,
+# это ДОСТОВЕРНАЯ порча, и контур глифа решает её ОДНОЗНАЧНО (у настоящей кириллицы
+# контур кириллический → латинского кандидата нет → не трогаем; у битого A1-глифа
+# контур латинский → чиним).
+_NONHOMOGRAPH = set("БГДЖЗИЙЛПФЦЧШЩЪЫЬЭЮЯбгджзийлпфцчшщъыьэюя")
+
+
 class FontRepairer:
     """Анализирует шрифты документа и декодирует текст БИТЫХ по контурам."""
 
@@ -174,6 +183,29 @@ class FontRepairer:
             return None
         return {"agreement": round(info.agreement, 4), "sample": info.sample,
                 "corrupt": info.corrupt}
+
+    def decode_nonhomograph(self, xref: int, gids: List[int],
+                            tu_text: str) -> Tuple[str, List[int]]:
+        """Правило промпта 13b: чинить ТОЛЬКО кириллические НЕ-гомографы (Б Г Д … Ш Щ),
+        стоящие в латинском токене — их контур решает однозначно. Гомографы (А В Е … Х)
+        НЕ трогаем (контур не различает; отдаём A2/eng-OCR). Возврат: (текст,
+        индексы_исправленных). Здоровый/неизвестный шрифт → tu_text без изменений."""
+        info = self._font(xref)
+        if info is None or not info.corrupt:
+            return tu_text, []
+        out: List[str] = []
+        fixed: List[int] = []
+        for i, gid in enumerate(gids):
+            tu = tu_text[i] if i < len(tu_text) else ""
+            cand = info.contour.get(gid)
+            if tu in _NONHOMOGRAPH and cand:
+                lat = sorted(c for c in cand if c.isascii() and (c.isalpha() or c.isdigit()))
+                if lat:                      # контур даёт латиницу → битый A1-глиф
+                    out.append(lat[0])
+                    fixed.append(i)
+                    continue
+            out.append(tu)
+        return "".join(out), fixed
 
     def decode_span(self, xref: int, gids: List[int], tu_text: str) -> Tuple[str, bool]:
         """Вернуть (текст, применён_ли_ремонт) для последовательности глифов ОДНОГО
