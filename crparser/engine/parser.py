@@ -131,7 +131,19 @@ class DocumentParser:
         page_ir = build_page_ir(pages)
         self._ownership_check(sections, tables, excluded, page_ir, warnings_list)
 
-        # 5. статистика покрытия (coverage_v2 по span-union — из page_ir)
+        # 4c. latin recovery (промпт 13b, за флагом): чинит латиницу в обучаемой зоне
+        # (sections/tables/metadata/excluded.appendices) с провенансом. Мутирует текст
+        # ПО МЕСТУ — ДО подсчёта stats, иначе included_chars разойдётся с фактом текста
+        # (STATS_MISMATCH). При выключенном флаге не вызывается -> вывод байт-в-байт baseline.
+        latin_recovery: List[Dict] = []
+        latin_unresolved: List[Dict] = []
+        latin_queue: List[Dict] = []
+        if self._latin_recovery:
+            latin_recovery, latin_unresolved, latin_queue = self._run_latin_recovery(
+                pdf_path, metadata, sections, tables, excluded, warnings_list)
+
+        # 5. статистика покрытия (coverage_v2 по span-union — из page_ir). Считается
+        # ПОСЛЕ latin recovery, чтобы char-бухгалтерия соответствовала итоговому тексту.
         stats = self._stats.compute(full_text, sections, excluded, tables, page_ir)
         # счётчики порчи текста: разрядка/удвоение (починены) + глиф-токены
         # (обнаружены, на OCR) — валидатор по ним поднимает статус CORRUPTION.
@@ -152,16 +164,6 @@ class DocumentParser:
             warnings_list.append(
                 f"низкое покрытие ({stats['coverage_percent']}%) — текст мог уйти "
                 f"в исключения или не распознались заголовки")
-
-        # 6. latin recovery (промпт 13b, за флагом): чинит латиницу в обучаемой зоне
-        # (sections/tables/metadata/excluded.appendices) с провенансом. Мутирует текст
-        # ПО МЕСТУ; при выключенном флаге не вызывается -> вывод байт-в-байт baseline.
-        latin_recovery: List[Dict] = []
-        latin_unresolved: List[Dict] = []
-        latin_queue: List[Dict] = []
-        if self._latin_recovery:
-            latin_recovery, latin_unresolved, latin_queue = self._run_latin_recovery(
-                pdf_path, metadata, sections, tables, excluded, warnings_list)
 
         return ParseResult(
             metadata=metadata,
