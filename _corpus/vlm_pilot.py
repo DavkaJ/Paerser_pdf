@@ -37,7 +37,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 from crparser.engine import rumorph
-from crparser.engine.latinrecovery import entity_valid, _translit, _CYR_ANY, _plausible_latin
+from crparser.engine.latinrecovery import (
+    entity_valid, _translit, _CYR_ANY, _plausible_latin, _RX_LONG_LOWER_CYR)
+
+# Гомоглифы: кириллические ЗАГЛАВНЫЕ, визуально = латинской заглавной.
+_HOMO_UP = set("АВЕКМНОРСТХ")
 
 ROUTER = "https://mosai-llmrouter.emias.ru/v1/chat/completions"
 MODEL = os.environ.get("VLM_MODEL", "ai6-qwen3-vl-30b")
@@ -165,15 +169,31 @@ def _source_is_russian(source: str) -> bool:
     остаток на человека, а не автозамена."""
     core = (source or "").strip('.,;:()[]«»"')
     low = core.lower()
-    # ТОЛЬКО язык (word_is_known). Замер показал: ALL-CAPS блокировать НЕЛЬЗЯ — под неё
-    # попадает ВСЯ порченая латинская АКРОНИМИКА (`ЕТОКЯ`=ETDRS, `ККА8`=KRAS, `МЕОЫЫЕ`=
-    # MEDLINE, RUSSCO/RECIST/FOLFOXIRI): это НЕ русские слова, а высокоценные коды -> в auto.
-    # Реальные провалы Group B были СТРОЧНЫЕ (`связанных`/`состоянию`/`медицинские`), их
-    # word_is_known ловит все. All-caps рус. аббревиатуры (ГЦР/СНВС) защищены ИНАЧЕ: их
-    # пиксели содержат Г/Ц/Д/Б без латинского двойника -> ни VLM, ни Tesseract не дают
-    # чистого лат. слова -> визуальные ноги их не пропустят. Гомоглиф-only рус. акронимы
-    # (АСТ) в очередь C5 не попадают (all-caps не триггерит cyr_orphan, шрифт-гейт молчит).
-    return rumorph.word_is_known(low)
+    # ТРИ языковых/структурных правила (целевой контроль 80 кропов, I27). Каждое закрывает
+    # класс, который остальные НЕ держат; визуальные ноги (VLM/OCR) на них скоррелированы:
+    # 1) word_is_known — частотная рус. лексика (`связанных`/`состоянию`);
+    if rumorph.word_is_known(low):
+        return True
+    # 2) ФОРМА «7+ строчных кириллических» — РЕДКАЯ мед. лексика, которой НЕТ в OpenCorpora
+    #    (`гепатоцеллюлярными`/`холангиокарциномой`/`устекинумаб`). Тот же приём, что в
+    #    C5-канале (`_c5_protected` long_lowercase) — вынесен и в гейт арбитра ЯВНО.
+    #    Цена: длинные ЛАТИНСКИЕ слова (`trachomatis`/`immunodeficiency`) уходят в очередь
+    #    с подсказкой, не в auto. Приемлемо: рус. слово испортить нельзя, латинское —
+    #    человек подтвердит по кропу за секунды.
+    if _RX_LONG_LOWER_CYR.match(core):
+        return True
+    # 3) ГОМОГЛИФ-ONLY ALL-CAPS — рус. аббревиатура ЦЕЛИКОМ из букв с латинским двойником
+    #    (`МАНК`=метод амплиф.нукл.кислот, `МНО`=межд.нормализ.отношение). Контроль показал:
+    #    арбитр латинизирует их в транслит (`МАНК`->`MAHK`, `МНО`->`MHO`), и обе визуальные
+    #    ноги проходят — различить Russian-гомоглиф от Latin-гомоглиф пикселями НЕЛЬЗЯ.
+    #    Блокируем ВЕСЬ класс (в т.ч. лат. акронимы EAU/IMPACT/KRAS -> очередь): auto по
+    #    гомоглиф-only небезопасен по построению. `ЕТОКЯ`(ETDRS)/`МЕОЫЫЕ`(MEDLINE) НЕ
+    #    гомоглиф-only (несут Я/Ы) -> остаются в auto. Рус. аббревиатуры с не-гомоглифом
+    #    (ГЦР/СОЭ/СРБ) защищены пикселями (Г/Ц/Э/Б без двойника) отдельно.
+    letters = [c for c in core if c.isalpha()]
+    if len(letters) >= 2 and all(c in _HOMO_UP for c in letters) and _CYR_ANY.search(core):
+        return True
+    return False
 
 
 def and_gate(verdict, cands, indep, kind, source=""):
