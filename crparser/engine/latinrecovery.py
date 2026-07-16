@@ -83,6 +83,18 @@ def _digit_sig(s: str) -> str:
     return "".join(out)
 
 
+# Дозовые единицы (внешнее ревю #6): `500мг`/`800МЕ`/`10мл` — ДОЗЫ, не коды. Хвост-единица
+# (мг/мл/г/ЕД/МЕ/ммоль…) НЕ буквы кода: без этого `_leading_glyph_code` матчил `800МЕ` как
+# ATC и eng-OCR «чинил» его в фейк-код `S00ME`. Токен, кончающийся дозовой единицей -> НЕ код.
+_RX_DOSE_UNIT_END = re.compile(
+    r"\d\s*(?:мг|мл|мкг|мкл|нг|г|кг|ЕД|МЕ|ме|ммоль|мкмоль|моль|ммол|Гр|гр|%|мЗв)$",
+    re.IGNORECASE)
+
+
+def _is_dose_token(core: str) -> bool:
+    return bool(_RX_DOSE_UNIT_END.search(core))
+
+
 # Сегментация whitespace-токена: ДЕФИС, пробелы, ОДИНОЧНЫЙ слэш, `+`, скобки `()`, звёзды `*`.
 # `.` и `[` не режем (коды `037.6`/`S01EC` и порча `1п[епог`/`8Иа//ег` целы). `+`/`()`/`*` —
 # границы склеек «препарат+[комбинация», «слово)[цитата», «тимолол**0,25» -> режем, чтобы не
@@ -361,6 +373,8 @@ def _looks_code(core: str) -> Optional[str]:
     ПЕРВЫЙ символ ОБЯЗАН быть буквой (лат/кир) — иначе чистые числа (324/100/430)
     ложно матчатся как коды. Ведущая цифро-глиф-буква (037.6/501ЕС) ловится
     отдельным узким правилом `_leading_glyph_code`."""
+    if _is_dose_token(core):
+        return None                            # `500мг`/`800МЕ` — доза, не код (#6)
     lat = "".join(_CYR2LAT.get(c, c) for c in core)
     has_digit = _has_digit(core)
     # ICD/ATC ОБЯЗАНЫ содержать реальную цифру (иначе «ООО»(рус.) ложно = «O00»(icd)).
@@ -386,6 +400,8 @@ _RX_LEAD_ATC = re.compile(r"^[58][0-9Oo][0-9Oo][А-Яа-яA-Za-z]{2}(?:[0-9Oo]{2
 
 def _leading_glyph_code(core: str) -> Optional[str]:
     """Код с ведущим цифро-глифом вместо буквы (узко, чтобы не ловить числа)."""
+    if _is_dose_token(core):
+        return None                            # `800МЕ`/`500мг` — доза, не ATC (#6)
     if _RX_LEAD_ICD.match(core):
         return "icd"
     if _RX_LEAD_ATC.match(core):
@@ -980,7 +996,10 @@ class LatinRecoverer:
             # -- код (icd/atc/tnm + ведущий глиф): гейт формы + цифро-сигнатура --
             code_kind = kind if kind in ("icd", "atc", "tnm") else _leading_glyph_code(core)
             if code_kind:
-                cand = self._code_from_eng(core, code_kind, eng_words)
+                # ЛОКАЛИЗАЦИЯ (#6): код из ВЫРОВНЕННОГО на позицию слова, НЕ из всей строки —
+                # сосед-код на строке не свидетель о цели (JO1XХ->J01DH соседа, 037.6->C22.0).
+                aligned = align.get(seg_idx.get(core, -1))
+                cand = self._code_from_eng(core, code_kind, [aligned] if aligned else [])
                 if cand and cand != core:
                     self._g[core] = _mkrec(core, cand, "ocr_eng",
                                            "entity-gate:%s+eng-crop" % code_kind, 0.9,
@@ -1047,7 +1066,14 @@ class LatinRecoverer:
     def _code_from_eng(self, core: str, kind: str, eng_words: List[str]) -> Optional[str]:
         """Выбрать из eng-OCR токен, дающий валидную форму сущности, чья цифро-сигнатура
         совпадает с corrupt (допускаем расхождение ВЕДУЩЕГО символа: 501ЕС->S01EC,
-        037.6->D37.6, где ведущая цифра — это буква). Не прошёл форму -> None."""
+        037.6->D37.6, где ведущая цифра — это буква). Не прошёл форму -> None.
+
+        ВНЕШНЕЕ РЕВЮ 2026-07-16 (#6): `eng_words` теперь = ТОЛЬКО ВЫРОВНЕННОЕ на позицию
+        целевого токена eng-слово (локализация в `_sweep_line`), а НЕ вся строка. Скан строки
+        «подтверждал» СОСЕДНИЙ код: `JO1XХ`->`J01DH`(соседа, X->D, другой класс препаратов),
+        `037.6`->`C22.0`(другой диагноз). Соответствие источнику даёт ЛОКАЛИЗАЦИЯ (пиксель
+        цели), не карта гомоглифов: битый шрифт подменяет глиф произвольно (`Т1Ь`->`T1b`:
+        Ь-пиксель это b — легитимно, но карта гомоглифов Ь->b не знает). См. I29."""
         sig = _digit_sig(core)
         dcore = _digits(core)
         for t in eng_words:
@@ -1096,10 +1122,18 @@ class LatinRecoverer:
 
     def _apply(self, text: str, page, span_uids, tnm_ok: bool, where: str) -> str:
         """Применить карты замен к тексту зоны НА УРОВНЕ СЕГМЕНТА (сплит по дефису):
-        чиним только порченый сегмент, чистый рус. хвост не трогаем (Group B)."""
+        чиним только порченый сегмент, чистый рус. хвост не трогаем (Group B).
+
+        КОНТРАКТ РЕШЕНИЯ (внешнее ревью 2026-07-16): ТЕКСТ МЕНЯЕТ ТОЛЬКО `decision=="auto"`.
+        `needs_review` — ПРЕДЛОЖЕНИЕ: провенанс + очередь на человека, ТЕКСТ НЕ ТРОГАЕМ
+        (исходный порченый токен остаётся, человек подтвердит и применит). Раньше применялись
+        ОБА -> 5683 неподтверждённые замены попали в корпус, а «уровень 2 = подсказка» был
+        фикцией. `corrections[].decision` — источник истины: auto=применено, needs_review=
+        предложено (текст не изменён)."""
         if not text or not text.strip():
             return text
-        # пред-проход: римские стадии — ЦЕЛЫМ токеном (до дефис-сегментации)
+        # пред-проход: римские стадии — ЦЕЛЫМ токеном (до дефис-сегментации). ВСЕ они
+        # needs_review -> провенанс+очередь, но ТЕКСТ НЕ меняем (лосси, только человек).
         if self._whole:
             ws = re.split(r"(\s+)", text)
             for i in range(0, len(ws), 2):
@@ -1109,7 +1143,8 @@ class LatinRecoverer:
                 rec = self._whole.get(core)
                 if rec and rec["resolved_text"] != core:
                     self._emit(rec, page, span_uids)
-                    ws[i] = lead + rec["resolved_text"] + trail
+                    if rec.get("decision") == "auto":
+                        ws[i] = lead + rec["resolved_text"] + trail
             text = "".join(ws)
         parts = _SEG_RE.split(text)      # [word, sep, word, sep, ...]
         for i in range(0, len(parts), 2):
@@ -1125,14 +1160,17 @@ class LatinRecoverer:
             if rec is None or rec["resolved_text"] == core:
                 continue
             self._emit(rec, page, span_uids)
-            parts[i] = lead + rec["resolved_text"] + trail
+            if rec.get("decision") == "auto":    # ТОЛЬКО auto меняет текст (см. контракт)
+                parts[i] = lead + rec["resolved_text"] + trail
         return "".join(parts)
 
     def _emit(self, rec: dict, page, span_uids) -> None:
-        """Записать провенанс этого применения (+ очередь при needs_review). Внутренние
-        поля (_pno/_bbox_raw) не сериализуются."""
+        """Записать провенанс (+ очередь при needs_review). Внутренние поля (_pno/_bbox_raw)
+        не сериализуются. `applied` — ЯВНО: True только для auto (текст изменён); needs_review
+        записано как ПРЕДЛОЖЕНИЕ (текст не тронут, спан в очереди)."""
         r = {"span_uid": span_uids[0] if span_uids else None,
-             "page": page if page is not None else rec.get("page")}
+             "page": page if page is not None else rec.get("page"),
+             "applied": rec.get("decision") == "auto"}
         r.update({k: v for k, v in rec.items() if not k.startswith("_")})
         self.prov.append(r)
         if rec.get("decision") == "needs_review":
