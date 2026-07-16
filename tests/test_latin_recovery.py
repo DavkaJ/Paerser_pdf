@@ -58,46 +58,78 @@ def _dash(s):
 
 
 # =========================================================================== #
-# ГРУППА A — ПОЗИТИВ: обязано быть ПОЧИНЕНО в обучаемой зоне                    #
+# ГРУППА A — ПОЗИТИВ: восстановление по КОНТРАКТУ ПРИМЕНЕНИЯ                    #
 # =========================================================================== #
-# (present-токены, absent-токены). Проверяется в _zone_text, НЕ в latin_recovery.
-_GROUP_A = {
-    "КР1_4": (
-        ["Nx", "D37.6", "M0", "Barcelona", "PD1", "PD-L1", "CTLA4",
-         "T1a", "Tx", "T0", "N0", "Mx"],
-        ["Ых", "037.6", "МО", "Вагсе1опа", "PDI", "СТЪА4",
-         "Т1а", "Тх", "ТО", "Мх", "Ыуег"],
-    ),
-    "КР628_2": (
-        ["H40.06", "S01EC", "Nasal", "Temporal", "Inferior", "van", "Spaeth", "Shaffer"],
-        ["Н40.0б", "501ЕС", "801ЕС", "ЫазаШ", "ТетрогаШ", "1п[епог",
-         "хап", "8рае1И", "8Иа//ег"],
-    ),
+# ВНЕШНЕЕ РЕВЮ 2026-07-16 (I30): раньше эти тесты ждали ВСЕ пины применёнными в тексте —
+# это отражало БАГ «`_apply` писал needs_review в текст». По ПРАВИЛЬНОМУ контракту текст
+# меняет ТОЛЬКО `decision=="auto"` (детерминированные коды); `needs_review` (термины,
+# eng-OCR, лосси-римские) — ПРЕДЛОЖЕНИЕ: источник в тексте СОХРАНЁН, спан в очереди.
+# Тест теперь берёт ожидание ИЗ decision самой коррекции -> не может снова разойтись с
+# контрактом. Пины: (source, resolved).
+_GROUP_A_PINS = {
+    "КР1_4": [("Ых", "Nx"), ("037.6", "D37.6"), ("МО", "M0"), ("СТЪА4", "CTLA4"),
+              ("Т1а", "T1a"), ("Тх", "Tx"), ("ТО", "T0"), ("Мх", "Mx"),
+              ("Ыуег", "Liver")],
+    "КР628_2": [("Н40.0б", "H40.06"), ("501ЕС", "S01EC"), ("ЫазаШ", "Nasalis"),
+                ("ТетрогаШ", "Temporalis"), ("1п[епог", "Inferior"), ("хап", "van"),
+                ("8рае1И", "Spaeth"), ("8Иа//ег", "Shaffer")],
 }
 
 
-@pytest.mark.parametrize("base", list(_GROUP_A))
-def test_group_a_present(base):
-    """Чистые формы ПРИСУТСТВУЮТ в обучаемой зоне."""
-    blob = _zone_text(_need(base))
-    missing = [tok for tok in _GROUP_A[base][0] if tok not in blob]
-    assert not missing, "%s: не восстановлены %s" % (base, missing)
+def _corr(doc, src):
+    for c in (doc.get("latin_recovery", {}) or {}).get("corrections", []):
+        if c.get("source_text") == src:
+            return c.get("decision"), c.get("resolved_text")
+    return None, None
 
 
-@pytest.mark.parametrize("base", list(_GROUP_A))
-def test_group_a_absent(base):
-    """Порченые формы ОТСУТСТВУЮТ в обучаемой зоне."""
-    blob = _zone_text(_need(base))
-    still = [tok for tok in _GROUP_A[base][1] if tok in blob]
-    assert not still, "%s: остались порченые %s" % (base, still)
+@pytest.mark.parametrize("base", list(_GROUP_A_PINS))
+def test_group_a_contract(base):
+    """КОНТРАКТ: auto -> resolved в тексте (применён); needs_review -> source СОХРАНЁН
+    в тексте (НЕ применён). Ловит регресс `needs_review писался в текст` (было 5683)."""
+    doc = _need(base)
+    blob = _zone_text(doc)
+    viol = []
+    for src, resolved in _GROUP_A_PINS[base]:
+        dec, rt = _corr(doc, src)
+        if dec is None:
+            continue                      # нет коррекции (напр. Вагсе1опа чинится таблицей)
+        if dec == "auto":
+            if rt and rt not in blob:
+                viol.append(("auto НЕ применён", src, rt))
+        elif dec == "needs_review":
+            if src not in blob:
+                viol.append(("needs_review ПРИМЕНЁН (source исчез)", src, rt))
+    assert not viol, "%s: контракт применения нарушен: %s" % (base, viol)
 
 
-def test_group_a_roman_stage():
-    """Римские стадии восстановлены (Н-Ш->II-III, П-1У->II-IV; дефис/тире не важен)."""
-    b14 = _dash(_zone_text(_need("КР1_4")))
-    assert "II-III" in b14 and "Н-Ш" not in b14, "КР1_4: II-III не восстановлена"
-    b628 = _dash(_zone_text(_need("КР628_2")))
-    assert "II-IV" in b628 and "П-1У" not in b628, "КР628_2: II-IV не восстановлена"
+def test_group_a_needs_review_not_applied_corpuswide():
+    """Ни одна needs_review-коррекция НЕ применена: её source остался в тексте.
+    Прямая проверка контракта по всему собранному outout_latin (дешёвая, без OCR)."""
+    leaked = []
+    for p in _latin_docs():
+        doc = json.load(open(p, encoding="utf-8"))
+        blob = _zone_text(doc)
+        for c in (doc.get("latin_recovery", {}) or {}).get("corrections", []):
+            if c.get("decision") == "needs_review" and c.get("applied"):
+                leaked.append((os.path.basename(p), c.get("source_text")))
+        # applied-флаг обязан совпадать с decision
+    assert not leaked, "needs_review с applied=True (баг вернулся): %s" % leaked[:10]
+
+
+def test_group_a_roman_stage_is_proposal_not_applied():
+    """Римские стадии (Н-Ш->II-III) ЛОССИ -> needs_review: источник СОХРАНЁН в тексте,
+    чистая форма НЕ впечатана автоматически (контракт: только человек применяет)."""
+    for base, src in (("КР1_4", None), ("КР628_2", None)):
+        doc = _need(base)
+        romans = [c for c in (doc.get("latin_recovery", {}) or {}).get("corrections", [])
+                  if "roman_stage" in (c.get("why_suspect") or [])]
+        for c in romans:
+            assert c.get("decision") == "needs_review", (
+                "%s: римская стадия %r не needs_review" % (base, c.get("source_text")))
+            assert not c.get("applied"), (
+                "%s: римская стадия %r применена (лосси, только человек)"
+                % (base, c.get("source_text")))
 
 
 def test_group_a_kr1_4_all_13_m0():
