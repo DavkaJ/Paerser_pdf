@@ -1349,14 +1349,20 @@ content_start 18→460 «1. Краткая информация…», 7 глав
 лидеров >=4 у маркера → лидерный путь → elif недостижим. Чистый эффект мерить ТОЛЬКО A/B
 (с правкой vs без, оба Jul-20).
 
-**BASELINE ОБНОВЛЁН (Jul-20 полный прогон, latin off, весь committed код): 529/130/63 →
-522/140/60.** 11 переходов, все объяснимы: КР715_2 FAIL→PASS (мой ШАГ 2, единственное
-восстановление); 8 PASS→REVIEW + 2 FAIL→REVIEW — ДРЕЙФ промежуточных latin-фикс коммитов
-(61d638c «гейт мёртв» и др.), несущий new-kind CORRUPTION/RESIDUAL_PIN. Это НЕ регрессы, а
-fail-closed ПОЧИНКИ: напр. КР1_4 PASS→REVIEW(RESIDUAL_PIN) — ровно то, что ТРЕБУЕТ I3 («КР1_4
-обязан давать RESIDUAL_PIN»); Jul-14 PASS был ЛОЖНЫЙ. КР931_1 PASS→REVIEW — тоже CORRUPTION
-(дрейф), НЕ мой furniture (тот дал lost 5→6 = warning, не флип; согласуется с 0 флипов Phase 0.1).
-**Итог: Phase 0/1 не внесли регрессов; report.json теперь честный 522/140/60 (Jul-20).**
+**BASELINE (Jul-20 полный прогон, latin off, весь committed код): 529/130/63 → 530/130/62.**
+ЕДИНСТВЕННЫЙ переход — КР715_2 FAIL→PASS (мой ШАГ 2). НОЛЬ PASS→REVIEW, никакого дрейфа.
+
+**ГРАБЛИ (I5 сработала!): первый baseline-прогон (коммит ac5d03a, 522/140/60) БЫЛ ОШИБОЧНЫМ —
+`batch.py` запущен в шелле БЕЗ `TESSERACT_CMD`.** env НЕ переносится между Bash-вызовами;
+`_resolve_tesseract()` вернул **None** → ГИБРИД-OCR не работал для born-digital док. (сканы
+«ожили» из OCR-КЭША, но hybrid не запустился). Итог: восстановление порчи не произошло →
+RESIDUAL_PIN/CORRUPTION всплыли → ЛОЖНЫЕ 8 PASS→REVIEW. Доказательство: КР1_4 `disagreements`
+= 0 в том прогоне, **486** при перепарсе с `TESSERACT_CMD`. Это РОВНО дыра fail-open I5 (batch.py
+не имеет `--require-ocr`, в отличие от batch_report.py). **Правило: любой корпусный прогон
+экспортировать `TESSERACT_CMD` (+`TESSDATA_PREFIX`) В ТОМ ЖЕ Bash-вызове; проверять
+`ocr._resolve_tesseract() is not None` и наличие disagreements у КР1_4 ПЕРЕД доверием числам.**
+Перегенерация с OCR дала истинный baseline 530/130/62. **Итог: Phase 0/1 регрессов не внесли;
+единственная дельта — восстановление КР715_2 (ШАГ 2). report.json теперь честный 530/130/62.**
 
 **Byte-сравнение на Windows:** `jsonio._atomic_dump` пишет в ТЕКСТОВОМ режиме → на диске
 CRLF, `manifest.output_sha256` = sha CRLF-байт; reparse-sha от `json.dumps().encode()` = LF.
