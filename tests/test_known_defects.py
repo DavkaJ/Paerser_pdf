@@ -90,12 +90,19 @@ def test_D7_kr401_not_pass(validate_base):
     assert rep.status != "PASS"
 
 
-def test_D11_kr848_overcount_detected(outout_doc):
-    """КР848_1: сумма учтённого > источника -> OVERCOUNT (было: обрезано min())."""
-    doc = outout_doc("КР848_1")
-    rep = V.Report("КР848_1")
+def test_D11_overcount_gate_detects_duplication(make_doc):
+    """OVERCOUNT-гейт: сумма учтённого (sections+excluded+tables) > total*1.02 → REVIEW.
+    Пин раньше стоял на КР848_1 (61551 > 54047), но ШАГ 4 (roman model-select) восстановил
+    его структуру и переучёт ИСЧЕЗ (overcount_ratio 1.0005, 5 секций вместо 1) — гейт теперь
+    проверяем СИНТЕТИКОЙ, исполняющей путь `_check_stats_and_coverage` (I30). Восстановление
+    КР848_1 покрыто test_D6_kr848_not_pass + test_content_start.test_kr848_1_no_single_section."""
+    # текст секции (300) заведомо превышает объявленный источник (100) → дубль между buckets
+    doc = make_doc(sections=[{"number": "1", "title": "", "text": "я" * 300,
+                              "level": 1, "children": []}], total_chars=100)
+    rep = V.Report("synthetic")
     V._check_stats_and_coverage(rep, doc, doc.get("stats", {}))
-    assert any("OVERCOUNT" in r for r in rep.reviews)
+    assert any("OVERCOUNT" in r for r in rep.reviews), (
+        "OVERCOUNT-гейт не сработал на синтетике: %s" % rep.reviews)
 
 
 # ============================================================================

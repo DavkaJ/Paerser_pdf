@@ -45,6 +45,9 @@ _RE_TOC_TAIL = re.compile(r"(\.{2,}\s*\d{1,4}|\s\d{1,4})\s*$")
 # Тумблер запасного tail-пути (ШАГ 2). Дефолт True; изоляционный A/B-замер выключает его,
 # чтобы получить baseline «Jul-20 без ШАГ 2» и отделить эффект правки от дрейфа Jul-14->Jul-20.
 _TAIL_TOC_ENABLED = True
+# Тумблер выбора модели нумерации по recall (ШАГ 4). Дефолт True; A/B выключает -> прежнее
+# поведение (roman_ok=False на неоднозначном римском док.), чтобы изолировать эффект.
+_ROMAN_MODEL_SELECT = True
 # Предел длины заголовка подраздела теперь задаёт NumberingPolicy профиля
 # (промпт 11): self._numbering.max_subtitle_len. Кандидат длиннее — это абзац прозы
 # с номером, а не раздел (отвергается, если не подтверждён оглавлением).
@@ -108,30 +111,57 @@ class Segmenter:
             [ln.text for page in pages for ln in page.lines], self._spec.toc)
 
         lines = self._collect_lines(pages, subtraction_map)
-        # римские главы включаем только если ПОЛИТИКА профиля их использует (промпт 11)
-        # И структура документа безопасна (нет одиночно-арабских подпунктов). Профиль
-        # без римских глав (uses_roman_chapters=False) их вовсе не эмитит — гейт инертен.
-        self._roman_ok = (self._numbering.uses_roman_chapters
-                          and self._roman_chapters_safe(lines))
         self._blank_gap = self._compute_blank_gap(lines)
-        start = self._find_content_start(lines)
 
+        # Выбор модели нумерации (промпт 12 ШАГ 4). Прежде: римские главы включались ТОЛЬКО
+        # если профиль их использует И структура «безопасна» (нет одиночно-арабских
+        # подпунктов) — иначе roman_ok=False и главы I-XII ТЕРЯЛИСЬ (КР848_1/1021_1). Теперь
+        # неоднозначный случай (римские главы ЕСТЬ, но за одной идёт одиночно-арабский
+        # подраздел → _roman_chapters_safe=False) разбираем перебором ОБЕИХ моделей и берём
+        # ту, что даёт больший КАНОНИЧЕСКИЙ recall (не угадываем — меряем). _roman_chapters_safe
+        # возвращает False ТОЛЬКО когда римские главы есть, поэтому uses_roman&not safe = ровно
+        # неоднозначный класс; не-римские док. идут прежним путём (байт-в-байт).
+        uses_roman = self._numbering.uses_roman_chapters
+        safe = self._roman_chapters_safe(lines)
+        if not uses_roman or safe or not _ROMAN_MODEL_SELECT:
+            tree, excluded = self._segment_body(lines, uses_roman and safe)
+        else:
+            # _segment_body ДОПИСЫВАЕТ в self._warnings (_check_heading_order и др.). При
+            # переборе двух моделей нельзя оставить предупреждения ОТВЕРГНУТОЙ модели —
+            # снимаем срез вокруг каждой попытки и оставляем только у ВЫБРАННОЙ (иначе
+            # tie-док получал бы двойные warnings и дрейф байтов при неизменном исходе).
+            mark = len(self._warnings)
+            tree_on, exc_on = self._segment_body(lines, True)
+            warn_on = self._warnings[mark:]
+            del self._warnings[mark:]
+            tree_off, exc_off = self._segment_body(lines, False)
+            warn_off = self._warnings[mark:]
+            del self._warnings[mark:]
+            if self._canonical_recall(tree_on) > self._canonical_recall(tree_off):
+                tree, excluded, keep = tree_on, exc_on, warn_on
+            else:
+                tree, excluded, keep = tree_off, exc_off, warn_off   # ничья → off (консервативно)
+            self._warnings.extend(keep)
+
+        return {"sections": tree, "excluded": excluded}
+
+    def _segment_body(self, lines: List[Line], roman_ok: bool):
+        """Собрать (дерево разделов, excluded) при заданной модели римских глав. Вынесено
+        из segment() ради перебора моделей нумерации (ШАГ 4). Для НЕоднозначного дока
+        вызывается дважды (roman on/off); для остальных — один раз, как прежде."""
+        self._roman_ok = roman_ok
+        start = self._find_content_start(lines)
         front_lines = lines[:start]
         body_lines = lines[start:]
-
-        # инлайн-разбиение строк основного текста (профиль-хук)
         split_body: List[Line] = []
         for line in body_lines:
             split_body.extend(self._profile.split_inline_headings(line))
-
         excluded = self._empty_excluded()
         self._split_front_matter(front_lines, excluded)
-
         sections = self._run_state_machine(split_body, excluded)
         sections = self._drop_phantom_duplicates(sections)
-        # provenance: схлопнуть повторы span_uid ВНУТРИ узла/элемента (одна строка,
-        # разбитая split_inline_headings, даёт клоны с ОДНИМ span_uid). На владельца
-        # это не влияет, но список должен быть чистым множеством (промпт 10).
+        # provenance: схлопнуть повторы span_uid ВНУТРИ узла/элемента (одна строка, разбитая
+        # split_inline_headings, даёт клоны с ОДНИМ span_uid) — список должен быть множеством.
         for s in sections:
             s.span_uids = self._dedupe(s.span_uids)
         for bucket in excluded.values():
@@ -139,8 +169,20 @@ class Segmenter:
                 item.span_uids = self._dedupe(item.span_uids)
         tree = self._build_hierarchy(sections)
         self._check_heading_order(tree)
+        return tree, excluded
 
-        return {"sections": tree, "excluded": excluded}
+    def _canonical_recall(self, tree: List[Section]) -> int:
+        """Сколько канонических глав (арабский верхний компонент 1..7) в дереве — критерий
+        выбора модели нумерации (ШАГ 4). Римские главы приведены к арабским номерам, поэтому
+        считаем по номерам, как валидатор `_canonical_recall`."""
+        present = set()
+        for s in _walk_tree(tree):
+            num = s.number
+            if num:
+                head = num.split(".")[0]
+                if head.isdigit() and 1 <= int(head) <= 7:
+                    present.add(int(head))
+        return len(present)
 
     def _check_heading_order(self, tree: List[Section]) -> None:
         """Промпт 11b: подключить NumberingPolicy.heading_order_valid (монотонность

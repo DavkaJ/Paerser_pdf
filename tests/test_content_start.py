@@ -47,3 +47,25 @@ def test_kr715_2_body_starts_after_page_tailed_toc():
         "заголовок первой главы окончен номером страницы — это строка TOC: %r" % top[0].title)
     canon = _canonical_tops(top)
     assert canon >= 5, "восстановлено <5 канонических глав (было 2 фрагмента TOC): %d" % canon
+
+
+# ШАГ 4 (NUMBERING_MISMATCH): римские главы (I.–XII.) терялись из-за safe-гейта, который
+# ГЛУХО отключал римскую модель, когда за римской главой шёл одиночно-арабский подраздел.
+# Фикс — перебор моделей и выбор по каноническому recall (не угадывание).
+def test_kr1021_1_roman_chapters_recovered():
+    """КР1021_1: римские главы V–XI (=канонические 1–7) восстановлены (было recall=2)."""
+    if not os.path.exists(os.path.join(RAW, "КР1021_1.pdf")):
+        pytest.skip("нет data/raw/КР1021_1.pdf")
+    res = _parse("КР1021_1")
+    canon = _canonical_tops(res.sections)
+    assert canon >= 5, "римская модель не выбрана — глав <5: recall=%d" % canon
+
+
+def test_kr848_1_no_single_section_collapse():
+    """КР848_1 (I10 ложный PASS: 1 секция, coverage 100%): римская структура восстановлена
+    → >1 секции и честный не-PASS (не «одна секция на весь документ»)."""
+    if not os.path.exists(os.path.join(RAW, "КР848_1.pdf")):
+        pytest.skip("нет data/raw/КР848_1.pdf")
+    res = _parse("КР848_1")
+    assert len(res.sections) > 1, "КР848_1 всё ещё коллапс в 1 секцию"
+    assert _canonical_tops(res.sections) >= 3, "структура КР848_1 не восстановлена"
