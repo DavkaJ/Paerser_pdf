@@ -153,6 +153,15 @@ def main():
         return (bucket, -g.get("occurrences", 1), -len(g.get("docs", [])))
     uniq.sort(key=sortkey)
 
+    # ГЕН-ДОГАДКИ без кандидата (МО4/СД2/ВГВ2/ФНО8α — рус. аббревиатуры+цифра, детектор
+    # `_looks_critical_term` кастует широкую сеть) — НЕ в основную очередь: неразрешимы,
+    # не блокируют релиз (release-block держат icd/atc/tnm code-violations, не они), и
+    # завалили бы человека. Отдельный экспертный триаж (не теряем, но и не грести в очереди).
+    def _is_gene_guess(g):
+        return g.get("entity_kind") == "gene" and not _has_cand(g)
+    triage = [g for g in uniq if _is_gene_guess(g)]
+    uniq = [g for g in uniq if not _is_gene_guess(g)]
+
     crit = [g for g in uniq if _is_crit(g)]
     crit_actionable = [g for g in crit if _has_cand(g)]
     crit_guess = [g for g in crit if not _has_cand(g)]
@@ -172,6 +181,11 @@ def main():
     with open(os.path.join(QDIR, "_noise.jsonl"), "w", encoding="utf-8") as fh:
         for t in noise:
             fh.write(json.dumps(t, ensure_ascii=False) + "\n")
+    for i, g in enumerate(triage):
+        g["task_id"] = "gt_%05d" % i
+    with open(os.path.join(QDIR, "tasks_gene_triage.jsonl"), "w", encoding="utf-8") as fh:
+        for g in triage:
+            fh.write(json.dumps(g, ensure_ascii=False) + "\n")
 
     # доклад
     by_kind = Counter(g.get("entity_kind") or "term" for g in uniq)
@@ -183,13 +197,16 @@ def main():
     print("ШУМ отсеян -> _noise.jsonl:            %d" % len(noise))
     print("  по причинам: %s" % dict(noise_by.most_common()))
     print("-" * 70)
-    print("ЗАДАЧ ЧЕЛОВЕКУ (дедуп, без шума):      %d" % len(uniq))
+    print("ГЕН-ДОГАДКИ (рус.аббрев+цифра) -> триаж:  %d" % len(triage))
+    print("-" * 70)
+    print("ОСНОВНАЯ ОЧЕРЕДЬ ЧЕЛОВЕКУ (дедуп):      %d" % len(uniq))
     print("  из них КРИТИЧЕСКИХ (icd/atc/tnm/dose/gene): %d" % len(crit))
     print("    - с кандидатом (actionable):        %d" % len(crit_actionable))
-    print("    - догадка формы, без кандидата:     %d" % len(crit_guess))
+    print("    - код без кандидата (эксперт):       %d" % len(crit_guess))
     print("  по типу сущности: %s" % dict(by_kind.most_common()))
     print("  с кропом: %d / %d" % (sum(1 for g in uniq if g.get("crop_png")), len(uniq)))
-    print("\nфайлы: %s  |  _noise.jsonl  |  crops_min/ (%d)" % (out_tasks, n_crop))
+    print("\nфайлы: %s  |  _noise.jsonl (%d)  |  tasks_gene_triage.jsonl (%d)  |  crops_min/ (%d)"
+          % (out_tasks, len(noise), len(triage), n_crop))
     return 0
 
 

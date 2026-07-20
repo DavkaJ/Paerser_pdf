@@ -57,3 +57,11 @@ __pycache__/
 *.pyo
 .venv/
 venv/
+_corpus/verify_queue/crops_min/
+_corpus/verify_queue/tasks_min.json
+_corpus/verify_queue/tasks_gene_triage.jsonl
+_corpus/verify_queue/_noise.jsonl
+_corpus/vlm_pilot_result.json
+_corpus/vlm_pilot_run.log
+_corpus/batch_latin_full.log
+_corpus/verify_queue/_minimize.log

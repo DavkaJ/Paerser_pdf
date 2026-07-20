@@ -16,8 +16,12 @@
 
   <View style="display:flex; gap:16px;">
     <View style="flex:1;">
-      <Header value="Изображение места (crop из PDF)" size="4"/>
-      <Image name="crop" value="$crop_png" zoom="true" maxWidth="100%"/>
+      <Header value="Слово (≈600 DPI)" size="5"/>
+      <Image name="crop" value="$crop_word" zoom="true" maxWidth="100%"/>
+      <Header value="Строка (контекст)" size="5"/>
+      <Image name="crop_line" value="$crop_line" zoom="true" maxWidth="100%"/>
+      <Header value="Страница (bbox подсвечен)" size="5"/>
+      <Image name="crop_page" value="$crop_page" zoom="true" maxWidth="100%"/>
     </View>
     <View style="flex:1;">
       <Header value="Контекст" size="4"/>
