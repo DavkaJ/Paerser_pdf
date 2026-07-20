@@ -363,14 +363,16 @@
   "status": "PASS"
  },
  "КР1033_1": {
-  "klass": "OK",
+  "klass": "FM_PREPEND",
   "recall": 7,
   "toc_tail_titles": [],
-  "front_matter_sections": [],
+  "front_matter_sections": [
+   "Термины и определения"
+  ],
   "toc_marker_section": null,
   "toc_glued": true,
   "missing": false,
-  "n_sections": 60,
+  "n_sections": 61,
   "status": "REVIEW"
  },
  "КР1034_1": {
@@ -572,14 +574,16 @@
   "status": "PASS"
  },
  "КР115_2": {
-  "klass": "OK",
+  "klass": "FM_PREPEND",
   "recall": 6,
   "toc_tail_titles": [],
-  "front_matter_sections": [],
+  "front_matter_sections": [
+   "Термины и определения"
+  ],
   "toc_marker_section": null,
   "toc_glued": true,
   "missing": true,
-  "n_sections": 9,
+  "n_sections": 10,
   "status": "FAIL"
  },
  "КР116_2": {
@@ -1253,7 +1257,7 @@
   "toc_glued": true,
   "missing": false,
   "n_sections": 36,
-  "status": "PASS"
+  "status": "REVIEW"
  },
  "КР200_3": {
   "klass": "OK",
@@ -1616,7 +1620,7 @@
   "toc_glued": true,
   "missing": false,
   "n_sections": 22,
-  "status": "PASS"
+  "status": "REVIEW"
  },
  "КР264_2": {
   "klass": "OK",
@@ -1887,14 +1891,16 @@
   "status": "PASS"
  },
  "КР297_2": {
-  "klass": "OK",
+  "klass": "FM_PREPEND",
   "recall": 7,
   "toc_tail_titles": [],
-  "front_matter_sections": [],
+  "front_matter_sections": [
+   "Термины и определения"
+  ],
   "toc_marker_section": null,
   "toc_glued": true,
   "missing": false,
-  "n_sections": 33,
+  "n_sections": 34,
   "status": "REVIEW"
  },
  "КР301_3": {
@@ -2016,7 +2022,7 @@
   "toc_glued": true,
   "missing": false,
   "n_sections": 24,
-  "status": "PASS"
+  "status": "REVIEW"
  },
  "КР327_3": {
   "klass": "OK",
@@ -2681,16 +2687,18 @@
   "status": "PASS"
  },
  "КР467_3": {
-  "klass": "OK",
+  "klass": "FM_PREPEND",
   "recall": 6,
   "toc_tail_titles": [
    "Медицинская реабилитация, медицинские показан"
   ],
-  "front_matter_sections": [],
+  "front_matter_sections": [
+   "Термины и определения"
+  ],
   "toc_marker_section": null,
   "toc_glued": true,
   "missing": true,
-  "n_sections": 37,
+  "n_sections": 38,
   "status": "FAIL"
  },
  "КР469_3": {
@@ -3002,14 +3010,16 @@
   "status": "PASS"
  },
  "КР524_3": {
-  "klass": "OK",
+  "klass": "FM_PREPEND",
   "recall": 7,
   "toc_tail_titles": [],
-  "front_matter_sections": [],
+  "front_matter_sections": [
+   "Термины и определения"
+  ],
   "toc_marker_section": null,
   "toc_glued": true,
   "missing": true,
-  "n_sections": 29,
+  "n_sections": 30,
   "status": "FAIL"
  },
  "КР526_2": {
@@ -3608,7 +3618,7 @@
   "toc_glued": true,
   "missing": false,
   "n_sections": 28,
-  "status": "PASS"
+  "status": "REVIEW"
  },
  "КР610_2": {
   "klass": "FM_PREPEND",
@@ -3626,14 +3636,16 @@
   "status": "REVIEW"
  },
  "КР613_2": {
-  "klass": "OK",
+  "klass": "FM_PREPEND",
   "recall": 7,
   "toc_tail_titles": [],
-  "front_matter_sections": [],
+  "front_matter_sections": [
+   "Термины и определения"
+  ],
   "toc_marker_section": null,
   "toc_glued": true,
   "missing": false,
-  "n_sections": 40,
+  "n_sections": 41,
   "status": "REVIEW"
  },
  "КР614_3": {
@@ -3785,15 +3797,15 @@
   "status": "PASS"
  },
  "КР627_3": {
-  "klass": "OK",
-  "recall": 7,
+  "klass": "NUMBERING_MISMATCH",
+  "recall": 0,
   "toc_tail_titles": [],
   "front_matter_sections": [],
   "toc_marker_section": null,
-  "toc_glued": true,
-  "missing": true,
-  "n_sections": 37,
-  "status": "FAIL"
+  "toc_glued": false,
+  "missing": false,
+  "n_sections": 0,
+  "status": "REVIEW"
  },
  "КР628_2": {
   "klass": "OK",
@@ -3803,7 +3815,7 @@
   "toc_marker_section": null,
   "toc_glued": true,
   "missing": false,
-  "n_sections": 22,
+  "n_sections": 24,
   "status": "REVIEW"
  },
  "КР629_2": {
@@ -4693,23 +4705,15 @@
   "status": "FAIL"
  },
  "КР715_2": {
-  "klass": "START_IN_TOC",
-  "recall": 2,
-  "toc_tail_titles": [
-   "Физическая активность 58",
-   "Лечение цирроза печени с гепаторенальным синд",
-   "Лечение цирроза печени с саркопенией 89",
-   "Хирургическое лечение 90",
-   "Хирургическое лечение цирроза печени с кровот",
-   "Трансплантация печени 96",
-   "Профилактика варикозных кровотечений 105"
-  ],
+  "klass": "OK",
+  "recall": 7,
+  "toc_tail_titles": [],
   "front_matter_sections": [],
   "toc_marker_section": null,
-  "toc_glued": false,
-  "missing": true,
-  "n_sections": 22,
-  "status": "FAIL"
+  "toc_glued": true,
+  "missing": false,
+  "n_sections": 43,
+  "status": "PASS"
  },
  "КР716_1": {
   "klass": "OK",
@@ -4777,7 +4781,7 @@
   "toc_glued": true,
   "missing": false,
   "n_sections": 24,
-  "status": "PASS"
+  "status": "REVIEW"
  },
  "КР721_2": {
   "klass": "OK",
@@ -6818,15 +6822,15 @@
   "status": "PASS"
  },
  "КР898_1": {
-  "klass": "OK",
-  "recall": 7,
+  "klass": "NUMBERING_MISMATCH",
+  "recall": 0,
   "toc_tail_titles": [],
   "front_matter_sections": [],
   "toc_marker_section": null,
-  "toc_glued": true,
-  "missing": true,
-  "n_sections": 16,
-  "status": "FAIL"
+  "toc_glued": false,
+  "missing": false,
+  "n_sections": 0,
+  "status": "REVIEW"
  },
  "КР899_1": {
   "klass": "OK",
@@ -6850,7 +6854,7 @@
   "toc_glued": true,
   "missing": false,
   "n_sections": 38,
-  "status": "PASS"
+  "status": "REVIEW"
  },
  "КР900_1": {
   "klass": "OK",
@@ -7213,7 +7217,7 @@
   "toc_glued": true,
   "missing": false,
   "n_sections": 24,
-  "status": "PASS"
+  "status": "REVIEW"
  },
  "КР932_1": {
   "klass": "OK",
@@ -7499,7 +7503,7 @@
   "toc_glued": true,
   "missing": false,
   "n_sections": 25,
-  "status": "PASS"
+  "status": "REVIEW"
  },
  "КР958_1": {
   "klass": "OK",
