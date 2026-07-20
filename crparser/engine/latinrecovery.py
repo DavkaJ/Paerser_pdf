@@ -1276,6 +1276,7 @@ class LatinRecoverer:
         wi = i
         has_gap = False
         corruption = False
+        prep = False
         for t in tmpl:
             if wi >= n:
                 return None
@@ -1286,6 +1287,8 @@ class LatinRecoverer:
             hl = _homoglyph_latin(core)
             if hl is not None and hl.lower() == t.lower():
                 corruption = True
+                if core in _RU_PREP:       # строчный рус. предлог как гомограф -> не auto
+                    prep = True
                 wi += 1
                 continue
             # РУН осколков заполняет ТОЛЬКО МНОГОБУКВЕННЫЙ токен шаблона (`virus`).
@@ -1302,8 +1305,14 @@ class LatinRecoverer:
                 # (`[1, 2, 3]`, `2)`) — цифры БЕЗ кир-букв: это НЕ рассыпанное слово, а
                 # легит-контент. Без этого гейта `COVID-19 [2]`->`COVID-19 II`,
                 # `virus 2)`->`virus HIV` (тихая порча цитат — I37 grabli, найдено ШАГ 5).
-                if sum(1 for k in range(wi, wj)
-                       for ch in toks[k][2] if _CYR_ANY.match(ch)) < 2:
+                run_cyr = [ch for k in range(wi, wj)
+                           for ch in toks[k][2] if _CYR_ANY.match(ch)]
+                if len(run_cyr) < 2:
+                    return None
+                # ВСЕ кир-буквы рана — предлоги (`а у`=and-among, `с и`=with-and)? Это
+                # РУССКИЕ слова, а не рассыпанное лат. слово: не заполнять из шаблона
+                # (Cowork-ревью 2: `а у`->MRSA). `у 1 ш з`=virus имеет ш/з (не предлоги) -> ок.
+                if all(ch in _RU_PREP for ch in run_cyr):
                     return None
                 # ДЛИНА рассыпанного рана обязана согласоваться с длиной слова шаблона:
                 # у рассыпки каждый глиф -> один осколок, длина сохраняется. `у 1 ш з`(4)
@@ -1317,7 +1326,7 @@ class LatinRecoverer:
                 wi = wj
                 continue
             return None
-        return wi - 1, has_gap, corruption
+        return wi - 1, has_gap, corruption, prep
 
     def _match_here(self, toks, i: int, cands) -> Optional[tuple]:
         """Сопоставить окно с позиции i против шаблонов-кандидатов. Принимаем шаблон,
@@ -1330,14 +1339,14 @@ class LatinRecoverer:
             res = self._walk_template(toks, i, tmpl_tokens)
             if res is None:
                 continue
-            end_idx, has_gap, corruption = res
+            end_idx, has_gap, corruption, prep = res
             if end_idx + 1 < n:
                 ncore = toks[end_idx + 1][2]
                 if _is_shatter_char_token(ncore) or (
                         _homoglyph_latin(ncore) is not None and _CYR_ANY.search(ncore)):
                     continue                   # порча продолжается за фразой
             crit = _phrase_is_critical(tmpl_tokens)
-            matches.append((phrase, end_idx, has_gap, corruption, count, crit))
+            matches.append((phrase, end_idx, has_gap, corruption, count, crit, prep))
         if not matches:
             return None
         uniq = {}
@@ -1378,7 +1387,7 @@ class LatinRecoverer:
             if best is None:
                 i += 1
                 continue
-            phrase, end_idx, has_gap, corruption, count, crit, ambiguous, alts = best
+            phrase, end_idx, has_gap, corruption, count, crit, prep, ambiguous, alts = best
             if not corruption:                 # окно уже чисто -> не трогаем
                 i += 1
                 continue
@@ -1386,13 +1395,17 @@ class LatinRecoverer:
             if src_phrase == phrase:
                 i += 1
                 continue
-            if ambiguous or crit or (has_gap and count < 2):
+            # prep: гомограф-слот занят СТРОЧНЫМ рус. предлогом (`CHOP с`->c) -> не auto
+            # (Cowork-ревью 2). ЗАГЛАВНЫЕ генотипы (Hepatitis С/В) не предлоги -> остаются auto.
+            if ambiguous or crit or prep or (has_gap and count < 2):
                 decision = "needs_review"
             else:
                 decision = "auto"
             why = ["intra_doc_selfrepair"]
             if has_gap:
                 why.append("shattered_latin")
+            if prep:
+                why.append("ru_preposition")
             conf = 0.95 if decision == "auto" else 0.6
             rule = "phrase-template(freq=%d%s%s)" % (
                 count, ",gap" if has_gap else "", ",amb" if ambiguous else "")
@@ -1439,13 +1452,24 @@ class LatinRecoverer:
                 continue
             if not (_clean_latin_word(rcore) and len(rcore) >= 2):
                 continue
-            edits.append((cs, ce, _CYR2LAT[core], core))
-        for cs, ce, lat, core in sorted(edits, reverse=True):
+            edits.append((cs, ce, _CYR2LAT[core], core, core in _RU_PREP, lcore))
+        for cs, ce, lat, core, is_prep, lcore in sorted(edits, key=lambda e: -e[0]):
+            # СТРОЧНЫЙ рус. предлог (`с`=with, `у`, `а`, `о`) в лат. окружении -> НЕ auto
+            # (Cowork-ревью 2: `FOLFOXIRI с`->`c`). Заглавные (С/В/А генотипы) не предлоги.
+            decision = "needs_review" if is_prep else "auto"
+            why = ["homoglyph_in_latin"] + (["ru_preposition"] if is_prep else [])
             rec = _mkrec(core, lat, "homoglyph_in_latin",
-                         "single-cyr-homoglyph-flanked-by-latin", 1.0, "term", False,
-                         "auto", ["homoglyph_in_latin"], candidates=[lat])
+                         "single-cyr-homoglyph-flanked-by-latin", 0.6 if is_prep else 1.0,
+                         "term", False, decision, why, candidates=[lat])
+            if is_prep:                        # локализуем для кропа: левый анкор + токен
+                pno, bbox, _ = self._locate(lcore + core, self._page_hint.get(core))
+                if pno is not None:
+                    rec["_pno"] = pno
+                    rec["_bbox_raw"] = tuple(bbox)
+                    rec["bbox"] = [round(float(x), 1) for x in bbox]
             self._emit(rec, page, span_uids)
-            text = text[:cs] + lat + text[ce:]
+            if not is_prep:
+                text = text[:cs] + lat + text[ce:]
         return text
 
     # ---- B3b: рассыпанные латинские слова -> широкий eng-OCR кроп (ШАГ 2) ----
@@ -1792,6 +1816,13 @@ def _homoglyph_latin(core: str) -> Optional[str]:
 def _is_shatter_char_token(core: str) -> bool:
     """Одиночный символ-осколок рассыпанного слова: одна кир-буква ИЛИ цифра."""
     return len(core) == 1 and (bool(_CYR_ANY.match(core)) or core.isdigit())
+
+
+# Одиночные СТРОЧНЫЕ русские предлоги/союзы: валидные РУССКИЕ слова, НЕ осколки битой
+# латиницы и НЕ латинские гомографы. Их НЕ авто-латинизировать (Cowork-ревью 2: «а у»->MRSA,
+# «у»->Y, «с»(with)->c). ЗАГЛАВНЫЕ (В/С/А генотипы Hepatitis/Influenza) сюда НЕ входят —
+# они по построению не строчные предлоги, латинизация генотипов сохраняется.
+_RU_PREP = frozenset("с у а и в к о я б ж".split())
 
 
 def _is_russian_word(core: str) -> bool:
