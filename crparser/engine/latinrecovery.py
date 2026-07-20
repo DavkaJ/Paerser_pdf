@@ -468,6 +468,7 @@ class LatinRecoverer:
         self._corrupt_fonts: Optional[set] = None   # ГЕЙТ 1 канала C5 (лениво)
         self._c5_queued: set = set()           # дедуп задач `c5_long_lowercase` в очередь
         self._eng_line_cache: Dict[Tuple[int, tuple], str] = {}
+        self._tmpl_first: Dict[str, list] = {}  # B3a: анкор(low) -> [(tokens, phrase, count)]
         self.prov: List[Dict[str, Any]] = []   # блок latin_recovery
         self.queue: List[Dict[str, Any]] = []  # неуверенные -> verify_queue
         self.unresolved_critical: List[Dict[str, Any]] = []
@@ -606,6 +607,9 @@ class LatinRecoverer:
         """Мутирует текстовые поля обучаемой зоны, наполняет self.prov/queue/…."""
         zones = self._gather_zones(sections, tables, excluded, metadata)
         self._doc_latin_vocab = _collect_latin_vocab(sections, tables, excluded)
+        # B3a (ШАГ 1): индекс ЧИСТЫХ латинских фраз-якорей документа для внутридок.
+        # self-repair (детерминизм, без OCR/моделей) — строится ДО правок зон.
+        self._build_phrase_templates(zones)
         # частоты кир-токенов по всему документу — защита от латинизации рус. слов
         # (Group B): токен, повторяющийся >=3 раз, — реальная рус. аббревиатура/слово.
         self._freq: Dict[str, int] = {}
@@ -1132,6 +1136,11 @@ class LatinRecoverer:
         предложено (текст не изменён)."""
         if not text or not text.strip():
             return text
+        # B3a (ШАГ 1): внутридок. self-repair фраз-якорей ПЕРВЫМ проходом (до
+        # роман/сегмент-правок): чинит рассыпанные/гомоглифные фразы по чистому
+        # образцу той же фразы в ЭТОМ документе. Меняет число токенов — поэтому
+        # строковая замена, а не посегментная.
+        text = self._phrase_selfrepair(text, page, span_uids)
         # пред-проход: римские стадии — ЦЕЛЫМ токеном (до дефис-сегментации). ВСЕ они
         # needs_review -> провенанс+очередь, но ТЕКСТ НЕ меняем (лосси, только человек).
         if self._whole:
@@ -1179,6 +1188,180 @@ class LatinRecoverer:
                           rec.get("why_suspect", []), rec.get("candidates", []),
                           rec.get("method"), rec.get("confidence", 0.0),
                           "eng-OCR, нужна визуальная проверка")
+
+    # ---- B3a: внутридокументный self-repair фраз (детерминизм, без OCR) ----
+    def _build_phrase_templates(self, zones: List[dict]) -> None:
+        """Собрать ЧИСТЫЕ латинские фразы-якоря документа (E3-свидетели): максимальные
+        пробеги чисто-латинских токенов, из них под-фразы длины 2..6 с СИЛЬНЫМ якорем
+        (первый токен >=4 букв с гласной). Ключ — первый токен (lower). Порченые
+        вхождения (кириллица/осколки рвут пробег) в индекс НЕ попадают."""
+        from collections import Counter, defaultdict
+        phrases: Counter = Counter()
+        for z in zones:
+            run: List[str] = []
+            for tok in z["text"].split():
+                _, core, _ = _strip_edges(tok)
+                if core and _clean_latin_word(core):
+                    run.append(core)
+                else:
+                    self._register_run(run, phrases)
+                    run = []
+            self._register_run(run, phrases)
+        self._tmpl_first = defaultdict(list)
+        for toks, cnt in phrases.items():
+            self._tmpl_first[toks[0].lower()].append((toks, " ".join(toks), cnt))
+
+    @staticmethod
+    def _register_run(run: List[str], phrases) -> None:
+        L = len(run)
+        if L < 2:
+            return
+        for a in range(L):
+            if len(run[a]) < 4 or not _has_vowel(run[a]):
+                continue                       # только СИЛЬНЫЙ якорь-слово
+            for b in range(a + 2, min(a + 7, L + 1)):   # под-фразы длины 2..6
+                phrases[tuple(run[a:b])] += 1
+
+    def _walk_template(self, toks, i: int, tmpl) -> Optional[tuple]:
+        """Параллельный проход окна native-токенов (с позиции i) по шаблону tmpl.
+        Каждый токен шаблона закрывается: (1) чистым лат. токеном (равным), (2) кир-
+        гомографом (отображённым в ту же латиницу), или (3) РУНОМ осколков (>=2
+        одиночных кир/цифро-токенов) — тогда GAP заполняется токеном шаблона.
+        -> (end_idx, has_gap, corruption) | None."""
+        n = len(toks)
+        wi = i
+        has_gap = False
+        corruption = False
+        for t in tmpl:
+            if wi >= n:
+                return None
+            core = toks[wi][2]
+            if _clean_latin_word(core) and core.lower() == t.lower():
+                wi += 1
+                continue
+            hl = _homoglyph_latin(core)
+            if hl is not None and hl.lower() == t.lower():
+                corruption = True
+                wi += 1
+                continue
+            # РУН осколков заполняет ТОЛЬКО МНОГОБУКВЕННЫЙ токен шаблона (`virus`).
+            # Одно-буквенный токен (генотип `B`/`C`, код) обязан прийти РЕАЛЬНЫМ
+            # гомографом, а не «дорисоваться» из шума — иначе `С у 1 ш з` ложно
+            # закрыл бы `Hepatitis B` (GAP=B), проглотив различающую букву.
+            if len(t) >= 2 and _is_shatter_char_token(core):
+                wj = wi
+                while wj < n and _is_shatter_char_token(toks[wj][2]):
+                    wj += 1
+                if wj - wi < 2:                # одиночный символ != рассыпанное слово
+                    return None
+                # ДЛИНА рассыпанного рана обязана согласоваться с длиной слова шаблона:
+                # у рассыпки каждый глиф -> один осколок, длина сохраняется. `у 1 ш з`(4)
+                # ~ `virus`(5) — да; `В 8 и`(3) ~ `classification`(14) — НЕТ (это «B 8 и»,
+                # класс Чайлд-Пью, а не рассыпанное слово). Отсекает ложные GAP-совпадения.
+                gap_len = sum(len(toks[k][2]) for k in range(wi, wj))
+                if abs(gap_len - len(t)) > max(3, round(0.34 * len(t))):
+                    return None
+                has_gap = True
+                corruption = True
+                wi = wj
+                continue
+            return None
+        return wi - 1, has_gap, corruption
+
+    def _match_here(self, toks, i: int, cands) -> Optional[tuple]:
+        """Сопоставить окно с позиции i против шаблонов-кандидатов. Принимаем шаблон,
+        только если СРАЗУ за окном НЕТ порчи (иначе фраза не покрыла всю порчу —
+        префикс длиннее). -> (phrase, end_idx, has_gap, corruption, count, crit,
+        ambiguous, alts) | None."""
+        n = len(toks)
+        matches = []
+        for tmpl_tokens, phrase, count in cands:
+            res = self._walk_template(toks, i, tmpl_tokens)
+            if res is None:
+                continue
+            end_idx, has_gap, corruption = res
+            if end_idx + 1 < n:
+                ncore = toks[end_idx + 1][2]
+                if _is_shatter_char_token(ncore) or (
+                        _homoglyph_latin(ncore) is not None and _CYR_ANY.search(ncore)):
+                    continue                   # порча продолжается за фразой
+            crit = _phrase_is_critical(tmpl_tokens)
+            matches.append((phrase, end_idx, has_gap, corruption, count, crit))
+        if not matches:
+            return None
+        uniq = {}
+        for m in matches:
+            if m[0] not in uniq:
+                uniq[m[0]] = m
+        if len(uniq) == 1:
+            m = next(iter(uniq.values()))
+            return (*m, False, [])
+        best = max(uniq.values(), key=lambda m: m[1])   # длиннейшая — предложение
+        alts = [p for p in uniq if p != best[0]]
+        return (*best, True, alts)
+
+    def _phrase_selfrepair(self, text: str, page, span_uids) -> str:
+        """B3a: починить порченые фразы по чистому образцу той же фразы в документе.
+        auto — ТОЛЬКО при уверенном однозначном совпадении (не критично); иначе
+        needs_review + очередь. Меняет число токенов -> строковая замена окна."""
+        if not self._tmpl_first or not text or not text.strip():
+            return text
+        toks = []
+        for m in _TOKEN_RE.finditer(text):
+            lead, core, _ = _strip_edges(m.group())
+            cs = m.start() + len(lead)
+            toks.append((cs, cs + len(core), core))
+        n = len(toks)
+        edits = []
+        i = 0
+        while i < n:
+            cs, ce, core = toks[i]
+            if not (_clean_latin_word(core) and len(core) >= 4 and _has_vowel(core)):
+                i += 1
+                continue
+            cands = self._tmpl_first.get(core.lower())
+            if not cands:
+                i += 1
+                continue
+            best = self._match_here(toks, i, cands)
+            if best is None:
+                i += 1
+                continue
+            phrase, end_idx, has_gap, corruption, count, crit, ambiguous, alts = best
+            if not corruption:                 # окно уже чисто -> не трогаем
+                i += 1
+                continue
+            src_phrase = text[cs:toks[end_idx][1]]
+            if src_phrase == phrase:
+                i += 1
+                continue
+            if ambiguous or crit or (has_gap and count < 2):
+                decision = "needs_review"
+            else:
+                decision = "auto"
+            why = ["intra_doc_selfrepair"]
+            if has_gap:
+                why.append("shattered_latin")
+            conf = 0.95 if decision == "auto" else 0.6
+            rule = "phrase-template(freq=%d%s%s)" % (
+                count, ",gap" if has_gap else "", ",amb" if ambiguous else "")
+            rec = _mkrec(src_phrase, phrase, "intra_doc_selfrepair", rule, conf,
+                         "term", crit, decision, why,
+                         candidates=[phrase] + list(alts))
+            if decision == "needs_review":     # локализуем для кропа задачи человеку
+                pno, bbox, _ = self._locate(src_phrase.replace(" ", ""),
+                                            self._page_hint.get(core))
+                if pno is not None:
+                    rec["_pno"] = pno
+                    rec["_bbox_raw"] = tuple(bbox)
+                    rec["bbox"] = [round(float(x), 1) for x in bbox]
+            self._emit(rec, page, span_uids)
+            if decision == "auto":
+                edits.append((cs, toks[end_idx][1], phrase))
+            i = end_idx + 1
+        for cstart, cend, repl in sorted(edits, reverse=True):
+            text = text[:cstart] + repl + text[cend:]
+        return text
 
     # ---- провенанс + очередь ----
     def _enqueue(self, src, best, kind, page, pno, bbox, why, candidates,
@@ -1409,6 +1592,52 @@ def _similar(a: str, b: str) -> float:
             prev = tmp
     lcs = dp[lb]
     return lcs / max(la, lb)
+
+
+# ---- B3a: классификация токенов для внутридок. self-repair (детерминизм) ----
+_RX_CLEAN_LAT_WORD = re.compile(r"^[A-Za-z][A-Za-z0-9./+-]*$")
+
+
+def _has_vowel(core: str) -> bool:
+    return bool(_VOWEL.search(core))
+
+
+def _clean_latin_word(core: str) -> bool:
+    """Чисто-латинский токен фразы (ascii-буква в начале, дальше буквы/цифры/.-/+;
+    без кириллицы). `virus`/`Hepatitis`/`C`/`PD-L1` — да; `Ыуег`/`С`(кир) — нет."""
+    return bool(core) and bool(_RX_CLEAN_LAT_WORD.match(core))
+
+
+def _homoglyph_latin(core: str) -> Optional[str]:
+    """Токен ЦЕЛИКОМ из кир-гомографов (+цифр) -> его латинская форма; иначе None.
+    `С`->`C`, `В`->`B`, `А`->`A`. `вируса`/`гепатита` -> None (не полностью гомографны)."""
+    if not core or not _CYR_ANY.search(core):
+        return None
+    out = []
+    for c in core:
+        if c in _CYR2LAT:
+            out.append(_CYR2LAT[c])
+        elif c.isascii() and (c.isalpha() or c.isdigit()):
+            out.append(c)
+        else:
+            return None
+    lat = "".join(out)
+    return lat if _clean_latin_word(lat) else None
+
+
+def _is_shatter_char_token(core: str) -> bool:
+    """Одиночный символ-осколок рассыпанного слова: одна кир-буква ИЛИ цифра."""
+    return len(core) == 1 and (bool(_CYR_ANY.match(core)) or core.isdigit())
+
+
+def _phrase_is_critical(tmpl) -> bool:
+    """Фраза содержит критическую сущность (код/ген) -> auto запрещён (13b Р3: нужен
+    визуальный E1/E2, внутридок. образец недостаточен для критического)."""
+    for t in tmpl:
+        if (entity_valid(t, "atc") or entity_valid(t, "icd") or entity_valid(t, "tnm")
+                or _looks_critical_term(t)):
+            return True
+    return False
 
 
 _CRIT_TERM_HINT = re.compile(r"[A-ZА-Я]{2,}\d|\d[A-ZА-Я]{2,}")
