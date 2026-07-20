@@ -41,3 +41,61 @@ def test_19_20_coverage_v2_metrics(make_doc):
     assert v2["structured_coverage"] < 0.1     # ~0.01 — вот где виден дефект
     assert "overlap_spans" in v2
     assert v2["structured_coverage"] <= 1.0    # Р4: пересечение обязательно, не >1
+
+
+# --------------------------------------------------------------------------- #
+# Phase 0.1 (I30 #6): обвязка по ГЕОМЕТРИИ, не по длине                        #
+# --------------------------------------------------------------------------- #
+def test_furniture_by_geometry_not_length():
+    """Прямой юнит `_is_furniture`: длина больше НЕ признак обвязки. Стадия «II» в
+    центре тела — НЕ обвязка; голый номер, короткий маркер у края и повтор — обвязка."""
+    from crparser.engine.stats import _is_furniture
+    # НЕ обвязка: короткий НЕ-числовой токен в центральной полосе (стадия/уровень) —
+    # прежний порог len<=2 списывал его молча (дефект I30 #6).
+    assert _is_furniture("II") is False
+    assert _is_furniture("5A") is False
+    assert _is_furniture("Клинические рекомендации") is False   # тело, не у края
+    # обвязка: голый (дотированный) номер ВНЕ зависимости от позиции — номер страницы,
+    # TOC-колонка «1.2.» (I14), номер источника, маркер списка «2.».
+    assert _is_furniture("7") is True
+    assert _is_furniture("1.2.") is True
+    assert _is_furniture("2.3.1.") is True
+    assert _is_furniture("") is True
+    # обвязка ПО ГЕОМЕТРИИ: короткий маркер у края / повторяющийся колонтитул.
+    assert _is_furniture("II", at_edge=True) is True
+    assert _is_furniture("Клинические рекомендации", at_edge=True, repeats=True) is True
+    assert _is_furniture("•", repeats=True) is True
+
+
+def test_furniture_geometry_via_coverage_core():
+    """Интеграция ЧЕРЕЗ реальный путь `coverage_v2_from_objects` (page_ir с геометрией,
+    как у парсера — не синтетика). Номер страницы в колонтитуле и повторяющийся заголовок
+    у края -> page_furniture; стадия «II» в центральной полосе -> lost (surface, не списан).
+    """
+    from crparser.engine.models import make_source_span, make_page_ir, span_uid, Section
+    from crparser.engine.stats import coverage_v2_from_objects
+
+    def span(page, bbox, text):
+        uid = span_uid(page, bbox)
+        return make_source_span(uid, page, bbox, {"native": text}, {}, "native"), uid
+
+    pages, owned = [], []
+    for p in range(1, 6):                      # 5 страниц
+        spans = []
+        header, _ = span(p, (70, 20, 500, 34), "Клинические рекомендации")   # верх. колонтитул (повтор)
+        spans.append(header)
+        for i in range(3):                     # 3 строки тела (owned секцией)
+            s, uid = span(p, (70, 100 + i * 60, 500, 130 + i * 60), "тело строка %d" % i)
+            spans.append(s); owned.append(uid)
+        pnum, _ = span(p, (280, 770, 300, 784), str(p))                      # номер страницы (низ)
+        spans.append(pnum)
+        if p == 3:                             # стадия «II» в центре тела (сирота)
+            spans.append(span(p, (250, 400, 270, 414), "II")[0])
+        pages.append(make_page_ir(p, spans, "native", [], {}))
+
+    sec = Section(number="1", title="Раздел", level=1, text="тело", span_uids=owned)
+    v2 = coverage_v2_from_objects([sec], [], {}, pages, accounted_raw=100, total_chars=100)
+
+    assert v2["page_furniture"] == 10          # 5 колонтитулов + 5 номеров страниц
+    assert v2["lost_spans"] == 1               # ровно стадия «II» — surface, не списана
+

@@ -24,24 +24,48 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from crparser.engine.models import PageIR, Section, Table
 
-# Служебная обвязка страницы (Р1 промпта 10): осиротевший span, чей текст — номер
-# страницы, ОДИНОКИЙ номер раздела оглавления/заголовка («1.2.», «2.3.1.», «05.9»)
-# или короткий колонтитульный маркер. Замер корпуса: сироты = 0.102% символов, 98.11%
-# — номера страниц (медиана 2 симв), сирот >100 симв — ноль; остаток — колонка номеров
-# оглавления, оторванная от заголовка. Такие span'ы НЕ «потерянный контент»: их
-# отделяем в класс page_furniture, а не в lost_spans. Голый номер (без текста после)
-# — обвязка; «1.6 Классификация…» (номер + заголовок) — уже НЕ обвязка (реальная строка).
+# Служебная обвязка страницы (Р1 промпта 10, ГЕОМЕТРИЯ — Phase 0.1, I30 #6): осиротевший
+# span, являющийся номером страницы, колонкой номеров оглавления, номером источника в
+# списке литературы, маркером нумерованного списка или повторяющимся колонтитулом.
+#
+# ПРЕЖНЯЯ версия списывала в обвязку по ДЛИНЕ (`len<=2`) — а длина не признак обвязки:
+# стадия «II», уровень «5A», ячейка «2.5» тем же порогом молча уходили из lost (дефект
+# I30 #6). Перепроверка геометрией (`_corpus/diag_furniture_geometry.py`, выборка 18 док.
+# по стратам, вкл. контрольную I1) показала: ВСЕ центральные числовые сироты — это голые
+# номера (`bare=1`): TOC-колонка (КР931_1 «6/14/18» рядом с «1.1 Определение…»), номера
+# источников (КР845_1 «283», КР848_1 «400»), маркеры списка (КР895_1 «2./3./4.» при
+# owned-тексте пункта). Реального КОРОТКОГО ТЕЛА, списанного по длине, в выборке НЕТ
+# (furn_central_word=0) — вывод I12 «потерянного тела нет» ПОДТВЕРЖДЁН геометрией.
+#
+# Отсюда принципиальное (не по длине) правило: голый номер — всегда обвязка; короткий
+# спан — обвязка ТОЛЬКО если он у края страницы (колонтитул) или повторяется из страницы
+# в страницу; повторяющийся заголовок у края (напр. «1.1 Определение…» вверху каждой
+# страницы раздела) — тоже обвязка. Иначе (центральная полоса, не голый номер, не повтор)
+# — это НЕ обвязка, а потенциально короткое тело -> lost (surface, не списывать молча).
 _RE_FURNITURE = re.compile(r"^\W*\d{1,4}(?:[.\-/]\d{1,4})*[.)]?\W*$")
-_FURNITURE_MAX_LEN = 2   # очень короткие сироты (маркеры «•», «§», буквы) — тоже обвязка
+_FURNITURE_MAX_LEN = 2       # порог «короткого» маркера («•», «§», буквы, римские «V.»)
+_FURNITURE_EDGE_FRAC = 0.08  # полоса высоты набора у верх/низ края = зона колонтитула
+_FURNITURE_REPEAT_PAGES = 3  # один и тот же спан на >=N страницах = повтор-обвязка
 
 
-def _is_furniture(text: str) -> bool:
+def _is_furniture(text: str, at_edge: bool = False, repeats: bool = False) -> bool:
+    """Обвязка ли осиротевший span. Геометрия (`at_edge`/`repeats`) приходит из page_ir;
+    без неё (синтетика/тесты без provenance) остаётся только голый-номер признак — но там
+    сирот и нет (S == owned), так что порог длины не нужен."""
     t = (text or "").strip()
     if not t:
         return True
-    if len(t) <= _FURNITURE_MAX_LEN:
+    # 1. голый (дотированный) номер — обвязка ВНЕ зависимости от позиции: номер страницы,
+    #    колонка номеров оглавления, номер источника, маркер списка «2.» (все они bare).
+    if _RE_FURNITURE.match(t):
         return True
-    return bool(_RE_FURNITURE.match(t))
+    # 2. у края страницы: короткий маркер-колонтитул ИЛИ повторяющийся заголовок-колонтитул.
+    if at_edge and (repeats or len(t) <= _FURNITURE_MAX_LEN):
+        return True
+    # 3. короткий маркер, повторяющийся из страницы в страницу (напр. буллет «•»).
+    if repeats and len(t) <= _FURNITURE_MAX_LEN:
+        return True
+    return False
 
 
 class StatsCalculator:
@@ -121,26 +145,37 @@ _BUCKET_CLASS = {
 }
 
 
-def _span_weight_and_text(page_ir: List[PageIR]) -> Tuple[Dict[str, int], Dict[str, str]]:
-    """span_uid -> (число символов выбранного канала, его текст). Источник веса —
-    ИТОГОВЫЙ page_ir (промпт 08): вес span'а = длина текста ВЫБРАННОГО канала. При
-    коллизии uid (клоны inline-разбиения делят один span_uid) берём наибольший вес."""
+def _span_weight_and_text(page_ir: List[PageIR]) -> Tuple[
+        Dict[str, int], Dict[str, str],
+        Dict[str, Tuple[int, Any]], Dict[int, Tuple[float, float]]]:
+    """span_uid -> (число символов выбранного канала, его текст, геометрия) + полоса
+    набора каждой страницы. Источник веса — ИТОГОВЫЙ page_ir (промпт 08): вес span'а =
+    длина текста ВЫБРАННОГО канала. При коллизии uid (клоны inline-разбиения делят один
+    span_uid) берём наибольший вес; геометрия у клонов одна (span_uid = f(page, bbox)).
+    Полоса набора страницы (min y0 .. max y1 по ВСЕМ её спанам) нужна классификатору
+    обвязки, чтобы определить «у края» без размеров страницы (их page_ir не несёт)."""
     weight: Dict[str, int] = {}
     text: Dict[str, str] = {}
+    geom: Dict[str, Tuple[int, Any]] = {}                 # uid -> (page, bbox)
+    page_band: Dict[int, Tuple[float, float]] = {}        # page -> (y0_min, y1_max)
     for pir in page_ir:
         for sp in pir.spans:
             t = sp.candidates.get(sp.selected, "") or ""
             if len(t) >= weight.get(sp.span_uid, -1):
                 weight[sp.span_uid] = len(t)
                 text[sp.span_uid] = t
-    return weight, text
+            geom.setdefault(sp.span_uid, (sp.page, sp.bbox))
+            y0, y1 = sp.bbox[1], sp.bbox[3]
+            lo, hi = page_band.get(sp.page, (float("inf"), float("-inf")))
+            page_band[sp.page] = (min(lo, y0), max(hi, y1))
+    return weight, text, geom, page_band
 
 
 def coverage_v2_from_objects(sections: List[Section], tables: List[Table],
                              excluded: Dict[str, List], page_ir: List[PageIR],
                              accounted_raw: int, total_chars: int) -> Dict[str, Any]:
     """coverage_v2 из датаклассов движка + page_ir (авторитетные веса span'ов)."""
-    weight, text = _span_weight_and_text(page_ir)
+    weight, text, geom, page_band = _span_weight_and_text(page_ir)
     ir_uids = set(weight)
 
     units: List[Dict[str, Any]] = []
@@ -157,7 +192,8 @@ def coverage_v2_from_objects(sections: List[Section], tables: List[Table],
                           "chars": len(item.get("title", "") or "")
                           + len(item.get("text", "") or "")})
 
-    return _coverage_v2_core(units, weight, text, ir_uids, accounted_raw, total_chars)
+    return _coverage_v2_core(units, weight, text, ir_uids, accounted_raw, total_chars,
+                             geom=geom, page_band=page_band)
 
 
 def coverage_v2_from_doc(doc: Dict[str, Any]) -> Dict[str, Any]:
@@ -192,12 +228,16 @@ def coverage_v2_from_doc(doc: Dict[str, Any]) -> Dict[str, Any]:
             units.append({"klass": klass, "uids": list(item.get("span_uids", []) or []),
                           "chars": len(item.get("title", "") or "")
                           + len(item.get("text", "") or "")})
-    return _coverage_v2_core(units, {}, {}, set(), accounted_raw, total)
+    return _coverage_v2_core(units, {}, {}, set(), accounted_raw, total,
+                             geom={}, page_band={})
 
 
 def _coverage_v2_core(units: List[Dict[str, Any]], weight: Dict[str, int],
                       text: Dict[str, str], ir_uids: set,
-                      accounted_raw: int, total_chars: int) -> Dict[str, Any]:
+                      accounted_raw: int, total_chars: int,
+                      geom: Optional[Dict[str, Tuple[int, Any]]] = None,
+                      page_band: Optional[Dict[int, Tuple[float, float]]] = None,
+                      ) -> Dict[str, Any]:
     """Ядро coverage_v2. Работает по span_uid; вес span'а — число символов.
 
     Два режима:
@@ -245,9 +285,36 @@ def _coverage_v2_core(units: List[Dict[str, Any]], weight: Dict[str, int],
     overlap_chars = w(overlap)
 
     lost_all = S - owned
+    # обвязка по ГЕОМЕТРИИ (Phase 0.1, I30 #6): «у края» — из полосы набора страницы,
+    # «повтор» — один и тот же текст-сирота на >=N страницах. Без geom (синтетика) обе
+    # величины False -> остаётся только голый-номер признак.
+    geom = geom or {}
+    page_band = page_band or {}
+    orphan_pages: Dict[str, set] = {}
+    for u in lost_all:
+        orphan_pages.setdefault((text.get(u, "") or "").strip(), set())
+        pg = geom.get(u)
+        if pg is not None:
+            orphan_pages[(text.get(u, "") or "").strip()].add(pg[0])
+
+    def _at_edge(u: str) -> bool:
+        pg = geom.get(u)
+        if pg is None:
+            return False
+        page, bbox = pg
+        band = page_band.get(page)
+        if not band:
+            return False
+        lo, hi = band
+        h = (hi - lo) or 1.0
+        y0, y1 = bbox[1], bbox[3]
+        return (y0 - lo) / h < _FURNITURE_EDGE_FRAC or (hi - y1) / h < _FURNITURE_EDGE_FRAC
+
     lost, furniture = [], 0
     for u in lost_all:
-        if _is_furniture(text.get(u, "")):
+        t = text.get(u, "")
+        repeats = len(orphan_pages.get((t or "").strip(), ())) >= _FURNITURE_REPEAT_PAGES
+        if _is_furniture(t, at_edge=_at_edge(u), repeats=repeats):
             furniture += 1
         else:
             lost.append(u)
