@@ -139,6 +139,10 @@ def layout_quarantine(label, items, run_id):
     if os.path.isdir(QUAR_DIR):
         shutil.rmtree(QUAR_DIR)
     os.makedirs(QUAR_DIR, exist_ok=True)
+    # источник — замороженный staging прогона, если он есть (не изменяемый outout/, I30 #7);
+    # под --current staging нет -> outout/.
+    stg = os.path.join(RUNS_DIR, label, "staging")
+    src_dir = stg if os.path.isdir(stg) else OUTOUT
     index = {}
     counts = {}
     for base, item in sorted(items.items()):
@@ -147,7 +151,7 @@ def layout_quarantine(label, items, run_id):
         kind = _primary_kind(item)
         dst_dir = os.path.join(QUAR_DIR, kind)
         os.makedirs(dst_dir, exist_ok=True)
-        src = os.path.join(OUTOUT, base + ".json")
+        src = os.path.join(src_dir, base + ".json")
         if os.path.exists(src):
             shutil.copyfile(src, os.path.join(dst_dir, base + ".json"))
         index[base] = {"status": item["status"], "kinds": item.get("kinds", []),
@@ -214,6 +218,22 @@ def export(label, items, run_meta, as_release):
         shutil.rmtree(out_root)
     os.makedirs(out_root, exist_ok=True)
 
+    # ИСТОЧНИК КОНТЕНТА (I30 #7): под --run читаем ЗАМОРОЖЕННЫЙ staging прогона и СВЕРЯЕМ
+    # output_sha256 каждого файла с манифестом. Экспорт из изменяемого outout/ (как было)
+    # — это «публикация от неизвестного прогона» (дефект промпта 05, I9): файл мог дрейфануть
+    # после прогона (перепарс/правка), а манифест утверждал бы целостность. Под --current
+    # источник — outout/ осознанно (незамороженное состояние, помечено not_for_distribution).
+    from_current = run_meta is None
+    if from_current:
+        src_dir, sha_map = OUTOUT, {}
+    else:
+        src_dir = os.path.join(RUNS_DIR, label, "staging")
+        if not os.path.isdir(src_dir):
+            print("ОТКАЗ: нет staging прогона %s (%s) — экспортировать нечего." % (label, src_dir))
+            raise SystemExit(2)
+        sha_map = {b: d.get("output_sha256")
+                   for b, d in (run_meta.get("documents", {}) or {}).items()}
+
     exported, skipped_corruption, skipped_unverifiable = [], [], []
     file_sha = {}
     for base, item in sorted(items.items()):
@@ -222,9 +242,23 @@ def export(label, items, run_meta, as_release):
         if item.get("unverifiable"):          # никогда не в обучение (промпт 06)
             skipped_unverifiable.append(base)
             continue
-        src = os.path.join(OUTOUT, base + ".json")
+        src = os.path.join(src_dir, base + ".json")
         if not os.path.exists(src):
-            continue
+            if from_current:
+                continue                       # outout/ мог не содержать файл — не фатально
+            print("ОТКАЗ: PASS-документ %s отсутствует в staging прогона %s — прогон "
+                  "неполон, экспорта нет." % (base, label))
+            raise SystemExit(2)
+        if not from_current:                   # сверка sha с манифестом (дрейф -> отказ)
+            expected = sha_map.get(base)
+            if not expected:
+                print("ОТКАЗ: в манифесте прогона %s нет output_sha256 для %s." % (label, base))
+                raise SystemExit(2)
+            actual = _sha256_file(src)
+            if actual != expected:
+                print("ОТКАЗ: output_sha256 ДРЕЙФ у %s — манифест %s != staging %s. "
+                      "Файл прогона изменён, экспорт отменён." % (base, expected[:12], actual[:12]))
+                raise SystemExit(2)
         doc = json.load(open(src, encoding="utf-8"))
         if not _corruption_zero(doc):         # двойная страховка поверх гейта 04
             skipped_corruption.append(base)
@@ -391,6 +425,8 @@ def build_sample(label, items, out_root):
     n = min(30, len(passing))
     step = max(1, len(passing) // n) if n else 1
     sample = passing[::step][:n]
+    stg = os.path.join(RUNS_DIR, label, "staging")
+    src_dir = stg if os.path.isdir(stg) else OUTOUT      # замороженный staging, если есть (I30 #7)
     checklist = [
         "# REVIEW_CHECKLIST — ручная проверка выборки (гейт §6.4 п.6 аудита)",
         "",
@@ -413,7 +449,7 @@ def build_sample(label, items, out_root):
     with open(os.path.join(review_dir, "REVIEW_CHECKLIST.md"), "w", encoding="utf-8") as fh:
         fh.write("\n".join(checklist) + "\n")
     for b in sample:
-        src = os.path.join(OUTOUT, b + ".json")
+        src = os.path.join(src_dir, b + ".json")
         if os.path.exists(src):
             shutil.copyfile(src, os.path.join(review_dir, b + ".json"))
     print("ВЫБОРКА НА РУЧНУЮ ПРОВЕРКУ: %d документов -> %s"
