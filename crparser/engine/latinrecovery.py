@@ -1041,9 +1041,18 @@ class LatinRecoverer:
             # bleeding sim=0.25) уходит из auto в очередь. Это правильный размен: человек
             # подтвердит по кропу за секунды, а молча испорченный термин — навсегда.
             uncertain = sim < C5_AUTO_SIM
+            method = "ocr_eng"
             rule = "eng-crop+align(sim=%.2f)%s" % (sim, "+E3" if e3 else "")
-            conf = round(min(0.97, 0.55 + 0.35 * sim + (0.1 if e3 else 0)), 2)
-            self._g[core] = _mkrec(core, ew, "ocr_eng", rule, conf, kind or "term",
+            # B1 (I30 #4): неуверенный НЕ-критический термин -> ПОСЛОВНЫЙ кроп ЦЕЛЕВОГО
+            # слова. OCR читает лишь bbox цели -> подтверждение ПИКСЕЛЯМИ ЦЕЛИ, а не
+            # соседом (`Ыуег`->liver подтверждается, сосед `the` — нет). Совпал -> auto.
+            if uncertain and not crit and self._perword_confirms(pno, bbox, core, ew):
+                uncertain = False
+                method = "ocr_eng_perword"
+                rule = "eng-crop+align+perword-confirm(sim=%.2f)" % sim
+            conf = round(min(0.97, 0.55 + 0.35 * sim + (0.1 if e3 else 0)
+                             + (0.15 if method == "ocr_eng_perword" else 0)), 2)
+            self._g[core] = _mkrec(core, ew, method, rule, conf, kind or "term",
                                    crit, "needs_review" if uncertain else "auto", why,
                                    bbox=bbox, pno=pno, candidates=[ew])
         # 3) УЗКОЕ восстановление СОСЕДЕЙ: только если на строке уже разрешено >=2 цели
@@ -1090,6 +1099,33 @@ class LatinRecoverer:
             if cds in (sig, sig[1:], dcore, dcore[1:]) or (not sig and not cds):
                 return cand
         return None
+
+    def _word_bbox(self, pno: int, core: str, line_bbox):
+        """bbox ЦЕЛЕВОГО слова на строке (для пословного кропа B1). Первое слово строки,
+        чьё ядро == core. None, если не нашли."""
+        try:
+            page = self._ensure_doc()[pno]
+            y0, y1 = line_bbox[1], line_bbox[3]
+            for w in page.get_text("words"):
+                cy = (w[1] + w[3]) / 2.0
+                if y0 - 2 <= cy <= y1 + 2 and _strip_edges(w[4])[1] == core:
+                    return (w[0], w[1], w[2], w[3])
+        except Exception:  # noqa: BLE001
+            pass
+        return None
+
+    def _perword_confirms(self, pno: int, line_bbox, core: str, cand: str) -> bool:
+        """B1 (I30 #4): пословный eng-OCR кроп ЦЕЛЕВОГО слова подтверждает кандидата
+        ПИКСЕЛЯМИ ЦЕЛИ (не соседом по строке). Кроп читает лишь bbox цели."""
+        wb = self._word_bbox(pno, core, line_bbox)
+        if wb is None:
+            return False
+        eng = self._eng_line(pno, wb, langs="eng")
+        words = [w for w in (_strip_edges(t)[1] for t in eng.split()) if w] if eng else []
+        if not words:
+            return False
+        cl = cand.lower()
+        return any(w.lower() == cl or _similar(w.lower(), cl) >= 0.85 for w in words)
 
     def _mark_unresolved(self, core: str, page, bbox, pno=None) -> None:
         """Нерешённый ЗАДЕТЕКТИРОВАННЫЙ спан.
