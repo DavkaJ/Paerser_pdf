@@ -333,6 +333,10 @@ def _cyr_orphan(core: str) -> bool:
     латиницы 8рае1И/Ыуег строчные есть; у рус. аббревиатуры — нет) ИЛИ Ы/Ь/Ъ-старта."""
     if not core or not _CYR_ANY.search(core):
         return False
+    # Смешанно-регистровая рус. аббревиатура (микроРНК/аутоТГСК) — легит рус. термин, НЕ
+    # сирота-латиница (Cowork-ревью 3). Иначе camelCase-правило (3) флагало бы её ложно.
+    if _is_ru_mixcase_abbr(core):
+        return False
     has_lower = bool(_HAS_LOWER.search(core))
     letters = [c for c in core if c.isalpha()]
     n_digit = sum(1 for c in core if c.isdigit())
@@ -751,6 +755,14 @@ class LatinRecoverer:
             return True
         if core.lower() in _RU_STOP:
             return True
+        # ЯЗЫКОВОЙ гейт (Cowork-ревью 3): смешанно-регистровая рус. аббревиатура (микроРНК/
+        # аутоТГСК) ИЛИ валидная рус. словоформа (заболеваниях) -> НЕ авто. Иначе eng-OCR даёт
+        # транслит-мусор (`микроРНК`->`MUKPOPHK`), а B1 его «подтверждает» (обе OCR-ноги
+        # транслитерируют одинаково, I28). Порченая латиница (`Ыуег`/`8рае1И`) сюда не попадает.
+        if _is_ru_mixcase_abbr(core):
+            return True
+        if _CYR_ANY.search(core) and not _LAT.search(core) and rumorph.word_is_known(core):
+            return True
         return False
 
     def _c5_protected(self, core: str) -> Optional[str]:
@@ -792,6 +804,8 @@ class LatinRecoverer:
         letters = [c for c in core if c.isalpha()]
         if letters and not any(c.islower() for c in letters):
             return "all_caps"
+        if _is_ru_mixcase_abbr(core):          # микроРНК/аутоТГСК (Cowork-ревью 3)
+            return "ru_mixcase_abbr"
         if self._freq.get(core, 0) >= 3:
             return "freq"
         if core.lower() in _RU_STOP:
@@ -1833,6 +1847,22 @@ def _is_russian_word(core: str) -> bool:
     if _homoglyph_latin(core) is not None:     # целиком гомографный -> не русское слово
         return False
     return any(("а" <= c <= "я") or c == "ё" for c in core)
+
+
+_RX_RU_LC_RUN = re.compile(r"[а-яё]{2,}")
+_RX_RU_UC_RUN = re.compile(r"[А-ЯЁ]{2,}")
+
+
+def _is_ru_mixcase_abbr(core: str) -> bool:
+    """Смешанно-регистровая ВСЕ-КИРИЛЛИЧЕСКАЯ русская аббревиатура: строчный пробег (>=2)
+    И заглавный пробег (>=2), БЕЗ латиницы и цифр — `микроРНК`, `аутоТГСК`, `ЭндоУЗИ`,
+    `РостГМУ`, `аллоТГСК`, `КрасГМУ`. Легит рус. клин. термин, НЕ порча латиницы (Cowork-
+    ревью 3: eng-OCR превращал их в транслит-мусор `MUKPOPHK`/`ayTOTTCK`). НЕ флагать и НЕ
+    латинизировать. Порченая латиница (`ТетрогаШ`, одиночная заглавная) заглавного пробега
+    не имеет -> сюда не попадает."""
+    if _LAT.search(core) or any(c.isdigit() for c in core) or not _CYR_ANY.search(core):
+        return False
+    return bool(_RX_RU_LC_RUN.search(core)) and bool(_RX_RU_UC_RUN.search(core))
 
 
 def _phrase_is_critical(tmpl) -> bool:
