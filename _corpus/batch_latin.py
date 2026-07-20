@@ -98,8 +98,25 @@ def main():
     for r in csv.DictReader(open("scan_candidates.csv", encoding="utf-8")):
         classmap[os.path.splitext(r["file"])[0]] = r["class"]
 
-    if len(sys.argv) > 1:
-        bases = [os.path.splitext(os.path.basename(a))[0] for a in sys.argv[1:]]
+    # OCR-предусловие (ШАГ 0, fail-closed): базовый гибрид-проход требует rus+eng.
+    # Без гейта прогон с молча выключенным OCR публикует ДРУГОЙ корпус и exit 0 —
+    # дыра I5/I34 (инцидент ac5d03a). --no-require-ocr снимает гейт ОСОЗНАННО (прогон
+    # помечается невалидным — из него нельзя строить baseline/релиз).
+    require_ocr = "--no-require-ocr" not in sys.argv
+    argv_files = [a for a in sys.argv[1:] if not a.startswith("--")]
+    from crparser.engine.ocr import ocr_precondition
+    available, ocr_msg = ocr_precondition()
+    if require_ocr and not available:
+        print("ОСТАНОВ (--require-ocr): OCR недоступен — %s" % ocr_msg)
+        print("Публикации в %s НЕТ, очередь не тронута. Задайте TESSERACT_CMD/"
+              "TESSDATA_PREFIX (нужен rus+eng) либо --no-require-ocr (прогон невалиден)."
+              % OUT)
+        return 2
+    print("OCR-предусловие: available=%s%s" % (
+        available, "" if available else " (--no-require-ocr: прогон невалиден)"))
+
+    if argv_files:
+        bases = [os.path.splitext(os.path.basename(a))[0] for a in argv_files]
     else:
         bases = sorted(b for b, c in classmap.items() if c in ("OK", "LOW_TEXT_REVIEW"))
     print("К обработке: %d файлов (OUT=%s)" % (len(bases), OUT))

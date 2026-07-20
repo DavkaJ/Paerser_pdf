@@ -1167,3 +1167,26 @@ class OcrRecoverer:
                 bold=False,
                 source="ocr"))       # provenance (промпт 08): полный OCR-скан
         return lines
+
+
+# ============================================================================
+# OCR-предусловие батч-прогонов (общий гейт для batch/batch_latin/batch_report)
+# ============================================================================
+
+def ocr_precondition(langs: Optional[str] = None) -> Tuple[bool, str]:
+    """Проверить предусловие OCR перед КОРПУСНЫМ прогоном, публикующим outout*.
+
+    Возвращает (available, message). `available` — есть рабочий Tesseract со ВСЕМИ
+    нужными языками (rus+eng по умолчанию, либо из OCR_LANGS). При недоступности
+    message объясняет ПРИЧИНУ (нет бинаря ЛИБО нет rus.traineddata) — обе ветви ведут
+    к fail-open (I5/I34): без гейта прогон молча производит ДРУГОЙ корпус и exit 0.
+
+    Причина инцидента ac5d03a — НЕ «`_resolve_tesseract` вернул None» сама по себе, а
+    отсутствие ЛЮБОГО из двух условий (бинарь резолвится И rus+eng установлены) БЕЗ
+    проверки этого условия инструментом. «Выставить TESSERACT_CMD» рецидив не
+    предотвращает: на машине с бинарём, но без rus, available()==False по ДРУГОЙ ветке
+    (см. execution-proof C). Гейт проверяет ФАКТ доступности, а не отдельную причину."""
+    rec = OcrRecoverer(langs=langs) if langs else OcrRecoverer()
+    available = rec.available()
+    msg = "" if available else (" | ".join(rec.warnings) or "OCR недоступен")
+    return available, msg
