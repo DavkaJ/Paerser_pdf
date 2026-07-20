@@ -1141,6 +1141,10 @@ class LatinRecoverer:
         # образцу той же фразы в ЭТОМ документе. Меняет число токенов — поэтому
         # строковая замена, а не посегментная.
         text = self._phrase_selfrepair(text, page, span_uids)
+        # B3c (ШАГ 3): одиночный кир-гомограф МЕЖДУ двумя чистыми лат. словами
+        # (`Hepatitis В virus`->`...B...`, `Influenza А virus`->`...A...`) — латинизируем
+        # (меняем СКРИПТ буквы, не семантику). freq-защита снята ТОЛЬКО для этого случая.
+        text = self._homoglyph_in_latin(text, page, span_uids)
         # B3b (ШАГ 2): рассыпанные латинские слова, НЕ покрытые B3a (нет чистого
         # образца) -> ШИРОКИЙ eng-OCR кроп -> needs_review + карантин. Прецизионный
         # гейт: НЕ трогаем разрядку русского (`по д обн ы е`) и табличные числа.
@@ -1365,6 +1369,40 @@ class LatinRecoverer:
             i = end_idx + 1
         for cstart, cend, repl in sorted(edits, reverse=True):
             text = text[:cstart] + repl + text[cend:]
+        return text
+
+    # ---- B3c: одиночный кир-гомограф между латиницей (ШАГ 3) ----
+    def _homoglyph_in_latin(self, text: str, page, span_uids) -> str:
+        """Одиночная кир-буква-гомограф МЕЖДУ двумя чистыми лат. словами -> латиница.
+        Меняем СКРИПТ буквы (`В`->B, `А`->A, `С`->C), не семантику: буква уже стояла в
+        тексте кириллицей — это mixed-script порча, а не вставка. Русское одиночное
+        (в русском окружении) НЕ трогаем: гейт требует ЧИСТОЙ латиницы С ОБЕИХ сторон.
+        freq-защита снята ТОЛЬКО здесь (одиночный гомограф среди латиницы = латиница)."""
+        if not text or not text.strip():
+            return text
+        toks = []
+        for m in _TOKEN_RE.finditer(text):
+            lead, core, _ = _strip_edges(m.group())
+            cs = m.start() + len(lead)
+            toks.append((cs, cs + len(core), core))
+        n = len(toks)
+        edits = []
+        for k in range(1, n - 1):
+            cs, ce, core = toks[k]
+            if len(core) != 1 or core not in _CYR2LAT:
+                continue
+            lcore, rcore = toks[k - 1][2], toks[k + 1][2]
+            if not (_clean_latin_word(lcore) and len(lcore) >= 2):
+                continue
+            if not (_clean_latin_word(rcore) and len(rcore) >= 2):
+                continue
+            edits.append((cs, ce, _CYR2LAT[core], core))
+        for cs, ce, lat, core in sorted(edits, reverse=True):
+            rec = _mkrec(core, lat, "homoglyph_in_latin",
+                         "single-cyr-homoglyph-flanked-by-latin", 1.0, "term", False,
+                         "auto", ["homoglyph_in_latin"], candidates=[lat])
+            self._emit(rec, page, span_uids)
+            text = text[:cs] + lat + text[ce:]
         return text
 
     # ---- B3b: рассыпанные латинские слова -> широкий eng-OCR кроп (ШАГ 2) ----
