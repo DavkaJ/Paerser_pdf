@@ -1141,6 +1141,10 @@ class LatinRecoverer:
         # образцу той же фразы в ЭТОМ документе. Меняет число токенов — поэтому
         # строковая замена, а не посегментная.
         text = self._phrase_selfrepair(text, page, span_uids)
+        # B3b (ШАГ 2): рассыпанные латинские слова, НЕ покрытые B3a (нет чистого
+        # образца) -> ШИРОКИЙ eng-OCR кроп -> needs_review + карантин. Прецизионный
+        # гейт: НЕ трогаем разрядку русского (`по д обн ы е`) и табличные числа.
+        self._shatter_sweep(text, page, span_uids)
         # пред-проход: римские стадии — ЦЕЛЫМ токеном (до дефис-сегментации). ВСЕ они
         # needs_review -> провенанс+очередь, но ТЕКСТ НЕ меняем (лосси, только человек).
         if self._whole:
@@ -1362,6 +1366,85 @@ class LatinRecoverer:
         for cstart, cend, repl in sorted(edits, reverse=True):
             text = text[:cstart] + repl + text[cend:]
         return text
+
+    # ---- B3b: рассыпанные латинские слова -> широкий eng-OCR кроп (ШАГ 2) ----
+    def _shatter_sweep(self, text: str, page, span_uids) -> None:
+        """Найти ГЕНУИННЫЕ рассыпанные латинские слова (рун из >=2 одиночных кир/цифро-
+        токенов, ПЛОТНО прижатый к чистому лат. слову, НЕ разрядка русского) и отдать
+        человеку с ШИРОКИМ eng-OCR кропом. Всегда needs_review + карантин (осколок лосси).
+
+        ЗАМЕР (промпт 17): сигнал `shattered_latin` скринера на 96% ШУМ — табличные числа
+        (`0 1 2 3 4`) и РАЗРЯДКА русского (`по д обн ы е`=подобные). Гейт отсекает их: рун
+        обязан быть прижат к ЧИСТОМУ ЛАТ. слову И НЕ иметь русского слова-соседа."""
+        if not text or not text.strip():
+            return
+        toks = []
+        for m in _TOKEN_RE.finditer(text):
+            lead, core, _ = _strip_edges(m.group())
+            cs = m.start() + len(lead)
+            toks.append((cs, cs + len(core), core))
+        n = len(toks)
+        i = 0
+        while i < n:
+            if not _is_shatter_char_token(toks[i][2]):
+                i += 1
+                continue
+            j = i
+            while j < n and _is_shatter_char_token(toks[j][2]):
+                j += 1
+            if j - i >= 2 and self._is_genuine_latin_shatter(toks, i, j):
+                run_str = text[toks[i][0]:toks[j - 1][1]]
+                key = (self._doc_id, run_str)
+                if not hasattr(self, "_shatter_queued"):
+                    self._shatter_queued = set()
+                if key not in self._shatter_queued:
+                    self._shatter_queued.add(key)
+                    self._enqueue_shatter(run_str, toks, i, j, page, span_uids)
+            i = j
+
+    def _is_genuine_latin_shatter(self, toks, i: int, j: int) -> bool:
+        """Рун [i,j) — ГЕНУИННОЕ рассыпанное лат. слово, а не разрядка русского/таблица.
+        Требуем: >=2 кир-БУКВЫ (не только цифры); НЕТ русского слова-соседа ВПЛОТНУЮ;
+        ЕСТЬ чистое лат. слово в 2 токенах слева/справа."""
+        run = [toks[k][2] for k in range(i, j)]
+        if all(c.isdigit() for c in run):
+            return False                       # табличные числа
+        if sum(1 for c in run if _CYR_ANY.match(c)) < 2:
+            return False                       # `1 и 2`: одна буква -> не слово
+        left = toks[i - 1][2] if i - 1 >= 0 else ""
+        right = toks[j][2] if j < len(toks) else ""
+        if _is_russian_word(left) or _is_russian_word(right):
+            return False                       # разрядка/русский контекст -> не наш случай
+
+        def latin_near(idxs) -> bool:
+            for k in idxs:
+                if 0 <= k < len(toks):
+                    c = toks[k][2]
+                    if _clean_latin_word(c) and len(c) >= 3 and _has_vowel(c):
+                        return True
+            return False
+        return latin_near([i - 1, i - 2]) or latin_near([j, j + 1])
+
+    def _enqueue_shatter(self, run_str, toks, i, j, page, span_uids) -> None:
+        """ШИРОКИЙ eng-OCR кроп строки с рассыпанным словом; кандидат — лат. слово после
+        ЧИСТОГО анкора. Всегда needs_review + очередь с кропом (человек по картинке)."""
+        anchor = ""
+        for k in (i - 1, i - 2):
+            if 0 <= k < len(toks) and _clean_latin_word(toks[k][2]) and len(toks[k][2]) >= 3:
+                anchor = toks[k][2]
+                break
+        pno, bbox, _ = self._locate(run_str.replace(" ", ""), self._page_hint.get(run_str))
+        cand = ""
+        if pno is not None and bbox is not None:
+            eng = self._eng_line(pno, bbox)    # ШИРОКИЙ кроп ВСЕЙ строки, langs='eng'
+            if eng and anchor:
+                mm = re.search(re.escape(anchor) + r"\s+(\S+)", eng, re.IGNORECASE)
+                if mm and _plausible_latin(mm.group(1)):
+                    cand = mm.group(1).strip(".,;:()[]")
+        self._enqueue(
+            run_str, cand or run_str, "term", page, pno, bbox,
+            ["shattered_latin", "b3b_widecrop"], [cand] if cand else [], "ocr_eng_wide", 0.0,
+            "рассыпанное лат. слово — широкий eng-OCR кроп, проверить по картинке")
 
     # ---- провенанс + очередь ----
     def _enqueue(self, src, best, kind, page, pno, bbox, why, candidates,
@@ -1628,6 +1711,16 @@ def _homoglyph_latin(core: str) -> Optional[str]:
 def _is_shatter_char_token(core: str) -> bool:
     """Одиночный символ-осколок рассыпанного слова: одна кир-буква ИЛИ цифра."""
     return len(core) == 1 and (bool(_CYR_ANY.match(core)) or core.isdigit())
+
+
+def _is_russian_word(core: str) -> bool:
+    """Многобуквенное РУССКОЕ слово (не гомограф-токен): кириллица, >=3, есть строчная
+    кир-буква. Сосед-русское-слово у рассыпки -> это РАЗРЯДКА русского, не лат. осколок."""
+    if len(core) < 3 or not _CYR_ANY.search(core):
+        return False
+    if _homoglyph_latin(core) is not None:     # целиком гомографный -> не русское слово
+        return False
+    return any(("а" <= c <= "я") or c == "ё" for c in core)
 
 
 def _phrase_is_critical(tmpl) -> bool:
