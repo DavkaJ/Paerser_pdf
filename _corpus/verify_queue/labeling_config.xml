@@ -1,39 +1,27 @@
-<!--
-  Label Studio конфиг для очереди верификации латинского восстановления (промпт 13b/14).
-  Импорт: tasks.json (список задач). Каждая задача несёт crop_png (рендер места ~400 DPI),
-  исходный текст, предложенную замену и список кандидатов. Разметчик подтверждает/правит.
-
-  Запуск (одна команда, из корня проекта):
-    label-studio start latin_verify --init \
-      --input-path _corpus/verify_queue/tasks.json \
-      --label-config _corpus/verify_queue/labeling_config.xml \
-      --input-format json-task
-  Затем открыть http://localhost:8080 и размечать. Экспорт решений -> reviewed rules (14).
--->
 <View>
   <Header value="Проверка восстановления латиницы (медицинский текст)"/>
-  <Style>.lsf-main-content { max-width: 900px; }</Style>
+  <Style>
+    .lsf-main-content { max-width: 100% !important; }
+    .lsf-main-view__annotation { max-width: 100% !important; }
+    .lsf-object { max-width: 100% !important; }
+  </Style>
 
-  <View style="display:flex; gap:16px;">
-    <View style="flex:1;">
-      <Header value="Слово (≈600 DPI)" size="5"/>
-      <Image name="crop" value="$crop_word" zoom="true" maxWidth="100%"/>
-      <Header value="Строка (контекст)" size="5"/>
-      <Image name="crop_line" value="$crop_line" zoom="true" maxWidth="100%"/>
-      <Header value="Страница (bbox подсвечен)" size="5"/>
-      <Image name="crop_page" value="$crop_page" zoom="true" maxWidth="100%"/>
-    </View>
-    <View style="flex:1;">
-      <Header value="Контекст" size="4"/>
-      <Text name="doc" value="Документ: $doc  •  стр. $page  •  тип: $entity_kind  •  критичность: $is_critical"/>
-      <Text name="src" value="Исходный текст (native):"/>
-      <Text name="source_text" value="$source_text"/>
-      <Text name="prop" value="Предложено системой:"/>
-      <Text name="resolved_text" value="$resolved_text"/>
-      <Text name="cand" value="Кандидаты: $candidates"/>
-      <Text name="why" value="Почему спорно: $why_uncertain  ($method, conf=$confidence)"/>
-    </View>
+  <View style="padding:8px 12px; margin-bottom:6px; background: rgba(128,128,128,0.10); border-radius:6px;">
+    <Text name="doc" value="Документ: $doc  •  стр. $page  •  тип: $entity_kind  •  критичность: $is_critical"/>
+    <Text name="source_text" value="Исходный текст (native): $source_text"/>
+    <Text name="resolved_text" value="Предложено системой: $resolved_text"/>
+    <Text name="candidates" value="Кандидаты: $candidates"/>
+    <Text name="why" value="Почему спорно: $why_uncertain  ($method, conf=$confidence)"/>
   </View>
+
+  <Header value="Слово (≈600 DPI) — колёсиком мыши можно приблизить" size="4"/>
+  <Image name="crop" value="$crop_word" zoom="true" zoomControl="true" width="100%"/>
+
+  <Header value="Строка (контекст)" size="4"/>
+  <Image name="crop_line" value="$crop_line" zoom="true" zoomControl="true" width="100%"/>
+
+  <Header value="Страница (bbox подсвечен красным)" size="4"/>
+  <Image name="crop_page" value="$crop_page" zoom="true" zoomControl="true" maxWidth="55%"/>
 
   <Header value="Решение" size="4"/>
   <Choices name="decision" toName="crop" choice="single" showInLine="false" required="true">
