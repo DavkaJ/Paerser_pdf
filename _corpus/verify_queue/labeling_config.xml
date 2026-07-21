@@ -24,23 +24,14 @@
   <Image name="crop_page" value="$crop_page" zoom="true" zoomControl="true" maxWidth="55%"/>
 
   <Header value="Решение" size="4"/>
-  <Choices name="decision" toName="crop" choice="single" showInLine="false" required="true">
-    <Choice value="accept" hint="Предложенная замена верна — принять"/>
-    <Choice value="pick_candidate" hint="Верен ДРУГОЙ кандидат из списка"/>
-    <Choice value="enter_own" hint="Ввести правильный вариант вручную (поле ниже)"/>
-    <Choice value="source_ok" hint="Исходный текст верен — НЕ менять"/>
-    <Choice value="illegible" hint="Неразборчиво даже по картинке"/>
-    <Choice value="need_expert" hint="Нужен медицинский эксперт"/>
+  <Choices name="decision" toName="crop" choice="single" showInLine="true" required="true">
+    <Choice value="принять" hint="Предложенная системой замена верна"/>
+    <Choice value="ошибка" hint="Неверно — ввести правильный вариант ниже"/>
   </Choices>
 
-  <Header value="Свой вариант / выбранный кандидат" size="5"/>
-  <TextArea name="corrected_text" toName="crop" rows="1" maxSubmissions="1"
-            placeholder="Правильная форма (если 'ввести свой' или 'выбрать кандидата')"/>
-
-  <Header value="Тип сущности (если система ошиблась)" size="5"/>
-  <Choices name="entity_kind_fix" toName="crop" choice="single" showInLine="true">
-    <Choice value="icd"/><Choice value="atc"/><Choice value="tnm"/>
-    <Choice value="gene"/><Choice value="drug"/><Choice value="dose"/>
-    <Choice value="term"/><Choice value="not_entity"/>
-  </Choices>
+  <View visibleWhen="choice-selected" whenTagName="decision" whenChoiceValue="ошибка">
+    <Header value="Правильный вариант" size="5"/>
+    <TextArea name="corrected_text" toName="crop" rows="1" maxSubmissions="1"
+              placeholder="Введите правильную форму"/>
+  </View>
 </View>
