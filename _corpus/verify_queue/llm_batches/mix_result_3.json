@@ -1,0 +1,1199 @@
+[
+ {
+  "form": "НеаЬЬ",
+  "verdict": "broken_latin",
+  "decoded": "Health",
+  "confidence": 0.85,
+  "reason": "Lancet Glob Health citation; Н=H,е=e,а=a,ЬЬ=lth"
+ },
+ {
+  "form": "ОШсотез",
+  "verdict": "broken_latin",
+  "decoded": "Outcomes",
+  "confidence": 0.9,
+  "reason": "'Outcomes of Pregnant Women' citation"
+ },
+ {
+  "form": "СНтса",
+  "verdict": "broken_latin",
+  "decoded": "Clinical",
+  "confidence": 0.85,
+  "reason": "DRCR 'Clinical Research Network'"
+ },
+ {
+  "form": "НаеторЫНа",
+  "verdict": "broken_latin",
+  "decoded": "Haemophilia",
+  "confidence": 0.85,
+  "reason": "journal 'Haemophilia 2006'; т=m,р=p"
+ },
+ {
+  "form": "МоСА-тест",
+  "verdict": "russian",
+  "decoded": null,
+  "confidence": 0.95,
+  "reason": "MoCA test, Russian -тест suffix; do not latinize"
+ },
+ {
+  "form": "ЬеаНЬ",
+  "verdict": "broken_latin",
+  "decoded": "health",
+  "confidence": 0.9,
+  "reason": "'among health check-up population'"
+ },
+ {
+  "form": "ОЬезку",
+  "verdict": "broken_latin",
+  "decoded": "Obesity",
+  "confidence": 0.85,
+  "reason": "'Obesity facts' journal / obesity in elderly"
+ },
+ {
+  "form": "ТЬат",
+  "verdict": "broken_latin",
+  "decoded": "Tham",
+  "confidence": 0.85,
+  "reason": "glaucoma author Tham YC; Т=T,Ь=h,а=a,т=m"
+ },
+ {
+  "form": "ууКЬ",
+  "verdict": "broken_latin",
+  "decoded": "with",
+  "confidence": 0.75,
+  "reason": "'associated with vemurafenib'; уу=w,Ь=h"
+ },
+ {
+  "form": "РЬат",
+  "verdict": "broken_latin",
+  "decoded": "Pham",
+  "confidence": 0.85,
+  "reason": "glaucoma author Pham TH"
+ },
+ {
+  "form": "еозторЫНс",
+  "verdict": "broken_latin",
+  "decoded": "eosinophilic",
+  "confidence": 0.8,
+  "reason": "'severe eosinophilic asthma'"
+ },
+ {
+  "form": "Стресс-МРТ",
+  "verdict": "russian",
+  "decoded": null,
+  "confidence": 0.95,
+  "reason": "Stress-MRI, Russian compound (МРТ); do not latinize"
+ },
+ {
+  "form": "СЫррз",
+  "verdict": "broken_latin",
+  "decoded": "Chipps",
+  "confidence": 0.8,
+  "reason": "author Chipps BE; С=C,Ы=hi,рр=pp,з=s"
+ },
+ {
+  "form": "еРРесРз",
+  "verdict": "broken_latin",
+  "decoded": "effects",
+  "confidence": 0.85,
+  "reason": "'treatment effects'; Р=ff/t font substitution"
+ },
+ {
+  "form": "СЬат",
+  "verdict": "broken_latin",
+  "decoded": "Cham",
+  "confidence": 0.85,
+  "reason": "'Springer, Cham.' place name"
+ },
+ {
+  "form": "КЬакоо",
+  "verdict": "broken_latin",
+  "decoded": "Khakoo",
+  "confidence": 0.8,
+  "reason": "author Khakoo NS"
+ },
+ {
+  "form": "АЬЬаз",
+  "verdict": "broken_latin",
+  "decoded": "Abbas",
+  "confidence": 0.8,
+  "reason": "author Abbasi A; А=A,ЬЬ=bb,а=a,з=s"
+ },
+ {
+  "form": "СЬао",
+  "verdict": "broken_latin",
+  "decoded": "Chao",
+  "confidence": 0.8,
+  "reason": "author Chao JH"
+ },
+ {
+  "form": "еРЯсасу",
+  "verdict": "broken_latin",
+  "decoded": "efficacy",
+  "confidence": 0.85,
+  "reason": "'clinical efficacy, safety'"
+ },
+ {
+  "form": "оРМесЬсте",
+  "verdict": "broken_latin",
+  "decoded": "ofMedicine",
+  "confidence": 0.7,
+  "reason": "NEJM 'Journal of Medicine' merged of+Medicine"
+ },
+ {
+  "form": "РНазе",
+  "verdict": "broken_latin",
+  "decoded": "Phase",
+  "confidence": 0.85,
+  "reason": "'Phase III trial of avelumab'"
+ },
+ {
+  "form": "еРРес!з",
+  "verdict": "broken_latin",
+  "decoded": "effects",
+  "confidence": 0.85,
+  "reason": "'adverse effects'; !=t"
+ },
+ {
+  "form": "ЬераШЫазШта",
+  "verdict": "broken_latin",
+  "decoded": "hepatoblastoma",
+  "confidence": 0.8,
+  "reason": "'pediatric hepatoblastoma'"
+ },
+ {
+  "form": "УозЫНа",
+  "verdict": "broken_latin",
+  "decoded": "Yoshida",
+  "confidence": 0.8,
+  "reason": "Japanese author list (Tokumoto, Watanabe)"
+ },
+ {
+  "form": "ЫНатз",
+  "verdict": "broken_latin",
+  "decoded": "Williams",
+  "confidence": 0.6,
+  "reason": "Child-Pugh classic ref 'Williams R'; leading W lost to backslashes"
+ },
+ {
+  "form": "теШШз",
+  "verdict": "broken_latin",
+  "decoded": "mellitus",
+  "confidence": 0.85,
+  "reason": "'diabetes mellitus'"
+ },
+ {
+  "form": "ЕРРесХ",
+  "verdict": "broken_latin",
+  "decoded": "Effect",
+  "confidence": 0.85,
+  "reason": "'Effect of prophylactic treatment'; Х=t"
+ },
+ {
+  "form": "ТЫотЬ",
+  "verdict": "broken_latin",
+  "decoded": "Thromb",
+  "confidence": 0.85,
+  "reason": "journal 'Thromb Haemost'; Ы=hr"
+ },
+ {
+  "form": "СЬшса",
+  "verdict": "broken_latin",
+  "decoded": "Clinical",
+  "confidence": 0.85,
+  "reason": "'Clinical Trial' Crohn's citation"
+ },
+ {
+  "form": "сотрЫШз",
+  "verdict": "broken_latin",
+  "decoded": "complications",
+  "confidence": 0.75,
+  "reason": "'ongoing complications after diverticulitis'"
+ },
+ {
+  "form": "РЬШрр",
+  "verdict": "broken_latin",
+  "decoded": "Philipp",
+  "confidence": 0.8,
+  "reason": "author Philipp S; Ш=ili"
+ },
+ {
+  "form": "ЕРРесНуе",
+  "verdict": "broken_latin",
+  "decoded": "Effective",
+  "confidence": 0.8,
+  "reason": "'Effective Treatment of Hereditary Angioedema'"
+ },
+ {
+  "form": "еозторЬШа",
+  "verdict": "broken_latin",
+  "decoded": "eosinophilia",
+  "confidence": 0.8,
+  "reason": "'airway eosinophilia in asthma'"
+ },
+ {
+  "form": "АМЬта",
+  "verdict": "broken_latin",
+  "decoded": "Asthma",
+  "confidence": 0.8,
+  "reason": "'Asthma Control Test' (Schatz)"
+ },
+ {
+  "form": "АНатз",
+  "verdict": "broken_latin",
+  "decoded": "Adams",
+  "confidence": 0.6,
+  "reason": "personal-name list 'Anne Adams'; Н=d"
+ },
+ {
+  "form": "ОЬсо",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.4,
+  "reason": "Russian gas-exchange context, likely DLCO but homoglyph decode unclear"
+ },
+ {
+  "form": "УШат",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.4,
+  "reason": "French ophthal author (Chamard,Bron); reads 'Villam', exact surname unclear"
+ },
+ {
+  "form": "СЬезХ",
+  "verdict": "broken_latin",
+  "decoded": "Chest",
+  "confidence": 0.9,
+  "reason": "journal 'Chest. 2018'"
+ },
+ {
+  "form": "РЬузЫ",
+  "verdict": "broken_latin",
+  "decoded": "Physiol",
+  "confidence": 0.8,
+  "reason": "'J Manipulative Physiol Ther'"
+ },
+ {
+  "form": "сотраЬЫе",
+  "verdict": "broken_latin",
+  "decoded": "compatible",
+  "confidence": 0.8,
+  "reason": "'ABO-compatible donors'"
+ },
+ {
+  "form": "СС-смерть",
+  "verdict": "russian",
+  "decoded": null,
+  "confidence": 0.95,
+  "reason": "contains Russian word смерть (death); CV-death"
+ },
+ {
+  "form": "ЕрММутШз",
+  "verdict": "broken_latin",
+  "decoded": "Epididymitis",
+  "confidence": 0.8,
+  "reason": "'Treatment of Acute Epididymitis'"
+ },
+ {
+  "form": "АНтет",
+  "verdict": "broken_latin",
+  "decoded": "Aliment",
+  "confidence": 0.8,
+  "reason": "journal 'Aliment Pharmacol Ther'; Н=li"
+ },
+ {
+  "form": "УасЬЬа",
+  "verdict": "broken_latin",
+  "decoded": "Vachha",
+  "confidence": 0.55,
+  "reason": "Indian author list (Bhatia,Bavdekar); сЬЬ=chh"
+ },
+ {
+  "form": "КЬаёуа",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.4,
+  "reason": "N.African author in Latin citation; ё ambiguous, exact spelling unclear"
+ },
+ {
+  "form": "аРРесР",
+  "verdict": "broken_latin",
+  "decoded": "affect",
+  "confidence": 0.85,
+  "reason": "'cholestasis affect fracture risk'"
+ },
+ {
+  "form": "РЬозрЬаШзе",
+  "verdict": "broken_latin",
+  "decoded": "Phosphatase",
+  "confidence": 0.8,
+  "reason": "'Alkaline Phosphatase'"
+ },
+ {
+  "form": "ЬМрз",
+  "verdict": "broken_latin",
+  "decoded": "https",
+  "confidence": 0.7,
+  "reason": "URL scheme in DOI; Ь=h,М=tt,р=p,з=s"
+ },
+ {
+  "form": "АУатез",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.4,
+  "reason": "colorectal author (Roberts,Smith,Cope); surname not confidently decodable"
+ },
+ {
+  "form": "ЕуоЫН",
+  "verdict": "broken_latin",
+  "decoded": "Evolution",
+  "confidence": 0.7,
+  "reason": "'The Evolution in the Prioritization of Liver' (split token)"
+ },
+ {
+  "form": "ЫШку",
+  "verdict": "broken_latin",
+  "decoded": "Utility",
+  "confidence": 0.7,
+  "reason": "Corpechot 'Utility of Noninvasive Markers'"
+ },
+ {
+  "form": "ОрМЫтхс",
+  "verdict": "broken_latin",
+  "decoded": "Ophthalmic",
+  "confidence": 0.75,
+  "reason": "'Ophthalmic and Physiological Optics'"
+ },
+ {
+  "form": "еЕЕес",
+  "verdict": "broken_latin",
+  "decoded": "effect",
+  "confidence": 0.8,
+  "reason": "'The effect of parental history of myopia'; Е=ff"
+ },
+ {
+  "form": "РоззМШез",
+  "verdict": "broken_latin",
+  "decoded": "Possibilities",
+  "confidence": 0.75,
+  "reason": "'Possibilities of monitoring intraocular pressure'"
+ },
+ {
+  "form": "ЫРоса",
+  "verdict": "broken_latin",
+  "decoded": "bifocal",
+  "confidence": 0.75,
+  "reason": "'bifocal and multifocal soft contact lenses'"
+ },
+ {
+  "form": "ассерЬхЫЫу",
+  "verdict": "broken_latin",
+  "decoded": "acceptability",
+  "confidence": 0.7,
+  "reason": "'safety and acceptability of orthokeratology'"
+ },
+ {
+  "form": "ОрЫМтоЬёу",
+  "verdict": "broken_latin",
+  "decoded": "Ophthalmology",
+  "confidence": 0.75,
+  "reason": "journal 'Ophthalmology. 2012'"
+ },
+ {
+  "form": "теШМз",
+  "verdict": "broken_latin",
+  "decoded": "mellitus",
+  "confidence": 0.8,
+  "reason": "'type 2 diabetes mellitus'"
+ },
+ {
+  "form": "УШктз",
+  "verdict": "broken_latin",
+  "decoded": "Wilkins",
+  "confidence": 0.8,
+  "reason": "'Lippincott Williams & Wilkins'"
+ },
+ {
+  "form": "раХХетз",
+  "verdict": "broken_latin",
+  "decoded": "patterns",
+  "confidence": 0.8,
+  "reason": "'patterns of disease recurrence'; Х=t,т=rn"
+ },
+ {
+  "form": "рЬазезШОу",
+  "verdict": "broken_latin",
+  "decoded": "phasestudy",
+  "confidence": 0.55,
+  "reason": "'A phase study of gemcitabine' merged phase+study"
+ },
+ {
+  "form": "ЬеторЫНа",
+  "verdict": "broken_latin",
+  "decoded": "hemophilia",
+  "confidence": 0.8,
+  "reason": "'factor VII deficiency and hemophilia B'"
+ },
+ {
+  "form": "ТЬхх",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.4,
+  "reason": "Chinese author list; reads 'Thii', surname not confidently decodable"
+ },
+ {
+  "form": "РОС-тестов",
+  "verdict": "russian",
+  "decoded": null,
+  "confidence": 0.9,
+  "reason": "Russian genitive plural -тестов (POC-tests); do not latinize"
+ },
+ {
+  "form": "АЬЯот",
+  "verdict": "broken_latin",
+  "decoded": "Abdom",
+  "confidence": 0.75,
+  "reason": "journal 'Abdom imaging'; Я=d"
+ },
+ {
+  "form": "АЬтеЬ",
+  "verdict": "broken_latin",
+  "decoded": "Ahmed",
+  "confidence": 0.75,
+  "reason": "author Ahmed W; А=A,Ь=h,т=m,е=e,Ь=d"
+ },
+ {
+  "form": "зурЬШз",
+  "verdict": "broken_latin",
+  "decoded": "syphilis",
+  "confidence": 0.8,
+  "reason": "'management of syphilis' guideline"
+ },
+ {
+  "form": "ХУакз",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.45,
+  "reason": "rectal-prolapse author; reads 'Wa..s', surname ambiguous"
+ },
+ {
+  "form": "АЬтак",
+  "verdict": "broken_latin",
+  "decoded": "Ahmad",
+  "confidence": 0.75,
+  "reason": "Silverberg/Satsangi IBD Montreal ref 'Ahmad T'; к=d"
+ },
+ {
+  "form": "зе!есШЕ",
+  "verdict": "broken_latin",
+  "decoded": "selected",
+  "confidence": 0.75,
+  "reason": "'in selected septuagenarians'"
+ },
+ {
+  "form": "СЬетуак",
+  "verdict": "broken_latin",
+  "decoded": "Chernyak",
+  "confidence": 0.8,
+  "reason": "LI-RADS author Chernyak V; т=rn"
+ },
+ {
+  "form": "УНШатз",
+  "verdict": "broken_latin",
+  "decoded": "Williams",
+  "confidence": 0.8,
+  "reason": "author Williams MT (active cycle of breathing)"
+ },
+ {
+  "form": "АЬеск",
+  "verdict": "broken_latin",
+  "decoded": "Abeck",
+  "confidence": 0.75,
+  "reason": "dermatology author Abeck D"
+ },
+ {
+  "form": "ОЬуата",
+  "verdict": "broken_latin",
+  "decoded": "Ohyama",
+  "confidence": 0.75,
+  "reason": "author Ohyama S (CMV IgM)"
+ },
+ {
+  "form": "РаЫШез",
+  "verdict": "broken_latin",
+  "decoded": "Fatalities",
+  "confidence": 0.75,
+  "reason": "'Fatalities due to anaphylactic reactions to foods'"
+ },
+ {
+  "form": "РЬазез",
+  "verdict": "broken_latin",
+  "decoded": "Phases",
+  "confidence": 0.85,
+  "reason": "'Extension Phases of PAST-3'"
+ },
+ {
+  "form": "ЕРРМес",
+  "verdict": "broken_latin",
+  "decoded": "EffMed",
+  "confidence": 0.55,
+  "reason": "'J Long Term Eff Med Implants' merged Eff+Med"
+ },
+ {
+  "form": "АЬаёеЬ",
+  "verdict": "broken_latin",
+  "decoded": "Abadeh",
+  "confidence": 0.7,
+  "reason": "appendicitis meta-analysis 'Eng KA, Abadeh A'"
+ },
+ {
+  "form": "ОЬазетаН",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.4,
+  "reason": "Iranian author; reads ~Ghasemah, exact spelling unclear"
+ },
+ {
+  "form": "зоШЬет",
+  "verdict": "broken_latin",
+  "decoded": "southern",
+  "confidence": 0.75,
+  "reason": "'cross-sectional study in southern Brazil'; Ш=ut,т=rn"
+ },
+ {
+  "form": "КЯеу",
+  "verdict": "broken_latin",
+  "decoded": "Kiley",
+  "confidence": 0.6,
+  "reason": "NHLBI asthma consortium author Kiley J"
+ },
+ {
+  "form": "азСЬтаЬсз",
+  "verdict": "broken_latin",
+  "decoded": "asthmatics",
+  "confidence": 0.75,
+  "reason": "'response of chronic asthmatics'; С=t"
+ },
+ {
+  "form": "РаШЬазе",
+  "verdict": "broken_latin",
+  "decoded": "Database",
+  "confidence": 0.7,
+  "reason": "'Cochrane Database of Systematic Reviews'; Р=D"
+ },
+ {
+  "form": "АзСЬша",
+  "verdict": "broken_latin",
+  "decoded": "Asthma",
+  "confidence": 0.8,
+  "reason": "'Avoidance Measures for Asthma'; С=t"
+ },
+ {
+  "form": "ШЬес",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.4,
+  "reason": "author-list fragment, cannot resolve to a whole word"
+ },
+ {
+  "form": "ЕНзееуа",
+  "verdict": "broken_latin",
+  "decoded": "Eliseeva",
+  "confidence": 0.7,
+  "reason": "transliterated Russian author Eliseeva TI in English citation; Н=li,у=v"
+ },
+ {
+  "form": "НСТ-тест",
+  "verdict": "russian",
+  "decoded": null,
+  "confidence": 0.95,
+  "reason": "NBT test, Russian -тест suffix; do not latinize"
+ },
+ {
+  "form": "РНскеу",
+  "verdict": "broken_latin",
+  "decoded": "Hickey",
+  "confidence": 0.7,
+  "reason": "Cochrane 'Jeffery M, Hickey BE'; Р=H,Н=i"
+ },
+ {
+  "form": "СЫске",
+  "verdict": "broken_latin",
+  "decoded": "Chiche",
+  "confidence": 0.65,
+  "reason": "liver-transplant author Laurence Chiche; Ы=hi,к=h"
+ },
+ {
+  "form": "ТЕотаз",
+  "verdict": "broken_latin",
+  "decoded": "Thomas",
+  "confidence": 0.75,
+  "reason": "author Thomas AA; Е=h"
+ },
+ {
+  "form": "КРзк",
+  "verdict": "broken_latin",
+  "decoded": "Risk",
+  "confidence": 0.7,
+  "reason": "'Risk Factors for non-closure'; К=R"
+ },
+ {
+  "form": "ОЬзсЬка",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.4,
+  "reason": "German derm author (Reifenberger,Garbe); exact surname unclear"
+ },
+ {
+  "form": "УУта",
+  "verdict": "russian",
+  "decoded": null,
+  "confidence": 0.6,
+  "reason": "Russian clinical-guideline grade (corrupted УУР) in УДД context; do not latinize"
+ },
+ {
+  "form": "НеаКЬ",
+  "verdict": "broken_latin",
+  "decoded": "Health",
+  "confidence": 0.8,
+  "reason": "ICD 'Related Health Problems'; К=lt,Ь=h"
+ },
+ {
+  "form": "ХУоо",
+  "verdict": "broken_latin",
+  "decoded": "Woo",
+  "confidence": 0.6,
+  "reason": "'Woodford T' split; literal ХУоо=Woo"
+ },
+ {
+  "form": "ууЯН",
+  "verdict": "broken_latin",
+  "decoded": "with",
+  "confidence": 0.7,
+  "reason": "'carcinoma of the skin with cisplatin'; уу=w,Н=h"
+ },
+ {
+  "form": "МоеЬНе",
+  "verdict": "broken_latin",
+  "decoded": "Moehle",
+  "confidence": 0.6,
+  "reason": "author Moehle M (keloids); Ь=h,Н=l"
+ },
+ {
+  "form": "ХУННатз",
+  "verdict": "broken_latin",
+  "decoded": "Williams",
+  "confidence": 0.75,
+  "reason": "author 'Green AC, Williams GM'"
+ },
+ {
+  "form": "ХЬутотаз",
+  "verdict": "broken_latin",
+  "decoded": "thymomas",
+  "confidence": 0.75,
+  "reason": "'unresectable malignant thymomas'; Х=t"
+ },
+ {
+  "form": "РЬузкз",
+  "verdict": "broken_latin",
+  "decoded": "Physics",
+  "confidence": 0.7,
+  "reason": "'Int J Radiat Oncol Biol Physics'; к=ic"
+ },
+ {
+  "form": "ОНазЫ",
+  "verdict": "broken_latin",
+  "decoded": "Ohashi",
+  "confidence": 0.7,
+  "reason": "author Yasuo Ohashi; Ы=hi"
+ },
+ {
+  "form": "ОХзсЬ",
+  "verdict": "broken_latin",
+  "decoded": "Dtsch",
+  "confidence": 0.65,
+  "reason": "journal 'Verh Dtsch Ges Inn Med'; О=D,Х=t"
+ },
+ {
+  "form": "СЬОта",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.35,
+  "reason": "heavily garbled URL fragment; not confidently decodable"
+ },
+ {
+  "form": "ресНаШЫ",
+  "verdict": "broken_latin",
+  "decoded": "pediatric",
+  "confidence": 0.65,
+  "reason": "'phase I study in pediatric patients'"
+ },
+ {
+  "form": "СЬееШат",
+  "verdict": "broken_latin",
+  "decoded": "Cheetham",
+  "confidence": 0.7,
+  "reason": "pharmacoepi author Cheetham TC; Ш=th"
+ },
+ {
+  "form": "СЫозХа",
+  "verdict": "broken_latin",
+  "decoded": "Chlosta",
+  "confidence": 0.7,
+  "reason": "Polish urology author Chlosta P; Ы=hl,Х=t"
+ },
+ {
+  "form": "Онко-ТЕСЕ",
+  "verdict": "russian",
+  "decoded": null,
+  "confidence": 0.95,
+  "reason": "Onco-TESE, Russian prefix Онко-; glossary-defined; do not latinize"
+ },
+ {
+  "form": "оРЬоте",
+  "verdict": "broken_latin",
+  "decoded": "ofhome",
+  "confidence": 0.65,
+  "reason": "'assessment of home nebulizer' merged of+home"
+ },
+ {
+  "form": "теШзШНс",
+  "verdict": "broken_latin",
+  "decoded": "metastatic",
+  "confidence": 0.7,
+  "reason": "'metastatic well-differentiated neuroendocrine'; Ш=ta"
+ },
+ {
+  "form": "ТЬозаш",
+  "verdict": "broken_latin",
+  "decoded": "Thosani",
+  "confidence": 0.65,
+  "reason": "author Thosani S; ш=ni"
+ },
+ {
+  "form": "осЕеоООе",
+  "verdict": "broken_latin",
+  "decoded": "octreotide",
+  "confidence": 0.6,
+  "reason": "NETTER-1 'long-acting octreotide'"
+ },
+ {
+  "form": "оРНеат",
+  "verdict": "broken_latin",
+  "decoded": "ofHeart",
+  "confidence": 0.65,
+  "reason": "'Treatment of Heart Failure' merged of+Heart"
+ },
+ {
+  "form": "ВЬазт",
+  "verdict": "broken_latin",
+  "decoded": "Bhasin",
+  "confidence": 0.7,
+  "reason": "cachexia author Bhasin S; т=in"
+ },
+ {
+  "form": "УШетз",
+  "verdict": "broken_latin",
+  "decoded": "Willems",
+  "confidence": 0.6,
+  "reason": "French cardiology author Willems; Ш=ill"
+ },
+ {
+  "form": "КНтоуа",
+  "verdict": "broken_latin",
+  "decoded": "Klimova",
+  "confidence": 0.7,
+  "reason": "Czech dementia author Klimova B; Н=li,у=v"
+ },
+ {
+  "form": "ОЫЬаш",
+  "verdict": "broken_latin",
+  "decoded": "Oldham",
+  "confidence": 0.65,
+  "reason": "delirium author Oldham M; Ы=ld,ш=m"
+ },
+ {
+  "form": "МОСА-тест",
+  "verdict": "russian",
+  "decoded": null,
+  "confidence": 0.95,
+  "reason": "MoCA test, Russian -тест suffix; do not latinize"
+ },
+ {
+  "form": "КЬауу",
+  "verdict": "broken_latin",
+  "decoded": "Khaw",
+  "confidence": 0.75,
+  "reason": "Weinreb & Khaw glaucoma Lancet review; уу=w"
+ },
+ {
+  "form": "ОрМЫтоР",
+  "verdict": "broken_latin",
+  "decoded": "Ophthalmol",
+  "confidence": 0.7,
+  "reason": "'Am J Ophthalmol - 1969'"
+ },
+ {
+  "form": "ЬЫоШту",
+  "verdict": "broken_latin",
+  "decoded": "iridotomy",
+  "confidence": 0.6,
+  "reason": "'laser peripheral iridotomy'"
+ },
+ {
+  "form": "ОШеоте",
+  "verdict": "broken_latin",
+  "decoded": "Outcome",
+  "confidence": 0.7,
+  "reason": "'Patient-Reported Outcome Measure'; Ш=ut"
+ },
+ {
+  "form": "АЬозе",
+  "verdict": "broken_latin",
+  "decoded": "Altose",
+  "confidence": 0.6,
+  "reason": "Lung Health Study author Altose MD (Anthonisen,Connett,Kiley)"
+ },
+ {
+  "form": "оРМесНсше",
+  "verdict": "broken_latin",
+  "decoded": "ofMedicine",
+  "confidence": 0.7,
+  "reason": "'American Journal of Medicine' merged of+Medicine"
+ },
+ {
+  "form": "ОЫЬат",
+  "verdict": "broken_latin",
+  "decoded": "Oldham",
+  "confidence": 0.65,
+  "reason": "IPF author Oldham JM (TOLLIP/MUC5B); Ы=ld"
+ },
+ {
+  "form": "РкнТЬ",
+  "verdict": "broken_latin",
+  "decoded": "North",
+  "confidence": 0.6,
+  "reason": "journal 'North Clin Istanb'; mixed cyr Р=N,к=o,н=r"
+ },
+ {
+  "form": "СЬуЫска",
+  "verdict": "broken_latin",
+  "decoded": "Chybicka",
+  "confidence": 0.65,
+  "reason": "Polish pediatric-onc author Chybicka; Ы=bi"
+ },
+ {
+  "form": "ЫШаНуе",
+  "verdict": "broken_latin",
+  "decoded": "Initiative",
+  "confidence": 0.65,
+  "reason": "'Expertise Initiative' (Pediatr Crit Care)"
+ },
+ {
+  "form": "ОазМЬз",
+  "verdict": "broken_latin",
+  "decoded": "Gastritis",
+  "confidence": 0.65,
+  "reason": "'OLGA Gastritis Staging'; О=G,М=tri"
+ },
+ {
+  "form": "АВВА-Рус",
+  "verdict": "russian",
+  "decoded": null,
+  "confidence": 0.9,
+  "reason": "Russian drug manufacturer АВВА-РУС (amoxicillin); proper noun"
+ },
+ {
+  "form": "СЬатаёа",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.45,
+  "reason": "ophthal author; reads ~Chamada, exact surname unclear"
+ },
+ {
+  "form": "СЬескНз",
+  "verdict": "broken_latin",
+  "decoded": "Checklist",
+  "confidence": 0.75,
+  "reason": "SMFM 'Checklist for amniotic fluid embolism'; Н=li"
+ },
+ {
+  "form": "КЬоо",
+  "verdict": "broken_latin",
+  "decoded": "Khoo",
+  "confidence": 0.7,
+  "reason": "author Khoo SK (amniotic fluid embolism)"
+ },
+ {
+  "form": "ЬНккЬак",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.35,
+  "reason": "Iranian author list; not confidently decodable"
+ },
+ {
+  "form": "ССКорсакова",
+  "verdict": "russian",
+  "decoded": null,
+  "confidence": 0.95,
+  "reason": "contains Russian surname Корсакова (Korsakov journal); do not latinize"
+ },
+ {
+  "form": "ехЫЫ",
+  "verdict": "broken_latin",
+  "decoded": "exhibit",
+  "confidence": 0.65,
+  "reason": "'overweight or exhibit fatty liver'; х=x,Ы=hi/bi"
+ },
+ {
+  "form": "ЕРРесСз",
+  "verdict": "broken_latin",
+  "decoded": "Effects",
+  "confidence": 0.8,
+  "reason": "'Effects of Mediterranean diet'; С=t"
+ },
+ {
+  "form": "КасЬН",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.4,
+  "reason": "French/Tunisian author; reads ~Kachi, exact surname unclear"
+ },
+ {
+  "form": "КЬее",
+  "verdict": "broken_latin",
+  "decoded": "Rhee",
+  "confidence": 0.55,
+  "reason": "Korean author list (Cho,Kim,Lee,Kang); К=R"
+ },
+ {
+  "form": "ЕЬасН",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.45,
+  "reason": "author 'Effect of Coffee'; reads ~Ebach, surname uncertain"
+ },
+ {
+  "form": "Оз^еораЕЕс",
+  "verdict": "broken_latin",
+  "decoded": "Osteopathic",
+  "confidence": 0.65,
+  "reason": "'Journal of Osteopathic Medicine'; Е=t/hi, ^ stray"
+ },
+ {
+  "form": "СЫеораШ",
+  "verdict": "broken_latin",
+  "decoded": "Osteopath",
+  "confidence": 0.6,
+  "reason": "'J Am Osteopath Assoc'; Ы=st,Ш=th"
+ },
+ {
+  "form": "ОКХек",
+  "verdict": "broken_latin",
+  "decoded": "Greek",
+  "confidence": 0.55,
+  "reason": "GREACE study 'GReek Atorvastatin...Evaluation'; О=G,К=R"
+ },
+ {
+  "form": "ЕЯесСз",
+  "verdict": "broken_latin",
+  "decoded": "Effects",
+  "confidence": 0.75,
+  "reason": "FIELD study 'Effects of long-term fenofibrate'; С=t"
+ },
+ {
+  "form": "ёоЫО",
+  "verdict": "broken_latin",
+  "decoded": "doi",
+  "confidence": 0.55,
+  "reason": "DOI prefix in Russian ref; ё=d,о=o,Ы=i"
+ },
+ {
+  "form": "А\\уазХЬу",
+  "verdict": "broken_latin",
+  "decoded": "Awasthy",
+  "confidence": 0.65,
+  "reason": "Indian author Awasthy N; \\у=w,Х=t,Ь=h,у=y"
+ },
+ {
+  "form": "езХаЬНзЬес",
+  "verdict": "broken_latin",
+  "decoded": "established",
+  "confidence": 0.7,
+  "reason": "'established and candidate melanoma susceptibility'; Х=t,Н=li,с=d"
+ },
+ {
+  "form": "РхзШШ",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.4,
+  "reason": "Italian author; reads ~Pistilli, exact surname unclear"
+ },
+ {
+  "form": "неРМС",
+  "verdict": "russian",
+  "decoded": null,
+  "confidence": 0.95,
+  "reason": "Russian prefix не- (non-RMS), glossary-defined; do not latinize"
+ },
+ {
+  "form": "СЬезЕ",
+  "verdict": "broken_latin",
+  "decoded": "Chest",
+  "confidence": 0.85,
+  "reason": "journal 'Chest 1993'; Е=t"
+ },
+ {
+  "form": "раРРетз",
+  "verdict": "broken_latin",
+  "decoded": "patterns",
+  "confidence": 0.75,
+  "reason": "'computed tomography patterns'; Р=t,т=rn"
+ },
+ {
+  "form": "АсЬШез",
+  "verdict": "broken_latin",
+  "decoded": "Achilles",
+  "confidence": 0.7,
+  "reason": "author Achilles SL (Society of Family Planning); Ш=ill"
+ },
+ {
+  "form": "сотраЬЫШу",
+  "verdict": "broken_latin",
+  "decoded": "compatibility",
+  "confidence": 0.7,
+  "reason": "'Impact of HLA compatibility on lung transplant'"
+ },
+ {
+  "form": "КНкоуЬз",
+  "verdict": "broken_latin",
+  "decoded": "Klikovits",
+  "confidence": 0.55,
+  "reason": "lung-transplant author Klikovits T; Н=li,у=v"
+ },
+ {
+  "form": "СЬезЬ",
+  "verdict": "broken_latin",
+  "decoded": "Chest",
+  "confidence": 0.8,
+  "reason": "journal 'Chest - 2000'; Ь=t"
+ },
+ {
+  "form": "СНоо",
+  "verdict": "broken_latin",
+  "decoded": "Choo",
+  "confidence": 0.65,
+  "reason": "Korean author Choo E"
+ },
+ {
+  "form": "АОаз",
+  "verdict": "broken_latin",
+  "decoded": "Atlas",
+  "confidence": 0.6,
+  "reason": "'Breast Imaging Atlas; BI-RADS' (heavy OCR loss)"
+ },
+ {
+  "form": "АСТ/уровень",
+  "verdict": "russian",
+  "decoded": null,
+  "confidence": 0.9,
+  "reason": "contains Russian word уровень (level); АСТ=AST lab abbrev; do not latinize"
+ },
+ {
+  "form": "ОЬ]есёуе",
+  "verdict": "broken_latin",
+  "decoded": "Objective",
+  "confidence": 0.7,
+  "reason": "'Objective Evaluation of Overactive Bladder'; ]=j,ё=ti,у=v"
+ },
+ {
+  "form": "ТЬукнс",
+  "verdict": "broken_latin",
+  "decoded": "Thyroid",
+  "confidence": 0.65,
+  "reason": "'American Thyroid Association'; к=r,н=o,с=i"
+ },
+ {
+  "form": "ЫНзсЬ",
+  "verdict": "broken_latin",
+  "decoded": "Nitsch",
+  "confidence": 0.6,
+  "reason": "CKD-consortium author Nitsch D (Grams M)"
+ },
+ {
+  "form": "АНтак",
+  "verdict": "broken_latin",
+  "decoded": "Ahmad",
+  "confidence": 0.7,
+  "reason": "preop-anemia meta-analysis 'Fowler AJ, Ahmad T'; к=d"
+ },
+ {
+  "form": "оРСНшса",
+  "verdict": "broken_latin",
+  "decoded": "ofClinical",
+  "confidence": 0.65,
+  "reason": "'Journal of Clinical Apheresis' merged of+Clinical"
+ },
+ {
+  "form": "РЫ\\уе",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.4,
+  "reason": "CKD-exercise author with Jacobson SH; reads ~Powe/Rowe, unclear"
+ },
+ {
+  "form": "аорты(КТА",
+  "verdict": "russian",
+  "decoded": null,
+  "confidence": 0.9,
+  "reason": "contains Russian word аорты (aorta gen.); КТА=CTA; do not latinize"
+ },
+ {
+  "form": "АЫауе",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.35,
+  "reason": "author list (Weiss,Moller); reads ~Ablave, surname unclear"
+ },
+ {
+  "form": "МЯза",
+  "verdict": "broken_latin",
+  "decoded": "Mirza",
+  "confidence": 0.55,
+  "reason": "glaucoma author Mirza; М=M,Я=ir,з=z,а=a"
+ },
+ {
+  "form": "УШттз",
+  "verdict": "broken_latin",
+  "decoded": "Williams",
+  "confidence": 0.55,
+  "reason": "author 'Williams GH' (Herndon, intraocular pressure)"
+ },
+ {
+  "form": "ут'РЬ",
+  "verdict": "broken_latin",
+  "decoded": "with",
+  "confidence": 0.55,
+  "reason": "'eye-drops compared with alternatively preserved'"
+ },
+ {
+  "form": "МЬотуст",
+  "verdict": "broken_latin",
+  "decoded": "Mitomycin",
+  "confidence": 0.6,
+  "reason": "'Mitomycin C versus 5-Fluorouracil in glaucoma surgery'"
+ },
+ {
+  "form": "ТШат",
+  "verdict": "broken_latin",
+  "decoded": "William",
+  "confidence": 0.5,
+  "reason": "first name 'William J MD' (W lost to backslashes); Ш=illi"
+ },
+ {
+  "form": "ЕЬзаш",
+  "verdict": "broken_latin",
+  "decoded": "Ehsani",
+  "confidence": 0.5,
+  "reason": "Iranian author list (Asgary,Eghbal); Ь=h,ш=ni"
+ }
+]

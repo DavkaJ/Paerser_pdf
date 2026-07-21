@@ -1,0 +1,1199 @@
+[
+ {
+  "form": "ТЬотаз",
+  "verdict": "broken_latin",
+  "decoded": "Thomas",
+  "confidence": 0.9,
+  "reason": "author name in English blood/anaesthesia citation"
+ },
+ {
+  "form": "ОЬез",
+  "verdict": "broken_latin",
+  "decoded": "Obes",
+  "confidence": 0.85,
+  "reason": "journal Obes Facts (Obesity Facts)"
+ },
+ {
+  "form": "ЬеаЬЬ",
+  "verdict": "broken_latin",
+  "decoded": "health",
+  "confidence": 0.85,
+  "reason": "sexual health and HIV guideline context"
+ },
+ {
+  "form": "СЫатусНа",
+  "verdict": "broken_latin",
+  "decoded": "Chlamydia",
+  "confidence": 0.95,
+  "reason": "Chlamydia trachomatis infection"
+ },
+ {
+  "form": "МТ/рост",
+  "verdict": "russian",
+  "decoded": null,
+  "confidence": 0.95,
+  "reason": "Russian: МТ (масса тела)/рост, anthropometric ratio"
+ },
+ {
+  "form": "ухХЬ",
+  "verdict": "broken_latin",
+  "decoded": "with",
+  "confidence": 0.8,
+  "reason": "ten years experience with the ... English citation"
+ },
+ {
+  "form": "СЬоу",
+  "verdict": "broken_latin",
+  "decoded": "Choy",
+  "confidence": 0.8,
+  "reason": "author surname in English citation"
+ },
+ {
+  "form": "НераННз",
+  "verdict": "broken_latin",
+  "decoded": "Hepatitis",
+  "confidence": 0.9,
+  "reason": "Autoimmune Hepatitis"
+ },
+ {
+  "form": "ууНЬ",
+  "verdict": "broken_latin",
+  "decoded": "with",
+  "confidence": 0.8,
+  "reason": "patients with systemic autoimmune diseases"
+ },
+ {
+  "form": "АЬзсезз",
+  "verdict": "broken_latin",
+  "decoded": "Abscess",
+  "confidence": 0.95,
+  "reason": "intra-abdominal Abscess, Crohn's citation"
+ },
+ {
+  "form": "ХЬутота",
+  "verdict": "broken_latin",
+  "decoded": "Thymoma",
+  "confidence": 0.95,
+  "reason": "resection of thymoma; latin 'thymoma' appears alongside"
+ },
+ {
+  "form": "стресс-МРТ",
+  "verdict": "russian",
+  "decoded": null,
+  "confidence": 0.97,
+  "reason": "Russian: стресс-МРТ (stress MRI), pharmacological agents"
+ },
+ {
+  "form": "ТЬошаз",
+  "verdict": "broken_latin",
+  "decoded": "Thomas",
+  "confidence": 0.9,
+  "reason": "Thomas M. allergic rhinitis citation"
+ },
+ {
+  "form": "зкакЬераННз",
+  "verdict": "broken_latin",
+  "decoded": "steatohepatitis",
+  "confidence": 0.8,
+  "reason": "secondary causes of steatohepatitis, J Hepatol"
+ },
+ {
+  "form": "СЬет",
+  "verdict": "broken_latin",
+  "decoded": "Chem",
+  "confidence": 0.9,
+  "reason": "journal Chem Biol Interact"
+ },
+ {
+  "form": "ОЫсотез",
+  "verdict": "broken_latin",
+  "decoded": "Outcomes",
+  "confidence": 0.9,
+  "reason": "Outcomes of early stage primary Biliary Cholangitis"
+ },
+ {
+  "form": "ТЬот",
+  "verdict": "broken_latin",
+  "decoded": "Thom",
+  "confidence": 0.75,
+  "reason": "author surname in myopia citation"
+ },
+ {
+  "form": "суЬЬ",
+  "verdict": "broken_latin",
+  "decoded": "with",
+  "confidence": 0.75,
+  "reason": "Treatment with TNF inhibitors in IBD"
+ },
+ {
+  "form": "НеаНН",
+  "verdict": "broken_latin",
+  "decoded": "Health",
+  "confidence": 0.9,
+  "reason": "journal Paediatr Child Health"
+ },
+ {
+  "form": "АзСЬта",
+  "verdict": "broken_latin",
+  "decoded": "Asthma",
+  "confidence": 0.9,
+  "reason": "Tokyo ... Asthma Research Group"
+ },
+ {
+  "form": "зуНЬ",
+  "verdict": "broken_latin",
+  "decoded": "with",
+  "confidence": 0.75,
+  "reason": "patients with increased risks"
+ },
+ {
+  "form": "СЬое",
+  "verdict": "broken_latin",
+  "decoded": "Choe",
+  "confidence": 0.85,
+  "reason": "author Choe EE, ophthalmology"
+ },
+ {
+  "form": "ОЬз!ек",
+  "verdict": "broken_latin",
+  "decoded": "Obstet",
+  "confidence": 0.85,
+  "reason": "journal Obstet Gynecol Surv"
+ },
+ {
+  "form": "ТЬек",
+  "verdict": "broken_latin",
+  "decoded": "Their",
+  "confidence": 0.8,
+  "reason": "Women with Thrombosis and Their Infants"
+ },
+ {
+  "form": "КазНМУ",
+  "verdict": "russian",
+  "decoded": null,
+  "confidence": 0.9,
+  "reason": "Russian acronym: Вестник КазНМУ (Kazakh Nat Med University)"
+ },
+ {
+  "form": "АЬтасЫа",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.4,
+  "reason": "broken latin author name but exact form not decodable"
+ },
+ {
+  "form": "РНуз",
+  "verdict": "broken_latin",
+  "decoded": "Phys",
+  "confidence": 0.9,
+  "reason": "journal Int J Radiat Oncol Biol Phys"
+ },
+ {
+  "form": "ЬеторЬШа",
+  "verdict": "broken_latin",
+  "decoded": "hemophilia",
+  "confidence": 0.9,
+  "reason": "factor deficiencies other than hemophilia, Blood"
+ },
+ {
+  "form": "ОЬозЬ",
+  "verdict": "broken_latin",
+  "decoded": "Ghosh",
+  "confidence": 0.6,
+  "reason": "author Ghosh S in Aliment Pharmacol Ther citation"
+ },
+ {
+  "form": "СЬауез",
+  "verdict": "broken_latin",
+  "decoded": "Chaves",
+  "confidence": 0.8,
+  "reason": "author surname in Gut citation"
+ },
+ {
+  "form": "ТЬас",
+  "verdict": "broken_latin",
+  "decoded": "Thaci",
+  "confidence": 0.7,
+  "reason": "author Thaci B., secukinumab citation"
+ },
+ {
+  "form": "СЫЫЬоос",
+  "verdict": "broken_latin",
+  "decoded": "Childhood",
+  "confidence": 0.85,
+  "reason": "Childhood Cancer Survivor Study"
+ },
+ {
+  "form": "ЬКрз",
+  "verdict": "broken_latin",
+  "decoded": "https",
+  "confidence": 0.85,
+  "reason": "https:// URL prefix"
+ },
+ {
+  "form": "еРКсасу",
+  "verdict": "broken_latin",
+  "decoded": "efficacy",
+  "confidence": 0.85,
+  "reason": "safety and efficacy of simultaneous..."
+ },
+ {
+  "form": "УЬке",
+  "verdict": "broken_latin",
+  "decoded": "White",
+  "confidence": 0.8,
+  "reason": "author White K., adrenal crisis citation"
+ },
+ {
+  "form": "оРТуре",
+  "verdict": "broken_latin",
+  "decoded": "of Type",
+  "confidence": 0.8,
+  "reason": "Eosinophil Evidence of Type 2 Inflammation"
+ },
+ {
+  "form": "ТЫете",
+  "verdict": "broken_latin",
+  "decoded": "Thieme",
+  "confidence": 0.85,
+  "reason": "publisher Thieme, New York"
+ },
+ {
+  "form": "зкакНераННз",
+  "verdict": "broken_latin",
+  "decoded": "steatohepatitis",
+  "confidence": 0.8,
+  "reason": "nonalcoholic steatohepatitis, Am J Gastroenterol"
+ },
+ {
+  "form": "еРРеск",
+  "verdict": "broken_latin",
+  "decoded": "effect",
+  "confidence": 0.85,
+  "reason": "Therapeutic effect of..."
+ },
+ {
+  "form": "ОШсошез",
+  "verdict": "broken_latin",
+  "decoded": "Outcomes",
+  "confidence": 0.9,
+  "reason": "Outcomes of lung transplantation for infants and children"
+ },
+ {
+  "form": "ерЫЫутЫз",
+  "verdict": "broken_latin",
+  "decoded": "epididymitis",
+  "confidence": 0.85,
+  "reason": "Acute epididymitis revisited"
+ },
+ {
+  "form": "раШНнш",
+  "verdict": "broken_latin",
+  "decoded": "pallidum",
+  "confidence": 0.7,
+  "reason": "Treponema pallidum (Тгеропета also broken latin)"
+ },
+ {
+  "form": "СЫатуШа",
+  "verdict": "broken_latin",
+  "decoded": "Chlamydia",
+  "confidence": 0.9,
+  "reason": "Chlamydia psittaci pneumonia"
+ },
+ {
+  "form": "ОНуена",
+  "verdict": "broken_latin",
+  "decoded": "Oliveira",
+  "confidence": 0.75,
+  "reason": "author surname, IBD management citation"
+ },
+ {
+  "form": "КЬ\\уа]а",
+  "verdict": "broken_latin",
+  "decoded": "Khwaja",
+  "confidence": 0.8,
+  "reason": "author Khwaja A., chronic kidney disease"
+ },
+ {
+  "form": "НкзсЬЯеШ",
+  "verdict": "broken_latin",
+  "decoded": "Hirschfield",
+  "confidence": 0.75,
+  "reason": "author Hirschfield GM, primary biliary cirrhosis"
+ },
+ {
+  "form": "ауЬЬ",
+  "verdict": "broken_latin",
+  "decoded": "with",
+  "confidence": 0.75,
+  "reason": "Chinese patients with primary biliary cholangitis"
+ },
+ {
+  "form": "КЬзоз",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.4,
+  "reason": "broken latin author name, exact form unclear (Kitsos?)"
+ },
+ {
+  "form": "АШШоз",
+  "verdict": "broken_latin",
+  "decoded": "Albillos",
+  "confidence": 0.7,
+  "reason": "Albillos A., portal hypertension, Baveno VII"
+ },
+ {
+  "form": "ОккоРРК.М",
+  "verdict": "broken_latin",
+  "decoded": "Olthoff R.M",
+  "confidence": 0.6,
+  "reason": "author Olthoff (spelled latin nearby) + initials merged"
+ },
+ {
+  "form": "МЬеакЬ",
+  "verdict": "broken_latin",
+  "decoded": "mHealth",
+  "confidence": 0.8,
+  "reason": "journal mHealth, gastroenterology narrative review"
+ },
+ {
+  "form": "УТШатз",
+  "verdict": "broken_latin",
+  "decoded": "Williams",
+  "confidence": 0.75,
+  "reason": "author Williams K.M., myopia in Europe"
+ },
+ {
+  "form": "ЕЬзае",
+  "verdict": "broken_latin",
+  "decoded": "Ehsaei",
+  "confidence": 0.6,
+  "reason": "author Ehsaei A., J Optom (form is fragment before !)"
+ },
+ {
+  "form": "ОрЫЫшоТ",
+  "verdict": "broken_latin",
+  "decoded": "Ophthalmol",
+  "confidence": 0.8,
+  "reason": "journal Br J Ophthalmol"
+ },
+ {
+  "form": "атаорЫЬа",
+  "verdict": "broken_latin",
+  "decoded": "amaophtha",
+  "confidence": 0.55,
+  "reason": "DOI jamaophthalmol fragment"
+ },
+ {
+  "form": "ЕЯес",
+  "verdict": "broken_latin",
+  "decoded": "Effect",
+  "confidence": 0.7,
+  "reason": "Effect of outdoor activities in myopia control"
+ },
+ {
+  "form": "СКтса",
+  "verdict": "broken_latin",
+  "decoded": "Clinical",
+  "confidence": 0.75,
+  "reason": "Diabetic Retinopathy Clinical Research Network"
+ },
+ {
+  "form": "ЬШеу",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.4,
+  "reason": "broken latin author name, exact surname unclear"
+ },
+ {
+  "form": "сузММоту",
+  "verdict": "broken_latin",
+  "decoded": "cystectomy",
+  "confidence": 0.8,
+  "reason": "pathological staging after cystectomy, Urol Oncol"
+ },
+ {
+  "form": "хуЕЬ",
+  "verdict": "broken_latin",
+  "decoded": "with",
+  "confidence": 0.8,
+  "reason": "patients with non-muscle-invasive bladder Cancer"
+ },
+ {
+  "form": "РЬузхсз",
+  "verdict": "broken_latin",
+  "decoded": "Physics",
+  "confidence": 0.85,
+  "reason": "journal ... Oncology Biology Physics"
+ },
+ {
+  "form": "ЬаеторЫНа",
+  "verdict": "broken_latin",
+  "decoded": "haemophilia",
+  "confidence": 0.85,
+  "reason": "United Kingdom Haemophilia Centre Doctors' Org"
+ },
+ {
+  "form": "МЬат-МеМа",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.4,
+  "reason": "hyphenated broken latin author name, exact form unclear"
+ },
+ {
+  "form": "ЕРксасу",
+  "verdict": "broken_latin",
+  "decoded": "Efficacy",
+  "confidence": 0.8,
+  "reason": "Efficacy and Safety of Tadalafil"
+ },
+ {
+  "form": "ез&ЬНзЬеЯ",
+  "verdict": "broken_latin",
+  "decoded": "established",
+  "confidence": 0.8,
+  "reason": "suspected and established small-bowel Crohn's"
+ },
+ {
+  "form": "ВЬее",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.4,
+  "reason": "broken latin author name, exact surname unclear (Rhee?)"
+ },
+ {
+  "form": "РШау",
+  "verdict": "broken_latin",
+  "decoded": "Pillay",
+  "confidence": 0.75,
+  "reason": "author surname Pillay L."
+ },
+ {
+  "form": "ЕНзеазез",
+  "verdict": "broken_latin",
+  "decoded": "Diseases",
+  "confidence": 0.75,
+  "reason": "journal Diseases of the colon & rectum"
+ },
+ {
+  "form": "кз-СКР",
+  "verdict": "broken_latin",
+  "decoded": "hs-CRP",
+  "confidence": 0.8,
+  "reason": "high sensitivity C-reactive protein (hs-CRP)"
+ },
+ {
+  "form": "сазе-таЯЬес",
+  "verdict": "broken_latin",
+  "decoded": "case-matched",
+  "confidence": 0.8,
+  "reason": "a case-matched study in 88 patients"
+ },
+ {
+  "form": "АррНсаЬННу",
+  "verdict": "broken_latin",
+  "decoded": "Applicability",
+  "confidence": 0.8,
+  "reason": "Applicability of staging systems for patients"
+ },
+ {
+  "form": "ЕШесаун",
+  "verdict": "broken_latin",
+  "decoded": "Entecavir",
+  "confidence": 0.8,
+  "reason": "Tenofovir Versus Entecavir, HBV recurrence"
+ },
+ {
+  "form": "АЯорЬоёетс",
+  "verdict": "broken_latin",
+  "decoded": "Atrophogenic",
+  "confidence": 0.7,
+  "reason": "Atrophogenic potential in psoriasis"
+ },
+ {
+  "form": "АЫаз",
+  "verdict": "broken_latin",
+  "decoded": "Abbas",
+  "confidence": 0.6,
+  "reason": "author Abbas I., late-onset hearing loss"
+ },
+ {
+  "form": "тоёаННез",
+  "verdict": "broken_latin",
+  "decoded": "modalities",
+  "confidence": 0.8,
+  "reason": "therapeutic modalities within a cohort study"
+ },
+ {
+  "form": "хсаНЬаШ",
+  "verdict": "broken_latin",
+  "decoded": "icatibant",
+  "confidence": 0.75,
+  "reason": "C1 esterase inhibitor and icatibant, angioedema"
+ },
+ {
+  "form": "оРЫорзу",
+  "verdict": "broken_latin",
+  "decoded": "of biopsy",
+  "confidence": 0.75,
+  "reason": "Effect of biopsy type on outcomes"
+ },
+ {
+  "form": "УНку",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.4,
+  "reason": "broken latin author name, exact surname unclear"
+ },
+ {
+  "form": "ВеЬезЬН",
+  "verdict": "broken_latin",
+  "decoded": "Beheshti",
+  "confidence": 0.8,
+  "reason": "author Mohsen Beheshti (spelled latin alongside)"
+ },
+ {
+  "form": "РасНН",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.4,
+  "reason": "broken latin Italian author name, exact form unclear"
+ },
+ {
+  "form": "МосЫНа",
+  "verdict": "broken_latin",
+  "decoded": "Mochida",
+  "confidence": 0.65,
+  "reason": "Japanese author list (Mochizuki, Inoue, Mochida)"
+ },
+ {
+  "form": "СНа\\уез",
+  "verdict": "broken_latin",
+  "decoded": "Chawes",
+  "confidence": 0.8,
+  "reason": "author Chawes B.L."
+ },
+ {
+  "form": "СЬеета",
+  "verdict": "broken_latin",
+  "decoded": "Cheema",
+  "confidence": 0.8,
+  "reason": "author surname Cheema B."
+ },
+ {
+  "form": "сЫЫЬооё",
+  "verdict": "broken_latin",
+  "decoded": "childhood",
+  "confidence": 0.85,
+  "reason": "influences on childhood Asthma: Allergens"
+ },
+ {
+  "form": "еозторЫНа",
+  "verdict": "broken_latin",
+  "decoded": "eosinophilia",
+  "confidence": 0.8,
+  "reason": "Asthma and eosinophilia, Churg-Strauss"
+ },
+ {
+  "form": "аМЬта",
+  "verdict": "broken_latin",
+  "decoded": "asthma",
+  "confidence": 0.8,
+  "reason": "questionnaire to measure asthma control"
+ },
+ {
+  "form": "тосЫШез",
+  "verdict": "broken_latin",
+  "decoded": "modalities",
+  "confidence": 0.8,
+  "reason": "imaging modalities in diagnosis of liver metastases"
+ },
+ {
+  "form": "ЬасЬК",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.4,
+  "reason": "broken latin author name, exact form unclear"
+ },
+ {
+  "form": "СЫое",
+  "verdict": "broken_latin",
+  "decoded": "Chloe",
+  "confidence": 0.8,
+  "reason": "author Chloe E. Atreya"
+ },
+ {
+  "form": "СЕао",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.45,
+  "reason": "heavily corrupted author name (Chao?), non-twin substitutions"
+ },
+ {
+  "form": "АЬасН",
+  "verdict": "broken_latin",
+  "decoded": "Abadi",
+  "confidence": 0.6,
+  "reason": "author Abadi M.S. repeated in citation"
+ },
+ {
+  "form": "СЫеЫска",
+  "verdict": "broken_latin",
+  "decoded": "Chlebicka",
+  "confidence": 0.65,
+  "reason": "Polish author list, photodynamic diagnosis"
+ },
+ {
+  "form": "РРаттакет",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.35,
+  "reason": "broken latin Finnish author name, exact form unclear"
+ },
+ {
+  "form": "АУетН",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.35,
+  "reason": "broken latin author name, exact form unclear"
+ },
+ {
+  "form": "ЫЬауаша",
+  "verdict": "broken_latin",
+  "decoded": "Shibayama",
+  "confidence": 0.5,
+  "reason": "Japanese author (S split to adjacent token)"
+ },
+ {
+  "form": "ОЬауазЫ",
+  "verdict": "broken_latin",
+  "decoded": "Obayashi",
+  "confidence": 0.7,
+  "reason": "Japanese author surname Obayashi H."
+ },
+ {
+  "form": "кеЫОз",
+  "verdict": "broken_latin",
+  "decoded": "keloids",
+  "confidence": 0.75,
+  "reason": "clinical features of keloids in Black Africans"
+ },
+ {
+  "form": "СМтоз",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.4,
+  "reason": "broken latin author name, exact form unclear (Campos/Cintos?)"
+ },
+ {
+  "form": "ЕРРесЬуе",
+  "verdict": "broken_latin",
+  "decoded": "Effective",
+  "confidence": 0.8,
+  "reason": "is an Effective Treatment for Advanced Thymic Carcinoma"
+ },
+ {
+  "form": "А^ат-ЕА",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.35,
+  "reason": "mangled author name + initials, exact form unclear"
+ },
+ {
+  "form": "МсоЫНез",
+  "verdict": "broken_latin",
+  "decoded": "Nicolaides",
+  "confidence": 0.6,
+  "reason": "known trio Charmandari/Nicolaides/Chrousos, adrenal insufficiency"
+ },
+ {
+  "form": "СЬето\\у",
+  "verdict": "broken_latin",
+  "decoded": "Chernow",
+  "confidence": 0.65,
+  "reason": "author Chernow B., glucocorticoid coverage"
+ },
+ {
+  "form": "ЕЕЕес",
+  "verdict": "broken_latin",
+  "decoded": "Effects",
+  "confidence": 0.7,
+  "reason": "Effects of transcutaneous electrical nerve stimulation"
+ },
+ {
+  "form": "ВЫок",
+  "verdict": "broken_latin",
+  "decoded": "Blood",
+  "confidence": 0.75,
+  "reason": "journal Pediatr Blood Cancer"
+ },
+ {
+  "form": "ЕЬоок",
+  "verdict": "broken_latin",
+  "decoded": "Ebook",
+  "confidence": 0.8,
+  "reason": "Print + Ebook (Ebook spelled latin nearby)"
+ },
+ {
+  "form": "ЕРРесР",
+  "verdict": "broken_latin",
+  "decoded": "Effect",
+  "confidence": 0.8,
+  "reason": "Effect of bladder management on complications"
+ },
+ {
+  "form": "КЬаЬаеу",
+  "verdict": "broken_latin",
+  "decoded": "Khabaev",
+  "confidence": 0.7,
+  "reason": "transliterated author in Chuchalin English citation"
+ },
+ {
+  "form": "оРУасстез",
+  "verdict": "broken_latin",
+  "decoded": "of Vaccines",
+  "confidence": 0.7,
+  "reason": "Role of Vaccines in COPD patients"
+ },
+ {
+  "form": "теШзШОс",
+  "verdict": "broken_latin",
+  "decoded": "metastatic",
+  "confidence": 0.75,
+  "reason": "locally advanced or metastatic medullary Thyroid Cancer"
+ },
+ {
+  "form": "оРОзе",
+  "verdict": "broken_latin",
+  "decoded": "of the",
+  "confidence": 0.6,
+  "reason": "Neuroendocrine Tumors of the Lung"
+ },
+ {
+  "form": "ООшз",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.4,
+  "reason": "broken latin author name, exact surname unclear (Owens?)"
+ },
+ {
+  "form": "СЬету",
+  "verdict": "broken_latin",
+  "decoded": "Cherny",
+  "confidence": 0.6,
+  "reason": "author Cherny, ESMO diarrhoea guideline"
+ },
+ {
+  "form": "УЬашт",
+  "verdict": "broken_latin",
+  "decoded": "Vitamin",
+  "confidence": 0.7,
+  "reason": "Patients with Vitamin D Deficiency"
+ },
+ {
+  "form": "МаЬаРРеу",
+  "verdict": "broken_latin",
+  "decoded": "Mahaffey",
+  "confidence": 0.8,
+  "reason": "author Mahaffey KW"
+ },
+ {
+  "form": "ХУаЫЬеск",
+  "verdict": "broken_latin",
+  "decoded": "Wahlbeck",
+  "confidence": 0.75,
+  "reason": "author Wahlbeck K., prevention of depression"
+ },
+ {
+  "form": "ЕРРеск",
+  "verdict": "broken_latin",
+  "decoded": "Effect",
+  "confidence": 0.8,
+  "reason": "Effect of ... on Hip and upper limb Fractures"
+ },
+ {
+  "form": "МосКВА",
+  "verdict": "russian",
+  "decoded": null,
+  "confidence": 0.9,
+  "reason": "Russian: МОСКВА (Moscow), clinical recommendations header"
+ },
+ {
+  "form": "ОЯохасш",
+  "verdict": "broken_latin",
+  "decoded": "Ofloxacin",
+  "confidence": 0.7,
+  "reason": "Graham/Tripp StatPearls, ophthalmology drug"
+ },
+ {
+  "form": "оесШЯаЫе",
+  "verdict": "broken_latin",
+  "decoded": "occludable",
+  "confidence": 0.75,
+  "reason": "poor predictors for occludable angles"
+ },
+ {
+  "form": "Р.С.,ТЬотаз",
+  "verdict": "broken_latin",
+  "decoded": "P.C., Thomas",
+  "confidence": 0.75,
+  "reason": "Pearce P.C., Thomas K. merged initials+surname"
+ },
+ {
+  "form": "ВАШ-«термометр",
+  "verdict": "russian",
+  "decoded": null,
+  "confidence": 0.95,
+  "reason": "Russian: ВАШ (VAS) термометр (thermometer)"
+ },
+ {
+  "form": "СНаско",
+  "verdict": "broken_latin",
+  "decoded": "Chacko",
+  "confidence": 0.75,
+  "reason": "author Chacko E., prophylactic antibiotic bronchitis"
+ },
+ {
+  "form": "УРзе",
+  "verdict": "broken_latin",
+  "decoded": "Wise",
+  "confidence": 0.6,
+  "reason": "author Wise, alpha-1 antitrypsin deficiency"
+ },
+ {
+  "form": "хёхораХЫс",
+  "verdict": "broken_latin",
+  "decoded": "idiopathic",
+  "confidence": 0.8,
+  "reason": "advanced idiopathic pulmonary fibrosis"
+ },
+ {
+  "form": "ЕНакт",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.4,
+  "reason": "broken latin author name, exact surname unclear"
+ },
+ {
+  "form": "сЫМНоос",
+  "verdict": "broken_latin",
+  "decoded": "childhood",
+  "confidence": 0.8,
+  "reason": "severe childhood malnutrition, BMJ"
+ },
+ {
+  "form": "уаХЬ",
+  "verdict": "broken_latin",
+  "decoded": "with",
+  "confidence": 0.75,
+  "reason": "patients with oncohematological diseases"
+ },
+ {
+  "form": "АНшеШ",
+  "verdict": "broken_latin",
+  "decoded": "Aliment",
+  "confidence": 0.75,
+  "reason": "journal Aliment Pharmacol Ther"
+ },
+ {
+  "form": "ОШЬоа",
+  "verdict": "broken_latin",
+  "decoded": "Gilboa",
+  "confidence": 0.6,
+  "reason": "Ailes/Gilboa/Gill antibiotic-use-in-pregnancy citation"
+ },
+ {
+  "form": "РН^Ь-Нозе",
+  "verdict": "broken_latin",
+  "decoded": "High-Dose",
+  "confidence": 0.6,
+  "reason": "High-Dose chemotherapy with hematopoietic stem cell rescue"
+ },
+ {
+  "form": "УЬсЬоууз",
+  "verdict": "broken_latin",
+  "decoded": "Virchows",
+  "confidence": 0.7,
+  "reason": "journal Virchows Arch"
+ },
+ {
+  "form": "АЬтек",
+  "verdict": "broken_latin",
+  "decoded": "Ahmed",
+  "confidence": 0.55,
+  "reason": "author, fibrinogen concentrate obstetric hemorrhage"
+ },
+ {
+  "form": "СЬешоузку",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.45,
+  "reason": "broken latin Slavic -vsky surname, Chern/Chem ambiguous"
+ },
+ {
+  "form": "РЬозрЬоНразе",
+  "verdict": "broken_latin",
+  "decoded": "Phospholipase",
+  "confidence": 0.8,
+  "reason": "Patatin-like Phospholipase Domain-Containing Protein 3"
+ },
+ {
+  "form": "ТНота",
+  "verdict": "broken_latin",
+  "decoded": "Thoma",
+  "confidence": 0.75,
+  "reason": "author Thoma C., NAFLD exercise study"
+ },
+ {
+  "form": "ТЬосНз",
+  "verdict": "broken_latin",
+  "decoded": "Thodis",
+  "confidence": 0.6,
+  "reason": "author Thodis T., Mediterranean diet citation"
+ },
+ {
+  "form": "з^еаШЬераННз",
+  "verdict": "broken_latin",
+  "decoded": "steatohepatitis",
+  "confidence": 0.8,
+  "reason": "nonalcoholic steatohepatitis"
+ },
+ {
+  "form": "ХУекоте",
+  "verdict": "broken_latin",
+  "decoded": "Welcome",
+  "confidence": 0.7,
+  "reason": "results from the Welcome study, Hepatology"
+ },
+ {
+  "form": "СоРРее",
+  "verdict": "broken_latin",
+  "decoded": "Coffee",
+  "confidence": 0.85,
+  "reason": "Coffee consumption and reduced risk of HCC"
+ },
+ {
+  "form": "езшЬНзЬеё",
+  "verdict": "broken_latin",
+  "decoded": "established",
+  "confidence": 0.75,
+  "reason": "a diagnosis established by a lumbar spinal block"
+ },
+ {
+  "form": "о/ОШсотез",
+  "verdict": "broken_latin",
+  "decoded": "of Outcomes",
+  "confidence": 0.7,
+  "reason": "IMPROVE-IT: Improved Reduction of Outcomes"
+ },
+ {
+  "form": "ЕШес^з",
+  "verdict": "broken_latin",
+  "decoded": "Effects",
+  "confidence": 0.75,
+  "reason": "ACCORD: Effects of combination lipid therapy"
+ },
+ {
+  "form": "ЕВесСз",
+  "verdict": "broken_latin",
+  "decoded": "Effects",
+  "confidence": 0.7,
+  "reason": "Effects of extended-release niacin with laropiprant"
+ },
+ {
+  "form": "ЕЕеес",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.4,
+  "reason": "author surname in coarctation citation, exact form unclear"
+ },
+ {
+  "form": "ЬШсЬсоск",
+  "verdict": "broken_latin",
+  "decoded": "Hitchcock",
+  "confidence": 0.7,
+  "reason": "author Hitchcock JF"
+ },
+ {
+  "form": "АезХЬеХ",
+  "verdict": "broken_latin",
+  "decoded": "Aesthet",
+  "confidence": 0.75,
+  "reason": "journal J Plast Reconstr Aesthet Surg"
+ },
+ {
+  "form": "ВаШЬазе",
+  "verdict": "broken_latin",
+  "decoded": "Database",
+  "confidence": 0.75,
+  "reason": "journal Cochrane Database Syst Rev"
+ },
+ {
+  "form": "МУса\\уа",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.4,
+  "reason": "broken latin Japanese author name, exact form unclear"
+ },
+ {
+  "form": "ОЫат",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.4,
+  "reason": "broken latin Japanese author name, exact form unclear (Ohta?)"
+ },
+ {
+  "form": "ОЬкат",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.4,
+  "reason": "broken latin Japanese author name, exact form unclear (Ohkawa?)"
+ },
+ {
+  "form": "шоком(ОШ",
+  "verdict": "russian",
+  "decoded": null,
+  "confidence": 0.9,
+  "reason": "Russian: септическим шоком (ОШ = отношение шансов, odds ratio)"
+ },
+ {
+  "form": "НЬА-зресШс",
+  "verdict": "broken_latin",
+  "decoded": "HLA-specific",
+  "confidence": 0.75,
+  "reason": "Pre-transplant donor HLA-specific antibodies"
+ },
+ {
+  "form": "МасЬН",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.4,
+  "reason": "broken latin author name, exact form unclear"
+ },
+ {
+  "form": "МсХУННатз",
+  "verdict": "broken_latin",
+  "decoded": "McWilliams",
+  "confidence": 0.75,
+  "reason": "author McWilliams, Tanya J., surveillance bronchoscopy"
+ },
+ {
+  "form": "ОЬшзЫ",
+  "verdict": "broken_latin",
+  "decoded": "Ohnishi",
+  "confidence": 0.6,
+  "reason": "Japanese author Ohnishi M., non-gonococcal urethritis"
+ },
+ {
+  "form": "ВеООохуз",
+  "verdict": "broken_latin",
+  "decoded": "Beddows",
+  "confidence": 0.55,
+  "reason": "author Beddows SA, cytotoxic effects of amiodarone"
+ },
+ {
+  "form": "МНез",
+  "verdict": "broken_latin",
+  "decoded": "Miles",
+  "confidence": 0.55,
+  "reason": "author Miles DA, management of acute bronchitis"
+ },
+ {
+  "form": "МНаш",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.4,
+  "reason": "broken latin author name, exact surname unclear"
+ },
+ {
+  "form": "ЬЬаш",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.35,
+  "reason": "broken latin author name, exact surname unclear"
+ },
+ {
+  "form": "НЬА-тсотраёЫе",
+  "verdict": "broken_latin",
+  "decoded": "HLA-incompatible",
+  "confidence": 0.75,
+  "reason": "rejection after HLA-incompatible kidney transplantation"
+ },
+ {
+  "form": "ХУоокз",
+  "verdict": "broken_latin",
+  "decoded": "Woods",
+  "confidence": 0.6,
+  "reason": "author Woods, Hepatitis B Prevalence"
+ },
+ {
+  "form": "РеазНЯе",
+  "verdict": "broken_latin",
+  "decoded": "Feasible",
+  "confidence": 0.6,
+  "reason": "Nephrectomy ... is Feasible and Satisfactory"
+ },
+ {
+  "form": "ХУез",
+  "verdict": "broken_latin",
+  "decoded": "West",
+  "confidence": 0.65,
+  "reason": "author West K., neural monitoring"
+ },
+ {
+  "form": "ОШсотеа",
+  "verdict": "broken_latin",
+  "decoded": "Outcomes",
+  "confidence": 0.7,
+  "reason": "Predictors of visual Outcomes after Ranibizumab"
+ },
+ {
+  "form": "оШскУАО",
+  "verdict": "broken_latin",
+  "decoded": "of Nd:YAG",
+  "confidence": 0.5,
+  "reason": "Probability of Nd:YAG laser capsulotomy after cataract surgery"
+ },
+ {
+  "form": "ОрЫЫтоХ",
+  "verdict": "broken_latin",
+  "decoded": "Ophthalmol",
+  "confidence": 0.8,
+  "reason": "journal Br J Ophthalmol"
+ },
+ {
+  "form": "АЬЬазх",
+  "verdict": "broken_latin",
+  "decoded": "Abbasi",
+  "confidence": 0.7,
+  "reason": "author Abbasi M., Glaucoma Pathogenesis"
+ },
+ {
+  "form": "ЬЫЬазЫ",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.4,
+  "reason": "broken latin Japanese author name, exact form unclear"
+ },
+ {
+  "form": "ТЫскнезз",
+  "verdict": "broken_latin",
+  "decoded": "Thickness",
+  "confidence": 0.8,
+  "reason": "Subfoveal Scleral Thickness in open-angle Glaucoma"
+ },
+ {
+  "form": "ЕШох",
+  "verdict": "uncertain",
+  "decoded": null,
+  "confidence": 0.4,
+  "reason": "broken latin author name, exact surname unclear"
+ },
+ {
+  "form": "сЫШЬооЯ",
+  "verdict": "broken_latin",
+  "decoded": "childhood",
+  "confidence": 0.8,
+  "reason": "SAPHO syndrome in childhood"
+ }
+]
