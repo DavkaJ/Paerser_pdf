@@ -27,8 +27,8 @@ import os
 import sys
 import time
 import warnings
+from collections import Counter
 from concurrent.futures import ProcessPoolExecutor
-from difflib import SequenceMatcher
 
 warnings.filterwarnings("ignore")
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -44,17 +44,38 @@ I1 = ["КР802_1", "КР845_1", "КР901_1", "КР1000_1", "КР66_4", "КР876_
 
 from _corpus.apply_verified_to_corpus import zone_pairs, _struct_sig  # noqa: E402
 from crparser.engine.latinrecovery import _SEG_RE, _strip_edges  # noqa: E402
+from crparser.engine.latinnorm import _CYR2LAT  # noqa: E402
+
+
+def _homnorm(s):
+    return "".join(_CYR2LAT.get(c, c) for c in s)
 
 _VERIFIED = json.load(open(VERIFIED, encoding="utf-8"))
+
+
+def _cores(text):
+    return [c for i, p in enumerate(_SEG_RE.split(text)) if i % 2 == 0 and p
+            for c in [_strip_edges(p)[1]] if c]
+
+
 # сегмент-ядра каждого corrected-значения (SIOPEL-3 -> {SIOPEL,3}; Vol. 224 -> {Vol.,224})
 _CORRECTED_CORES = set()
 for _e in _VERIFIED.values():
-    for _i, _p in enumerate(_SEG_RE.split(_e["corrected"])):
-        if _i % 2 == 0 and _p:
-            _c = _strip_edges(_p)[1]
-            if _c:
-                _CORRECTED_CORES.add(_c)
+    _CORRECTED_CORES.update(_cores(_e["corrected"]))
 _SOURCE_FORMS = set(_VERIFIED)
+# ядра, которые оверлей ВПРАВЕ УБРАТЬ: для каждой формы = cores(src) - cores(dst).
+# Сверяем ПО СКЕЛЕТУ (гомоглиф-норм + O<->0, I<->1<->l): OFF-канал рендерит источник по-разному
+# (`Н2О` -> `H2O` гомоглифом ИЛИ `H20` цифро-коэрцией О->0), и всё это — легит рендеры источника.
+# Одиночный `оГ`->{оГ}; фраза `Herpes С simplex virus` УДАЛЯЕТ {С}; `Hepatitis В`->{В}.
+def _skel(s):
+    s = _homnorm(s).upper()
+    return s.replace("0", "O").replace("1", "I").replace("L", "I")
+
+
+_REMOVED_ALLOWED_SKEL = set()
+for _s, _e in _VERIFIED.items():
+    for _rc in (set(_cores(_s)) - set(_cores(_e["corrected"]))):
+        _REMOVED_ALLOWED_SKEL.add(_skel(_rc))
 
 _PARSER_ON = _PARSER_OFF = _WRITER = None
 
@@ -70,11 +91,6 @@ def _init(registry):
     _WRITER = JsonWriter()
 
 
-def _cores(text):
-    return [c for i, p in enumerate(_SEG_RE.split(text)) if i % 2 == 0 and p
-            for c in [_strip_edges(p)[1]] if c]
-
-
 def _audit_pair(base, off, on):
     r = {"doc": base, "struct_mismatch": None, "unexplained": [], "prov_bad": [],
          "applied": 0, "source_leaks": [], "n_diff_zones": 0}
@@ -86,19 +102,16 @@ def _audit_pair(base, off, on):
         if otext == ntext:
             continue
         r["n_diff_zones"] += 1
-        oc, nc = _cores(otext), _cores(ntext)
-        for tag, i1, i2, j1, j2 in SequenceMatcher(None, oc, nc).get_opcodes():
-            if tag == "equal":
-                continue
-            # ГЕЙТ: каждое ON-ядро в отличии — проверенное corrected-значение
-            for c in nc[j1:j2]:
-                if c not in _CORRECTED_CORES:
-                    r["unexplained"].append((where, "on+", c))
-            # OFF-ядро, ИСЧЕЗНУВШЕЕ без ON-замены (pure delete) — не должно быть чужим токеном
-            if j2 == j1:
-                for c in oc[i1:i2]:
-                    if c not in _SOURCE_FORMS:
-                        r["unexplained"].append((where, "off-del", c))
+        # МУЛЬТИМНОЖЕСТВЕННЫЙ диф ядер (не difflib-opcodes: те мисвыравнивают пунктуацию
+        # у соседней правки и дают ложный `on+ '.'`). Net-added обязаны быть проверенными
+        # corrected-ядрами; net-removed — source-ядрами (вкл. удаляемые фразой).
+        oc, nc = Counter(_cores(otext)), Counter(_cores(ntext))
+        for c in (nc - oc):                      # чисто добавленные ядра
+            if c not in _CORRECTED_CORES:
+                r["unexplained"].append((where, "on+", c))
+        for c in (oc - nc):                      # чисто убранные ядра (сверка по скелету)
+            if _skel(c) not in _REMOVED_ALLOWED_SKEL:
+                r["unexplained"].append((where, "off-", c))
     # провенанс human_verified
     for c in (on.get("latin_recovery") or {}).get("corrections", []) or []:
         if c.get("source") != "human_verified":

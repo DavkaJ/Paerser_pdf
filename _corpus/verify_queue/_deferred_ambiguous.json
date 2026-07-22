@@ -1,0 +1,178 @@
+{
+ "апс": {
+  "corrected": "and",
+  "entity_kind": "term",
+  "provenance": "ls_verified_full",
+  "confidence": 0.95,
+  "note": "ls_export decision=принять",
+  "deferred_reason": "short<=3-cyr"
+ },
+ "Ше": {
+  "corrected": "the",
+  "entity_kind": "term",
+  "provenance": "ls_verified_full",
+  "confidence": 0.95,
+  "note": "ls_export decision=принять",
+  "deferred_reason": "short<=3-cyr"
+ },
+ "ЫК": {
+  "corrected": "NK",
+  "entity_kind": "term",
+  "provenance": "ls_verified_full",
+  "confidence": 0.95,
+  "note": "ls_export decision=ошибка",
+  "deferred_reason": "short<=3-cyr"
+ },
+ "рат": {
+  "corrected": "pain",
+  "entity_kind": "term",
+  "provenance": "ls_verified_full",
+  "confidence": 0.95,
+  "note": "ls_export decision=принять",
+  "deferred_reason": "short<=3-cyr"
+ },
+ "апб": {
+  "corrected": "and",
+  "entity_kind": "term",
+  "provenance": "ls_verified_full",
+  "confidence": 0.95,
+  "note": "ls_export decision=принять",
+  "deferred_reason": "short<=3-cyr"
+ },
+ "Йге": {
+  "corrected": "the",
+  "entity_kind": null,
+  "provenance": "ls_verified_full",
+  "confidence": 0.95,
+  "note": "ls_export decision=принять",
+  "deferred_reason": "short<=3-cyr"
+ },
+ "Р.А": {
+  "corrected": "P.A.",
+  "entity_kind": null,
+  "provenance": "ls_verified_full",
+  "confidence": 0.95,
+  "note": "ls_export decision=ошибка",
+  "deferred_reason": "initials"
+ },
+ "йз": {
+  "corrected": "its",
+  "entity_kind": "term",
+  "provenance": "ls_verified_full",
+  "confidence": 0.95,
+  "note": "ls_export decision=принять",
+  "deferred_reason": "short<=3-cyr"
+ },
+ "Е.А": {
+  "corrected": "E.A",
+  "entity_kind": null,
+  "provenance": "ls_verified_full",
+  "confidence": 0.95,
+  "note": "ls_export decision=принять",
+  "deferred_reason": "initials"
+ },
+ "СПп": {
+  "corrected": "Clin",
+  "entity_kind": null,
+  "provenance": "ls_verified_full",
+  "confidence": 0.95,
+  "note": "ls_export decision=принять",
+  "deferred_reason": "short<=3-cyr"
+ },
+ "Раш": {
+  "corrected": "Pain",
+  "entity_kind": "term",
+  "provenance": "ls_verified_full",
+  "confidence": 0.95,
+  "note": "ls_export decision=принять",
+  "deferred_reason": "short<=3-cyr"
+ },
+ "Рат": {
+  "corrected": "Pain",
+  "entity_kind": "term",
+  "provenance": "ls_verified_full",
+  "confidence": 0.95,
+  "note": "ls_export decision=принять",
+  "deferred_reason": "short<=3-cyr"
+ },
+ "ап": {
+  "corrected": "an",
+  "entity_kind": "term",
+  "provenance": "ls_verified_full",
+  "confidence": 0.95,
+  "note": "ls_export decision=принять",
+  "deferred_reason": "short<=3-cyr"
+ },
+ "уап": {
+  "corrected": "van",
+  "entity_kind": null,
+  "provenance": "ls_verified_full",
+  "confidence": 0.95,
+  "note": "ls_export decision=принять",
+  "deferred_reason": "short<=3-cyr"
+ },
+ "ЕА": {
+  "corrected": "EA",
+  "entity_kind": null,
+  "provenance": "ls_verified_full",
+  "confidence": 0.95,
+  "note": "ls_export decision=принять",
+  "deferred_reason": "initials"
+ },
+ "ех": {
+  "corrected": "index",
+  "entity_kind": "term",
+  "provenance": "ls_verified_full",
+  "confidence": 0.95,
+  "note": "ls_export decision=принять",
+  "deferred_reason": "short<=3-cyr"
+ },
+ "Ьйр": {
+  "corrected": "http",
+  "entity_kind": null,
+  "provenance": "ls_verified_full",
+  "confidence": 0.95,
+  "note": "ls_export decision=ошибка",
+  "deferred_reason": "short<=3-cyr"
+ },
+ "Ыо": {
+  "corrected": "No",
+  "entity_kind": null,
+  "provenance": "ls_verified_full",
+  "confidence": 0.95,
+  "note": "ls_export decision=ошибка",
+  "deferred_reason": "short<=3-cyr"
+ },
+ "difficile с": {
+  "corrected": "difficile c",
+  "entity_kind": null,
+  "provenance": "ls_verified_full",
+  "confidence": 0.95,
+  "note": "ls_export decision=ошибка",
+  "deferred_reason": "phrase-ru-preposition/marker"
+ },
+ "AL-A с": {
+  "corrected": "AL-A c",
+  "entity_kind": null,
+  "provenance": "ls_verified_full",
+  "confidence": 0.95,
+  "note": "ls_export decision=ошибка",
+  "deferred_reason": "phrase-ru-preposition/marker"
+ },
+ "virus с": {
+  "corrected": "virus c",
+  "entity_kind": null,
+  "provenance": "ls_verified_full",
+  "confidence": 0.95,
+  "note": "ls_export decision=ошибка",
+  "deferred_reason": "phrase-ru-preposition/marker"
+ },
+ "AOSpine: а": {
+  "corrected": "AOSpine: a",
+  "entity_kind": "term",
+  "provenance": "ls_verified_full",
+  "confidence": 0.95,
+  "note": "ls_export decision=ошибка",
+  "deferred_reason": "phrase-ru-preposition/marker"
+ }
+}

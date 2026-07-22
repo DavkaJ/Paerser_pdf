@@ -1272,8 +1272,14 @@ class LatinRecoverer:
                 dst = ent.get("corrected", "")
                 if not src or not dst or src not in text:
                     continue
-                n = text.count(src)
-                text = text.replace(src, dst)
+                # ГРАНИЦА СЛОВА с обеих сторон: `Hepatitis В` НЕ должен матчиться внутри
+                # склейки `Hepatitis Вухш` (иначе рождается мусор `Bухш`). Одиночный
+                # хвостовой гомограф чинится ТОЛЬКО когда это отдельный токен.
+                pat = re.compile(r"(?<![%s])%s(?![%s])"
+                                 % (_WORD_CH, re.escape(src), _WORD_CH))
+                text, n = pat.subn(lambda m: dst, text)
+                if not n:
+                    continue
                 rec = _mkrec(src, dst, "human_verified",
                              ent.get("provenance", "human_verified"),
                              float(ent.get("confidence", 0.95)), ent.get("entity_kind"),

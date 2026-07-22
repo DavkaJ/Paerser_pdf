@@ -336,11 +336,19 @@ def test_latin_vocab_is_built_from_trusted_source():
 @pytest.mark.skipif(not os.path.isdir(LATIN), reason="outout_latin не собран")
 def test_c5_recovers_known_class_positives():
     """ПОЗИТИВ: класс C5 (88% пропусков детектора, замер recall) реально чинится.
-    Без этого теста «безопасность» достигается тривиально — выключением канала."""
+    Без этого теста «безопасность» достигается тривиально — выключением канала.
+
+    Восстановление засчитывается по C5 ИЛИ human_verified-оверлею (ROADMAP шаг 1): оверлей
+    человека имеет ВЫСШИЙ приоритет и легитимно перекрывает часть C5-класса той же целью
+    (напр. `уапсез`->`varices` подтверждён человеком). Исход тот же — форма восстановлена."""
     p = os.path.join(LATIN, "КР1_4.json")
     if not os.path.exists(p):
         pytest.skip("КР1_4 не собран")
-    fixed = {s: t for d, s, t in _c5_corrections() if d == "КР1_4.json"}
+    doc = json.load(open(p, encoding="utf-8"))
+    fixed = {}
+    for c in (doc.get("latin_recovery", {}) or {}).get("corrections", []):
+        if "c5_corrupt_font" in (c.get("why_suspect") or []) or c.get("source") == "human_verified":
+            fixed[c.get("source_text") or ""] = c.get("resolved_text") or ""
     for src, dst in (("уапсез", "varices"), ("КеПгогк", "Network"),
                      ("оезорЬадиз", "oesophagus"), ("Огдашгайоп", "Organization"),
                      # взяты ПОСЛЕ перехода на глобальное выравнивание (I26): раньше
