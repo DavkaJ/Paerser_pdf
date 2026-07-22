@@ -32,7 +32,9 @@ VERIFIED = os.path.join(QDIR, "_verified_corrections.json")
 DEFERRED = os.path.join(QDIR, "_deferred_ambiguous.json")
 OUT_V4 = os.path.join(QDIR, "_v4_predictions.jsonl")
 OUT_MIX = os.path.join(QDIR, "_mixcase_predictions.jsonl")
-TEXT_MODEL = os.environ.get("TEXT_MODEL", "ai2-gpt120b-oss")   # текстовый арбитр для mixcase
+# текстовый арбитр для mixcase: medgemma-27b — ЕДИНСТВЕННАЯ, что вернула content с json_schema
+# strict (gpt-oss/minimax отдают content=None — reasoning-модели). medgemma текстовая, медицинская.
+TEXT_MODEL = os.environ.get("TEXT_MODEL", "ai1-medgemma-27b")
 
 _LOCK = threading.Lock()
 _CONF = {"auto": 0.9, "keep": 0.85, "queue": 0.5}
@@ -76,7 +78,8 @@ def _pred_v4(t):
         return {"key": key, "queue": "v4", "source_text": src, "doc": t.get("doc"),
                 "verdict": "NO_CANDIDATE", "gate": "human", "decision": None,
                 "corrected": None, "confidence": 0.0, "note": "нет кандидатов -> эксперт"}
-    png = _load_png(t.get("crop_word") or t.get("crop_line") or t.get("crop_page"))
+    crop = t.get("crop_word") or t.get("crop_line") or t.get("crop_page")
+    png = _load_png(crop) if crop else None
     if not png:
         return {"key": key, "queue": "v4", "source_text": src, "doc": t.get("doc"),
                 "verdict": "NO_CROP", "gate": "human", "decision": None,
