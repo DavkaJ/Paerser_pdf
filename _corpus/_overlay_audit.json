@@ -1,0 +1,1345 @@
+{
+ "results": [
+  {
+   "doc": "КР1007_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 1,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "Ьйрз": 1
+   },
+   "secs": 22.8
+  },
+  {
+   "doc": "КР1024_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 3,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "РO2": 2,
+    "Н2О": 1
+   },
+   "secs": 34.6
+  },
+  {
+   "doc": "КР1033_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 11,
+   "source_leaks": [],
+   "n_diff_zones": 9,
+   "clean": true,
+   "forms": {
+    "оГ": 9,
+    "1А1НС": 1,
+    "СНп": 1
+   },
+   "secs": 178.6
+  },
+  {
+   "doc": "КР109_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 4,
+   "source_leaks": [],
+   "n_diff_zones": 4,
+   "clean": true,
+   "forms": {
+    "801РВ01": 3,
+    "801АА": 1
+   },
+   "secs": 97.7
+  },
+  {
+   "doc": "КР10_5",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 2,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "ВАР1": 2
+   },
+   "secs": 37.3
+  },
+  {
+   "doc": "КР115_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 2,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "ЕТ1Ш8": 2
+   },
+   "secs": 120.2
+  },
+  {
+   "doc": "КР119_3",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 112,
+   "source_leaks": [],
+   "n_diff_zones": 4,
+   "clean": true,
+   "forms": {
+    "оГ": 112
+   },
+   "secs": 90.4
+  },
+  {
+   "doc": "КР11_3",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 8,
+   "source_leaks": [],
+   "n_diff_zones": 4,
+   "clean": true,
+   "forms": {
+    "Т4Ь": 1,
+    "М1а": 1,
+    "М1Ь": 1,
+    "Т1Ь": 1,
+    "1Ш88СО": 1,
+    "оГ": 3
+   },
+   "secs": 141.3
+  },
+  {
+   "doc": "КР12_3",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 3,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "М1а": 1,
+    "М1с": 2
+   },
+   "secs": 35.2
+  },
+  {
+   "doc": "КР14_3",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 1,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "АС55": 1
+   },
+   "secs": 62.0
+  },
+  {
+   "doc": "КР153_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 1,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "VО2": 1
+   },
+   "secs": 242.0
+  },
+  {
+   "doc": "КР15_3",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 3,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "уегзюп": 2,
+    "оГ": 1
+   },
+   "secs": 40.8
+  },
+  {
+   "doc": "КР177_5",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 10,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "8са1е": 6,
+    "оГ": 2,
+    "МсОШ": 2
+   },
+   "secs": 48.9
+  },
+  {
+   "doc": "КР193_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 5,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "Ю4ААЗЗ": 1,
+    "Б04ААЗЗ": 1,
+    "Ь04АВ02": 2,
+    "Т04ААЗЗ": 1
+   },
+   "secs": 151.1
+  },
+  {
+   "doc": "КР1_4",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 8,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "Т1Ь": 1,
+    "Уо1.22": 1,
+    "оГ": 5,
+    "СНп": 1
+   },
+   "secs": 69.4
+  },
+  {
+   "doc": "КР260_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 3,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "оГ": 3
+   },
+   "secs": 55.8
+  },
+  {
+   "doc": "КР267_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 3,
+   "source_leaks": [],
+   "n_diff_zones": 3,
+   "clean": true,
+   "forms": {
+    "оГ": 3
+   },
+   "secs": 80.6
+  },
+  {
+   "doc": "КР297_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 6,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "рМ1а": 1,
+    "М1а": 1,
+    "М1с": 1,
+    "8са1е": 1,
+    "оГ": 1,
+    "СНп": 1
+   },
+   "secs": 78.3
+  },
+  {
+   "doc": "КР30_5",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 6,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "N2а": 2,
+    "М1а": 1,
+    "М1с": 1,
+    "М1с1": 1,
+    "М1с2": 1
+   },
+   "secs": 15.2
+  },
+  {
+   "doc": "КР325_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 6,
+   "source_leaks": [],
+   "n_diff_zones": 6,
+   "clean": true,
+   "forms": {
+    "301СЯ": 1,
+    "ШРА8А": 1,
+    "МРА8А": 2,
+    "оГ": 2
+   },
+   "secs": 49.9
+  },
+  {
+   "doc": "КР329_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 3,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "Т1Ь": 1,
+    "Т4Ь": 1,
+    "КЕС15Т": 1
+   },
+   "secs": 62.5
+  },
+  {
+   "doc": "КР330_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 27,
+   "source_leaks": [],
+   "n_diff_zones": 9,
+   "clean": true,
+   "forms": {
+    "оГ": 10,
+    "1Ш88СО": 6,
+    "К.1188СО": 1,
+    "СНп": 1,
+    "уегзюп": 1,
+    "8са1е": 6,
+    "МсОШ": 2
+   },
+   "secs": 48.3
+  },
+  {
+   "doc": "КР332_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 1,
+   "source_leaks": [],
+   "n_diff_zones": 0,
+   "clean": true,
+   "forms": {
+    "Т1Ь": 1
+   },
+   "secs": 43.7
+  },
+  {
+   "doc": "КР359_3",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 31,
+   "source_leaks": [],
+   "n_diff_zones": 4,
+   "clean": true,
+   "forms": {
+    "оГ": 27,
+    "АО5": 1,
+    "СНп": 2,
+    "ЮЙ8": 1
+   },
+   "secs": 246.1
+  },
+  {
+   "doc": "КР360_3",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 0,
+   "source_leaks": [],
+   "n_diff_zones": 0,
+   "clean": true,
+   "forms": {},
+   "secs": 5.6
+  },
+  {
+   "doc": "КР382_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 1,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "CHА2DS2": 1
+   },
+   "secs": 40.0
+  },
+  {
+   "doc": "КР396_4",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 10,
+   "source_leaks": [],
+   "n_diff_zones": 5,
+   "clean": true,
+   "forms": {
+    "М1а": 2,
+    "Т4Ь": 1,
+    "Р01РОХ1Ш": 1,
+    "ЯА8": 1,
+    "оГ": 4,
+    "8са1е": 1
+   },
+   "secs": 109.5
+  },
+  {
+   "doc": "КР450_3",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 12,
+   "source_leaks": [],
+   "n_diff_zones": 4,
+   "clean": true,
+   "forms": {
+    "оГ": 3,
+    "8са1е": 5,
+    "МсОШ": 2,
+    "уегзюп": 1,
+    "ЯЕС18Т": 1
+   },
+   "secs": 73.7
+  },
+  {
+   "doc": "КР467_3",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 6,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "1Ш88СО": 2,
+    "К.1188СО": 1,
+    "ШЛ88СО": 1,
+    "1Ш8БСО": 1,
+    "Т4Ь": 1
+   },
+   "secs": 252.4
+  },
+  {
+   "doc": "КР476_3",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 2,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "Ьйрз": 1,
+    "СНп": 1
+   },
+   "secs": 107.1
+  },
+  {
+   "doc": "КР479_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 3,
+   "source_leaks": [],
+   "n_diff_zones": 3,
+   "clean": true,
+   "forms": {
+    "JO1XХ": 3
+   },
+   "secs": 46.6
+  },
+  {
+   "doc": "КР495_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 4,
+   "source_leaks": [],
+   "n_diff_zones": 3,
+   "clean": true,
+   "forms": {
+    "Т2в": 2,
+    "T2в": 2
+   },
+   "secs": 12.8
+  },
+  {
+   "doc": "КР4_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 1,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "N2с": 1
+   },
+   "secs": 20.2
+  },
+  {
+   "doc": "КР501_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 1,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "N1а": 1
+   },
+   "secs": 10.0
+  },
+  {
+   "doc": "КР502_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 20,
+   "source_leaks": [],
+   "n_diff_zones": 9,
+   "clean": true,
+   "forms": {
+    "М1а": 2,
+    "оГ": 5,
+    "1Ш88СО": 2,
+    "СНп": 1,
+    "уегзюп": 1,
+    "8са1е": 6,
+    "МсОШ": 2,
+    "Уо1.1": 1
+   },
+   "secs": 92.7
+  },
+  {
+   "doc": "КР524_3",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 1,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "Ьйрз": 1
+   },
+   "secs": 70.0
+  },
+  {
+   "doc": "КР526_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 4,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "1Ш88СО": 1,
+    "Ьйрз": 1,
+    "8са1е": 1,
+    "уегзюп": 1
+   },
+   "secs": 111.3
+  },
+  {
+   "doc": "КР532_5",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 4,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "Т1Ь": 1,
+    "М1а": 3
+   },
+   "secs": 80.8
+  },
+  {
+   "doc": "КР547_3",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 1,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "СА19.9": 1
+   },
+   "secs": 24.0
+  },
+  {
+   "doc": "КР554_4",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 2,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "М1a": 1,
+    "М1b": 1
+   },
+   "secs": 15.8
+  },
+  {
+   "doc": "КР555_3",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 2,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "N1а": 1,
+    "N1с": 1
+   },
+   "secs": 10.9
+  },
+  {
+   "doc": "КР584_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 2,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "М1а": 1,
+    "М1b": 1
+   },
+   "secs": 11.0
+  },
+  {
+   "doc": "КР588_3",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 1,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "Н2О": 1
+   },
+   "secs": 119.1
+  },
+  {
+   "doc": "КР603_3",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 4,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "оГ": 3,
+    "Уо1.54": 1
+   },
+   "secs": 129.0
+  },
+  {
+   "doc": "КР606_3",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 2,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "JO1XХ": 2
+   },
+   "secs": 68.4
+  },
+  {
+   "doc": "КР610_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 4,
+   "source_leaks": [],
+   "n_diff_zones": 3,
+   "clean": true,
+   "forms": {
+    "7ЧЕС": 2,
+    "8са1е": 1,
+    "СНп": 1
+   },
+   "secs": 123.3
+  },
+  {
+   "doc": "КР613_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 22,
+   "source_leaks": [],
+   "n_diff_zones": 12,
+   "clean": true,
+   "forms": {
+    "оГ": 12,
+    "8са1е": 9,
+    "уегзюп": 1
+   },
+   "secs": 147.9
+  },
+  {
+   "doc": "КР628_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 11,
+   "source_leaks": [],
+   "n_diff_zones": 3,
+   "clean": true,
+   "forms": {
+    "801ЕС": 1,
+    "оГ": 9,
+    "8са1е": 1
+   },
+   "secs": 70.9
+  },
+  {
+   "doc": "КР629_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 17,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "801АЕ": 1,
+    "801АА": 2,
+    "оГ": 14
+   },
+   "secs": 28.0
+  },
+  {
+   "doc": "КР631_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 8,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "оГ": 5,
+    "8са1е": 3
+   },
+   "secs": 88.7
+  },
+  {
+   "doc": "КР651_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 1,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "Ьйрз": 1
+   },
+   "secs": 87.2
+  },
+  {
+   "doc": "КР655_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 4,
+   "source_leaks": [],
+   "n_diff_zones": 4,
+   "clean": true,
+   "forms": {
+    "оГ": 4
+   },
+   "secs": 50.2
+  },
+  {
+   "doc": "КР677_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 0,
+   "source_leaks": [],
+   "n_diff_zones": 0,
+   "clean": true,
+   "forms": {},
+   "secs": 44.0
+  },
+  {
+   "doc": "КР68_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 5,
+   "source_leaks": [],
+   "n_diff_zones": 4,
+   "clean": true,
+   "forms": {
+    "511ТЗ": 1,
+    "8МАКСВ1": 1,
+    "8ЮРЕЬ": 1,
+    "810РЕЬ": 2
+   },
+   "secs": 153.0
+  },
+  {
+   "doc": "КР719_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 4,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "оГ": 3,
+    "гЦТ11Ш1с!еПпе": 1
+   },
+   "secs": 41.9
+  },
+  {
+   "doc": "КР720_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 2,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "оГ": 1,
+    "РО2": 1
+   },
+   "secs": 55.7
+  },
+  {
+   "doc": "КР736_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 8,
+   "source_leaks": [],
+   "n_diff_zones": 4,
+   "clean": true,
+   "forms": {
+    "оГ": 3,
+    "8са1е": 4,
+    "Уо1.54": 1
+   },
+   "secs": 79.5
+  },
+  {
+   "doc": "КР743_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 2,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "рО2": 2
+   },
+   "secs": 10.9
+  },
+  {
+   "doc": "КР748_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 3,
+   "source_leaks": [],
+   "n_diff_zones": 3,
+   "clean": true,
+   "forms": {
+    "оГ": 3
+   },
+   "secs": 130.4
+  },
+  {
+   "doc": "КР74_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 3,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "N1а": 3
+   },
+   "secs": 8.3
+  },
+  {
+   "doc": "КР752_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 2,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "оГ": 2
+   },
+   "secs": 123.3
+  },
+  {
+   "doc": "КР758_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 2,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "JO1XХ": 2
+   },
+   "secs": 33.0
+  },
+  {
+   "doc": "КР75_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 1,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "N2с": 1
+   },
+   "secs": 5.6
+  },
+  {
+   "doc": "КР763_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 4,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "ВАР1": 2,
+    "Т1Ь": 1,
+    "ТН1М": 1
+   },
+   "secs": 91.3
+  },
+  {
+   "doc": "КР764_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 1,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "оГ": 1
+   },
+   "secs": 18.8
+  },
+  {
+   "doc": "КР765_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 1,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "оГ": 1
+   },
+   "secs": 23.1
+  },
+  {
+   "doc": "КР795_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 1,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "оГ": 1
+   },
+   "secs": 138.8
+  },
+  {
+   "doc": "КР796_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 1,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "оГ": 1
+   },
+   "secs": 53.5
+  },
+  {
+   "doc": "КР797_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 82,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "оГ": 80,
+    "Ьйрз": 2
+   },
+   "secs": 61.0
+  },
+  {
+   "doc": "КР79_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 0,
+   "source_leaks": [],
+   "n_diff_zones": 0,
+   "clean": true,
+   "forms": {},
+   "secs": 34.9
+  },
+  {
+   "doc": "КР805_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 1,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "оГ": 1
+   },
+   "secs": 39.5
+  },
+  {
+   "doc": "КР873_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 2,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "Н2O": 1,
+    "рО2": 1
+   },
+   "secs": 6.2
+  },
+  {
+   "doc": "КР8_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 2,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "О04ВБ": 1,
+    "С04ЕЮ": 1
+   },
+   "secs": 62.7
+  },
+  {
+   "doc": "КР910_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 2,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "А8КМ": 1,
+    "Е8НКЕ": 1
+   },
+   "secs": 61.5
+  },
+  {
+   "doc": "КР912_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 6,
+   "source_leaks": [],
+   "n_diff_zones": 3,
+   "clean": true,
+   "forms": {
+    "Н2О": 3,
+    "рО2": 3
+   },
+   "secs": 15.1
+  },
+  {
+   "doc": "КР921_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 4,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "N1а": 1,
+    "N2а": 1,
+    "М1a": 2
+   },
+   "secs": 33.1
+  },
+  {
+   "doc": "КР926_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 9,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "Н2О": 9
+   },
+   "secs": 11.5
+  },
+  {
+   "doc": "КР945_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 1,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "РО2": 1
+   },
+   "secs": 31.1
+  },
+  {
+   "doc": "КР969_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 1,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "801РА": 1
+   },
+   "secs": 66.3
+  },
+  {
+   "doc": "КР96_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 6,
+   "source_leaks": [],
+   "n_diff_zones": 4,
+   "clean": true,
+   "forms": {
+    "8са1е": 4,
+    "оГ": 2
+   },
+   "secs": 107.5
+  },
+  {
+   "doc": "КР997_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 13,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "оГ": 13
+   },
+   "secs": 53.7
+  }
+ ],
+ "i1": [
+  [
+   "КР802_1",
+   true,
+   true
+  ],
+  [
+   "КР845_1",
+   true,
+   true
+  ],
+  [
+   "КР901_1",
+   true,
+   true
+  ],
+  [
+   "КР1000_1",
+   true,
+   true
+  ],
+  [
+   "КР66_4",
+   true,
+   true
+  ],
+  [
+   "КР876_1",
+   true,
+   true
+  ]
+ ],
+ "not_applied": [
+  "Herpes С simplex virus"
+ ],
+ "per_prov": {
+  "human_verified_5a": 507,
+  "reverified_homoglyph_norm": 26,
+  "reverified_human_verified+homoglyph_norm": 39,
+  "reverified_crop_arbitrated": 7
+ },
+ "per_form_occ": {
+  "Ьйрз": 7,
+  "РO2": 2,
+  "Н2О": 14,
+  "оГ": 349,
+  "1А1НС": 1,
+  "СНп": 9,
+  "801РВ01": 3,
+  "801АА": 3,
+  "ВАР1": 4,
+  "ЕТ1Ш8": 2,
+  "Т4Ь": 4,
+  "М1а": 12,
+  "М1Ь": 1,
+  "Т1Ь": 6,
+  "1Ш88СО": 12,
+  "М1с": 4,
+  "АС55": 1,
+  "VО2": 1,
+  "уегзюп": 7,
+  "8са1е": 48,
+  "МсОШ": 8,
+  "Ю4ААЗЗ": 1,
+  "Б04ААЗЗ": 1,
+  "Ь04АВ02": 2,
+  "Т04ААЗЗ": 1,
+  "Уо1.22": 1,
+  "рМ1а": 1,
+  "N2а": 3,
+  "М1с1": 1,
+  "М1с2": 1,
+  "301СЯ": 1,
+  "ШРА8А": 1,
+  "МРА8А": 2,
+  "КЕС15Т": 1,
+  "К.1188СО": 2,
+  "АО5": 1,
+  "ЮЙ8": 1,
+  "CHА2DS2": 1,
+  "Р01РОХ1Ш": 1,
+  "ЯА8": 1,
+  "ЯЕС18Т": 1,
+  "ШЛ88СО": 1,
+  "1Ш8БСО": 1,
+  "JO1XХ": 7,
+  "Т2в": 2,
+  "T2в": 2,
+  "N2с": 2,
+  "N1а": 6,
+  "Уо1.1": 1,
+  "СА19.9": 1,
+  "М1a": 3,
+  "М1b": 2,
+  "N1с": 1,
+  "Уо1.54": 2,
+  "7ЧЕС": 2,
+  "801ЕС": 1,
+  "801АЕ": 1,
+  "511ТЗ": 1,
+  "8МАКСВ1": 1,
+  "8ЮРЕЬ": 1,
+  "810РЕЬ": 2,
+  "гЦТ11Ш1с!еПпе": 1,
+  "РО2": 2,
+  "рО2": 6,
+  "ТН1М": 1,
+  "Н2O": 1,
+  "О04ВБ": 1,
+  "С04ЕЮ": 1,
+  "А8КМ": 1,
+  "Е8НКЕ": 1,
+  "801РА": 1
+ },
+ "total": 579
+}

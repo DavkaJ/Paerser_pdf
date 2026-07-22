@@ -175,7 +175,14 @@ def test_group_b_healthy_tokens_preserved():
 
 
 def test_group_b_no_invalid_entity_forms():
-    """Ни одной замены на НЕвалидную форму кода (нет SOLEC, нет MO/M3 в TNM)."""
+    """Ни одной МЕХАНИЧЕСКОЙ замены на НЕвалидную форму кода (нет SOLEC, нет MO/M3 в TNM).
+
+    Инвариант проверяет ВЫХОД КАНАЛОВ (a2/eng-OCR/font-repair): канал не имеет права
+    выдумать невалидный код. HUMAN-VERIFIED оверлей (ROADMAP шаг 1) ИСКЛЮЧЁН: это истина,
+    подтверждённая человеком по кропу, а form-гейт движка НЕПОЛОН — `_RX_TNM` не знает
+    ПОДстадий (M1a/M1b/M1c, N1a/N2a — реальные TNM, но `M[01xX]`/`N[0-3xX]` их режут). Именно
+    поэтому канал отправлял их в needs_review -> человеку, а тот подтвердил. Судить истину
+    неполным regex'ом нельзя; провенанс human_verified верифицирован против карты 72 отдельно."""
     rx = {
         "atc": re.compile(r"^[A-Z]\d{2}[A-Z]{2}(?:\d{2})?$|^[A-Z]\d{2}[A-Z]$"),
         "icd": re.compile(r"^[A-Z]\d{2}(?:\.\d{1,2})?$"),
@@ -185,6 +192,8 @@ def test_group_b_no_invalid_entity_forms():
     for p in _latin_docs():
         doc = json.load(open(p, encoding="utf-8"))
         for c in (doc.get("latin_recovery", {}) or {}).get("corrections", []):
+            if c.get("source") == "human_verified":
+                continue                       # истина человека, не выход канала
             k = c.get("entity_kind")
             rt = (c.get("resolved_text") or "").strip("().,;:")
             if k in rx and c.get("method") not in (None, "none") and rt and not rx[k].match(rt):

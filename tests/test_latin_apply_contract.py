@@ -26,6 +26,7 @@ TESSDATA = os.environ.get("TESSDATA_PREFIX") or os.path.expanduser(
     "~/Tesseract-OCR/tessdata")
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 KR14 = os.path.join(ROOT, "data", "raw", "КР1_4.pdf")
+KR10_5 = os.path.join(ROOT, "data", "raw", "КР10_5.pdf")
 
 
 def _zone_text(res) -> str:
@@ -150,3 +151,61 @@ def test_needs_review_not_pass_via_gate(kr14_recovered):
         assert rep.status != "PASS", (
             "КР1_4 с %d unresolved_critical получил PASS — гейт не сработал"
             % len(lr["unresolved_critical"]))
+
+
+# ---------- (3) HUMAN-VERIFIED ОВЕРЛЕЙ ПРИМЕНЁН К ТЕКСТУ (ROADMAP шаг 1) ----------
+@pytest.fixture(scope="module")
+def kr10_5_recovered(request):
+    """Перепарс РЕАЛЬНОГО КР10_5 с ВКЛЮЧЁННЫМ OCR и human-verified оверлеем (ВАР1->BAP1).
+    Исполняет путь _inject_verified_overlay + _apply (I30: тест ИСПОЛНЯЕТ путь, не читает
+    артефакт). Skip, если нет Tesseract/PDF."""
+    if not os.path.isfile(TESS):
+        pytest.skip("нет Tesseract (%s) — интеграционный тест требует OCR" % TESS)
+    if not os.path.isfile(KR10_5):
+        pytest.skip("нет data/raw/КР10_5.pdf")
+    os.environ["TESSERACT_CMD"] = TESS
+    os.environ["TESSDATA_PREFIX"] = TESSDATA
+    os.environ["CR_VERIFIED_OVERLAY"] = "1"      # оверлей ВКЛ (дефолт, но явно для теста)
+    import crparser.engine.ocr as ocr
+    mp = pytest.MonkeyPatch()
+    mp.setattr(ocr, "_resolve_tesseract",
+               lambda: TESS if os.path.isfile(TESS) else None)
+    request.addfinalizer(mp.undo)
+    from crparser.engine.parser import DocumentParser
+    from crparser.profiles.clinical import ClinicalRecommendationProfile
+    res = DocumentParser(ClinicalRecommendationProfile(),
+                         latin_recovery=True).parse(KR10_5)
+    return res
+
+
+def test_verified_overlay_applied_bap1(kr10_5_recovered):
+    """КР10_5: проверенная человеком правка `ВАР1`->`BAP1` ПРИМЕНЕНА к тексту, с провенансом
+    source=human_verified, applied=True, decision=auto; исходная порченая форма исчезла."""
+    res = kr10_5_recovered
+    zone = _zone_text(res)
+    assert "BAP1" in zone, "BAP1 нет в тексте — human-verified оверлей не применён"
+    assert "ВАР1" not in zone, "порченая ВАР1 (кир.) осталась в тексте — правка не применена"
+    hv = [c for c in res.latin_recovery
+          if c.get("source") == "human_verified" and c.get("source_text") == "ВАР1"]
+    assert hv, "нет провенанс-записи human_verified для ВАР1"
+    for c in hv:
+        assert c.get("resolved_text") == "BAP1"
+        assert c.get("applied") is True and c.get("decision") == "auto", (
+            "human_verified запись не auto/applied: %s" % c)
+        assert c.get("method") == "human_verified"
+
+
+def test_verified_overlay_provenance_in_map(kr10_5_recovered):
+    """ВСЕ human_verified правки в КР10_5 обязаны быть из карты _verified_corrections.json
+    (никаких необъяснимых human_verified замен) и все applied=True."""
+    import json
+    ver = json.load(open(
+        os.path.join(ROOT, "_corpus", "verify_queue", "_verified_corrections.json"),
+        encoding="utf-8"))
+    for c in kr10_5_recovered.latin_recovery:
+        if c.get("source") != "human_verified":
+            continue
+        st, rt = c.get("source_text"), c.get("resolved_text")
+        assert st in ver and ver[st]["corrected"] == rt, (
+            "human_verified правка вне карты: %s -> %s" % (st, rt))
+        assert c.get("applied") is True and c.get("decision") == "auto"

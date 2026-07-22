@@ -95,6 +95,41 @@ def _is_dose_token(core: str) -> bool:
     return bool(_RX_DOSE_UNIT_END.search(core))
 
 
+# ---- HUMAN-VERIFIED overlay (ROADMAP шаг 1) --------------------------------- #
+# Проверенные человеком/кропом правки формы (`source->corrected`), которые
+# накладываются ПОВЕРХ механических каналов как decision=auto с source=human_verified.
+# Вход: verify_queue/_verified_corrections.json (72 формы). Оверлей — ПЕРМАНЕНТНОЕ
+# поведение движка (правки уезжают в текст корпуса), но переключаем env-флагом
+# CR_VERIFIED_OVERLAY=0 для baseline-сверки/контрольной группы.
+_VERIFIED_FILE = "_verified_corrections.json"
+
+
+def _verified_overlay_enabled() -> bool:
+    return os.environ.get("CR_VERIFIED_OVERLAY", "1").strip().lower() not in (
+        "0", "false", "off", "no", "")
+
+
+def _load_verified_overlay(queue_dir: Optional[str]) -> Dict[str, dict]:
+    """Загрузить карту проверенных правок. Ищем в queue_dir, затем в репо-дефолте
+    (_corpus/verify_queue/). Отсутствует/битый -> {} (оверлей инертен, fail-open к
+    baseline — молчаливой порчи не вносит: без карты просто нет правок)."""
+    paths = []
+    if queue_dir:
+        paths.append(os.path.join(queue_dir, _VERIFIED_FILE))
+    paths.append(os.path.join(os.path.dirname(__file__), "..", "..",
+                              "_corpus", "verify_queue", _VERIFIED_FILE))
+    for p in paths:
+        try:
+            if os.path.isfile(p):
+                with open(p, encoding="utf-8") as fh:
+                    data = json.load(fh)
+                if isinstance(data, dict):
+                    return data
+        except Exception:  # noqa: BLE001
+            continue
+    return {}
+
+
 # Сегментация whitespace-токена: ДЕФИС, пробелы, ОДИНОЧНЫЙ слэш, `+`, скобки `()`, звёзды `*`.
 # `.` и `[` не режем (коды `037.6`/`S01EC` и порча `1п[епог`/`8Иа//ег` целы). `+`/`()`/`*` —
 # границы склеек «препарат+[комбинация», «слово)[цитата», «тимолол**0,25» -> режем, чтобы не
@@ -476,6 +511,17 @@ class LatinRecoverer:
         self.prov: List[Dict[str, Any]] = []   # блок latin_recovery
         self.queue: List[Dict[str, Any]] = []  # неуверенные -> verify_queue
         self.unresolved_critical: List[Dict[str, Any]] = []
+        # HUMAN-VERIFIED оверлей (шаг 1): 72 проверенные правки. Многословные ключи
+        # (`Herpes С simplex virus`) — отдельно (строковая замена ДО гомоглиф-прохода),
+        # односегментные — в self._g при резолюции (см. _inject_verified_overlay).
+        self._verified_tokens: Dict[str, dict] = {}
+        self._verified_phrases: Dict[str, dict] = {}
+        if _verified_overlay_enabled():
+            for src, ent in _load_verified_overlay(queue_dir).items():
+                if not isinstance(ent, dict) or not ent.get("corrected"):
+                    continue
+                (self._verified_phrases if " " in src
+                 else self._verified_tokens)[src] = ent
 
     # ---- ленивая инициализация тяжёлых ресурсов ----
     def _ensure_doc(self):
@@ -701,10 +747,41 @@ class LatinRecoverer:
             for z in zones:
                 all_zone_tokens.update(_iter_segments(z["text"]))
             self._font_sweep(all_zone_tokens)
+        # HUMAN-VERIFIED оверлей (шаг 1): накладываем проверенные правки ПОСЛЕ всех
+        # каналов -> высший приоритет (перекрывает канальное решение для той же формы).
+        self._inject_verified_overlay()
         # применить карты по зонам
         for z in zones:
             new = self._apply(z["text"], z["page"], z["uids"], z["tnm"], z["where"])
             z["set"](new)
+
+    def _inject_verified_overlay(self) -> None:
+        """Наложить проверенные правки (source=human_verified) поверх self._g как
+        decision=auto. Высший приоритет: перекрывает канальное решение для той же формы.
+        Форму, которую авторешили, убираем из очереди/unresolved_critical (иначе ложный
+        LATIN_UNRESOLVED-гейт и двойной учёт: авто-правка И «не разрешено» одновременно).
+        Многословные ключи (фразы) применяются в _apply, здесь не трогаются."""
+        if not self._verified_tokens:
+            return
+        applied: set = set()
+        for src, ent in self._verified_tokens.items():
+            dst = ent.get("corrected", "")
+            if not dst or dst == src:
+                continue
+            kind = ent.get("entity_kind")
+            conf = float(ent.get("confidence", 0.95))
+            prov = ent.get("provenance", "human_verified")
+            rec = _mkrec(src, dst, "human_verified", prov, conf, kind,
+                         kind in CRIT_KINDS, "auto", ["human_verified"])
+            rec["source"] = "human_verified"        # отличает от механических каналов
+            self._g[src] = rec                       # перекрывает канал
+            applied.add(src)
+        if applied:
+            self.queue = [q for q in self.queue
+                          if q.get("source_text") not in applied]
+            self.unresolved_critical = [
+                u for u in self.unresolved_critical
+                if u.get("source_text") not in applied]
 
     def _gather_zones(self, sections, tables, excluded, metadata) -> List[dict]:
         """Плоский список редактируемых зон: sections(title/text), tables(caption/
@@ -1186,6 +1263,25 @@ class LatinRecoverer:
         предложено (текст не изменён)."""
         if not text or not text.strip():
             return text
+        # HUMAN-VERIFIED фраз-оверлей (шаг 1): многословный ключ (`Herpes С simplex
+        # virus`) — точная строковая замена ДО гомоглиф-прохода. Иначе _homoglyph_in_latin
+        # латинизировал бы одиночную кир. букву (С->C), а человек её УДАЛИЛ. Провенанс на
+        # каждую замену (source=human_verified, applied=True).
+        if self._verified_phrases:
+            for src, ent in self._verified_phrases.items():
+                dst = ent.get("corrected", "")
+                if not src or not dst or src not in text:
+                    continue
+                n = text.count(src)
+                text = text.replace(src, dst)
+                rec = _mkrec(src, dst, "human_verified",
+                             ent.get("provenance", "human_verified"),
+                             float(ent.get("confidence", 0.95)), ent.get("entity_kind"),
+                             ent.get("entity_kind") in CRIT_KINDS, "auto",
+                             ["human_verified", "phrase"])
+                rec["source"] = "human_verified"
+                rec["occurrences"] = n
+                self._emit(rec, page, span_uids)
         # B3a (ШАГ 1): внутридок. self-repair фраз-якорей ПЕРВЫМ проходом (до
         # роман/сегмент-правок): чинит рассыпанные/гомоглифные фразы по чистому
         # образцу той же фразы в ЭТОМ документе. Меняет число токенов — поэтому
