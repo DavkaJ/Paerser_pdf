@@ -117,6 +117,36 @@ def _step2_auto_enabled() -> bool:
         "0", "false", "off", "no", "")
 
 
+def _pua_enabled() -> bool:
+    return os.environ.get("CR_PUA_NORMALIZE", "1").strip().lower() not in (
+        "0", "false", "off", "no", "")
+
+
+def _pua_fix(s: str):
+    """PUA (символьный шрифт) -> Unicode по таблице Adobe Symbol. Возврат (new, covered, unresolved)
+    где covered/unresolved — Counter кодпоинтов. Символ вне таблицы ОСТАЁТСЯ (needs_review, не
+    дропаем молча)."""
+    from collections import Counter
+    from crparser.engine.pua_symbol import symbol_char
+    if not s:
+        return s, Counter(), Counter()
+    cov, unc = Counter(), Counter()
+    if not any(0xE000 <= ord(c) <= 0xF8FF for c in s):
+        return s, cov, unc
+    out = []
+    for ch in s:
+        o = ord(ch)
+        if 0xE000 <= o <= 0xF8FF:
+            r = symbol_char(o)
+            if r is not None:
+                out.append(r); cov[o] += 1
+            else:
+                out.append(ch); unc[o] += 1     # вне Symbol -> needs_review, НЕ дропаем
+        else:
+            out.append(ch)
+    return "".join(out), cov, unc
+
+
 def _load_overlay_file(queue_dir: Optional[str], fname: str) -> Dict[str, dict]:
     """Загрузить карту правок из fname. Ищем в queue_dir, затем в репо-дефолте
     (_corpus/verify_queue/). Отсутствует/битый -> {} (оверлей инертен, fail-open к baseline)."""
@@ -773,6 +803,78 @@ class LatinRecoverer:
         for z in zones:
             new = self._apply(z["text"], z["page"], z["uids"], z["tnm"], z["where"])
             z["set"](new)
+        # PUA-нормализация (символьные шрифты -> Unicode по Adobe Symbol) — ПОСЛЕ латиницы,
+        # ПО ВСЕМ полям (вкл. references/toc/other, которые латиница не трогает).
+        if _pua_enabled():
+            self._pua_normalize_all(sections, tables, excluded, metadata)
+
+    def _pua_normalize_all(self, sections, tables, excluded, metadata) -> None:
+        """Заменить PUA-глифы (U+E000..U+F8FF) на Unicode по таблице Adobe Symbol во ВСЕХ
+        текстовых полях. Провенанс АГРЕГИРОВАННЫЙ (одна запись на кодпоинт): source=pua_normalize,
+        decision=auto для покрытых, needs_review для непокрытых (символ остаётся в тексте)."""
+        from collections import Counter
+        cov, unc = Counter(), Counter()
+
+        def fix_attr(obj, attr):
+            v = getattr(obj, attr, None)
+            if isinstance(v, str) and v:
+                nv, c, u = _pua_fix(v)
+                if c or u:
+                    cov.update(c); unc.update(u)
+                    if nv != v:
+                        setattr(obj, attr, nv)
+
+        def fix_dictkey(dct, key):
+            v = dct.get(key)
+            if isinstance(v, str) and v:
+                nv, c, u = _pua_fix(v)
+                if c or u:
+                    cov.update(c); unc.update(u)
+                    if nv != v:
+                        dct[key] = nv
+
+        def walk_json(o):
+            """Рекурсивно чинить все строки в dict/list (excluded: references/toc/other/…)."""
+            if isinstance(o, dict):
+                for k, v in list(o.items()):
+                    if isinstance(v, str):
+                        fix_dictkey(o, k)
+                    else:
+                        walk_json(v)
+            elif isinstance(o, list):
+                for i, v in enumerate(o):
+                    if isinstance(v, str):
+                        nv, c, u = _pua_fix(v)
+                        if c or u:
+                            cov.update(c); unc.update(u)
+                            if nv != v:
+                                o[i] = nv
+                    else:
+                        walk_json(v)
+
+        for sec in _walk(sections):
+            fix_attr(sec, "title"); fix_attr(sec, "text")
+        for t in tables:
+            fix_attr(t, "raw_text"); fix_attr(t, "caption")
+        walk_json(excluded)
+        if isinstance(metadata, dict):
+            fix_dictkey(metadata, "title")
+        # провенанс: одна запись на кодпоинт
+        from crparser.engine.pua_symbol import symbol_char
+        for o, n in sorted(cov.items()):
+            rec = {"source_text": "U+%04X" % o, "resolved_text": symbol_char(o),
+                   "method": "pua_normalize", "rule": "adobe_symbol", "confidence": 1.0,
+                   "entity_kind": "symbol", "is_critical": False, "decision": "auto",
+                   "why_suspect": ["pua_glyph"], "source": "pua_normalize",
+                   "applied": True, "occurrences": n}
+            self.prov.append(rec)
+        for o, n in sorted(unc.items()):
+            rec = {"source_text": "U+%04X" % o, "resolved_text": None,
+                   "method": "pua_normalize", "rule": "not_in_symbol_table", "confidence": 0.0,
+                   "entity_kind": "symbol", "is_critical": False, "decision": "needs_review",
+                   "why_suspect": ["pua_glyph", "outside_symbol_table"], "source": "pua_normalize",
+                   "applied": False, "occurrences": n}
+            self.prov.append(rec)
 
     def _inject_verified_overlay(self) -> None:
         """Наложить проверенные правки (source=human_verified) поверх self._g как

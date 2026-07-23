@@ -154,13 +154,32 @@ def test_group_a_uicc():
 # ГРУППА B — НЕГАТИВ: обязано быть НЕ ТРОНУТО (false_substitution = 0)          #
 # =========================================================================== #
 def test_group_b_kr1000_byte_identical():
-    """Здоровый КР1000_1 — БАЙТ-В-БАЙТ как baseline (0 замен)."""
+    """Здоровый КР1000_1 — LATIN recovery НЕ тронул (0 латинизаций, false_substitution=0).
+    Единственное допустимое отличие от baseline — ДЕТЕРМИНИРОВАННАЯ PUA-нормализация
+    (символьный шрифт -> Unicode по Adobe Symbol): это не латинизация, а починка битого
+    Unicode, применяется глобально (в т.ч. на здоровых)."""
+    from crparser.engine.latinrecovery import _pua_fix
     a = _need("КР1000_1")
     b = json.load(open(os.path.join(BASE, "КР1000_1.json"), encoding="utf-8"))
-    assert "latin_recovery" not in a, "КР1000_1: появился блок latin_recovery (были замены)"
-    assert (json.dumps(a, ensure_ascii=False, sort_keys=True)
-            == json.dumps(b, ensure_ascii=False, sort_keys=True)), \
-        "КР1000_1 изменён latin recovery (ожидалось байт-в-байт)"
+    # LATIN recovery (рискованная часть) не сделал НИ ОДНОЙ замены на здоровом доке
+    latin_corr = [c for c in (a.get("latin_recovery") or {}).get("corrections", [])
+                  if c.get("source") != "pua_normalize"]
+    assert not latin_corr, "КР1000_1: latin recovery сделал замены: %s" % latin_corr[:5]
+
+    def _strip_lr(d):
+        d = dict(d); d.pop("latin_recovery", None); return d
+
+    def _pua(o):                                  # применить ту же PUA-норму к baseline
+        if isinstance(o, str):
+            return _pua_fix(o)[0]
+        if isinstance(o, dict):
+            return {k: _pua(v) for k, v in o.items()}
+        if isinstance(o, list):
+            return [_pua(v) for v in o]
+        return o
+    assert (json.dumps(_strip_lr(a), ensure_ascii=False, sort_keys=True)
+            == json.dumps(_pua(_strip_lr(b)), ensure_ascii=False, sort_keys=True)), \
+        "КР1000_1 отличается от baseline не только PUA-нормализацией"
 
 
 def test_group_b_healthy_tokens_preserved():
