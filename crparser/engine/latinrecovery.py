@@ -109,15 +109,22 @@ def _verified_overlay_enabled() -> bool:
         "0", "false", "off", "no", "")
 
 
-def _load_verified_overlay(queue_dir: Optional[str]) -> Dict[str, dict]:
-    """Загрузить карту проверенных правок. Ищем в queue_dir, затем в репо-дефолте
-    (_corpus/verify_queue/). Отсутствует/битый -> {} (оверлей инертен, fail-open к
-    baseline — молчаливой порчи не вносит: без карты просто нет правок)."""
+_STEP2_FILE = "_step2_auto_apply.json"
+
+
+def _step2_auto_enabled() -> bool:
+    return os.environ.get("CR_STEP2_AUTO", "1").strip().lower() not in (
+        "0", "false", "off", "no", "")
+
+
+def _load_overlay_file(queue_dir: Optional[str], fname: str) -> Dict[str, dict]:
+    """Загрузить карту правок из fname. Ищем в queue_dir, затем в репо-дефолте
+    (_corpus/verify_queue/). Отсутствует/битый -> {} (оверлей инертен, fail-open к baseline)."""
     paths = []
     if queue_dir:
-        paths.append(os.path.join(queue_dir, _VERIFIED_FILE))
+        paths.append(os.path.join(queue_dir, fname))
     paths.append(os.path.join(os.path.dirname(__file__), "..", "..",
-                              "_corpus", "verify_queue", _VERIFIED_FILE))
+                              "_corpus", "verify_queue", fname))
     for p in paths:
         try:
             if os.path.isfile(p):
@@ -128,6 +135,10 @@ def _load_verified_overlay(queue_dir: Optional[str]) -> Dict[str, dict]:
         except Exception:  # noqa: BLE001
             continue
     return {}
+
+
+def _load_verified_overlay(queue_dir: Optional[str]) -> Dict[str, dict]:
+    return _load_overlay_file(queue_dir, _VERIFIED_FILE)
 
 
 # Сегментация whitespace-токена: ДЕФИС, пробелы, ОДИНОЧНЫЙ слэш, `+`, скобки `()`, звёзды `*`.
@@ -516,12 +527,20 @@ class LatinRecoverer:
         # односегментные — в self._g при резолюции (см. _inject_verified_overlay).
         self._verified_tokens: Dict[str, dict] = {}
         self._verified_phrases: Dict[str, dict] = {}
-        if _verified_overlay_enabled():
-            for src, ent in _load_verified_overlay(queue_dir).items():
+
+        def _add_overlay(mp, default_source):
+            for src, ent in mp.items():
                 if not isinstance(ent, dict) or not ent.get("corrected"):
                     continue
-                (self._verified_phrases if " " in src
-                 else self._verified_tokens)[src] = ent
+                ent = dict(ent)
+                ent.setdefault("source", default_source)
+                (self._verified_phrases if " " in src else self._verified_tokens)[src] = ent
+        if _verified_overlay_enabled():
+            _add_overlay(_load_verified_overlay(queue_dir), "human_verified")
+        # step2_auto (ROADMAP шаг 2): 589 VLM+OCR+словарь правок, отдельный source и env-флаг
+        # CR_STEP2_AUTO (для изолированной сверки: OFF=human-only, ON=human+step2).
+        if _step2_auto_enabled():
+            _add_overlay(_load_overlay_file(queue_dir, _STEP2_FILE), "step2_auto")
 
     # ---- ленивая инициализация тяжёлых ресурсов ----
     def _ensure_doc(self):
@@ -771,9 +790,10 @@ class LatinRecoverer:
             kind = ent.get("entity_kind")
             conf = float(ent.get("confidence", 0.95))
             prov = ent.get("provenance", "human_verified")
-            rec = _mkrec(src, dst, "human_verified", prov, conf, kind,
-                         kind in CRIT_KINDS, "auto", ["human_verified"])
-            rec["source"] = "human_verified"        # отличает от механических каналов
+            source = ent.get("source", "human_verified")
+            rec = _mkrec(src, dst, source, prov, conf, kind,
+                         kind in CRIT_KINDS, "auto", [source])
+            rec["source"] = source                   # human_verified | step2_auto
             self._g[src] = rec                       # перекрывает канал
             applied.add(src)
         if applied:
@@ -1280,12 +1300,13 @@ class LatinRecoverer:
                 text, n = pat.subn(lambda m: dst, text)
                 if not n:
                     continue
-                rec = _mkrec(src, dst, "human_verified",
+                source = ent.get("source", "human_verified")
+                rec = _mkrec(src, dst, source,
                              ent.get("provenance", "human_verified"),
                              float(ent.get("confidence", 0.95)), ent.get("entity_kind"),
                              ent.get("entity_kind") in CRIT_KINDS, "auto",
-                             ["human_verified", "phrase"])
-                rec["source"] = "human_verified"
+                             [source, "phrase"])
+                rec["source"] = source
                 rec["occurrences"] = n
                 self._emit(rec, page, span_uids)
         # B3a (ШАГ 1): внутридок. self-repair фраз-якорей ПЕРВЫМ проходом (до

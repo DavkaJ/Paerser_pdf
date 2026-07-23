@@ -347,7 +347,10 @@ def test_c5_recovers_known_class_positives():
     doc = json.load(open(p, encoding="utf-8"))
     fixed = {}
     for c in (doc.get("latin_recovery", {}) or {}).get("corrections", []):
-        if "c5_corrupt_font" in (c.get("why_suspect") or []) or c.get("source") == "human_verified":
+        # C5-канал ИЛИ оверлеи-подтверждения (human_verified шаг1 / step2_auto шаг2) —
+        # все легитимно закрывают C5-класс той же целью; исход тот же (форма восстановлена).
+        if ("c5_corrupt_font" in (c.get("why_suspect") or [])
+                or c.get("source") in ("human_verified", "step2_auto")):
             fixed[c.get("source_text") or ""] = c.get("resolved_text") or ""
     for src, dst in (("уапсез", "varices"), ("КеПгогк", "Network"),
                      ("оезорЬадиз", "oesophagus"), ("Огдашгайоп", "Organization"),

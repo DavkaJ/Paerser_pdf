@@ -17,6 +17,25 @@ import json, os, re, sys, collections
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 from _corpus.safety_filter_verified import is_dangerous   # тот же гейт, что в шаге 1
+from crparser.engine.latinrecovery import latin_vocab
+
+# МЕД+АНГЛ СЛОВАРЬ = latin_vocab() (born-digital мед. корпус, 4016 слов): Pseudomonas/
+# Helicobacter/pallidum ЕСТЬ, фамилии (bepren/Isupova) — НЕТ (ловит транслит рус. имён).
+# Плюс: исключаем ALL-CAPS (акронимы ANCA/NYHA — в словаре есть, но по решению -> человеку) и
+# многословные/дефисные/суффиксные (`follow-`,`NETTER-1`) -> человеку.
+_VOCAB = latin_vocab()
+
+
+def in_med_dict(dst):
+    d = (dst or "").strip()
+    if " " in d:
+        return False
+    core = re.sub(r"^[^A-Za-z]+|[^A-Za-z]+$", "", d)
+    if not core or "-" in core:
+        return False
+    if core.isupper():                # акроним -> человеку
+        return False
+    return core.lower() in _VOCAB
 
 # ТРАНСЛИТ-МУСОР: VLM+OCR на РУССКОМ источнике даёт чистую латиницу, которая проходит
 # entity_valid, но это транслитерация, а не слово (`СпецЛит`->`CnenJIut`, `ТхаМ`->`TlaNOMO`).
@@ -59,7 +78,8 @@ def main():
     filtered = {}      # form -> reason (гейт безопасности шага 1 отсеял)
     translit = {}      # form -> reason (транслит-мусор на рус. источнике)
     exposure = {}      # form -> reason (occ>1: VLM проверил 1 кроп, применение затронет все)
-    safe = {}          # occ==1, чисто: by-form == per-occurrence (VLM видел ЕДИНСТВЕННОЕ вхождение)
+    not_dict = {}      # form -> corrected НЕ в мед+англ словаре (имена/акронимы/суффиксы -> человеку)
+    safe = {}          # occ==1 + corrected в словаре: by-form == per-occurrence, реальное слово
     for s, dst in forms.items():
         r = is_dangerous(s)
         if r:
@@ -73,6 +93,11 @@ def main():
         # на per-occurrence (шаг 2 применяет по локации кропа, не по форме).
         if n_occ > 1 or n_docs > 1:
             exposure[s] = "occ=%d docs=%d" % (n_occ, n_docs)
+            continue
+        # ФИНАЛЬНЫЙ гейт (уточнение пользователя): corrected обязан быть реальным словом
+        # мед+англ словаря — иначе имя/акроним/транслит -> НЕ в текст, остаётся предсказанием в LS.
+        if not in_med_dict(dst):
+            not_dict[s] = dst
             continue
         safe[s] = dst
 
@@ -93,27 +118,30 @@ def main():
         print("        %r -> %r" % (s, forms[s]))
     print()
     print("(3) ОТСЕЯНО по ЭКСПОЗИЦИИ occ>1 (нужен per-occurrence, не by-form): %d форм" % len(exposure))
-    for s in list(exposure)[:8]:
+    for s in list(exposure)[:6]:
         print("        %r -> %r  [%s]" % (s, forms[s], exposure[s]))
     print()
-    print("ПРОШЛИ ВСЁ — occ==1, чисто (by-form == per-occurrence, VLM видел единств. вхождение):")
-    print("   **%d форм, ~%d вхождений**" % (len(safe), len(safe)))
+    print("(4) ОТСЕЯНО: corrected НЕ в мед+англ словаре (имена/акронимы/суффиксы -> человеку в LS): %d" % len(not_dict))
+    for s in list(not_dict)[:12]:
+        print("        %r -> %r" % (s, not_dict[s]))
+    print()
+    print("ПРОШЛИ ВСЁ (occ==1 + реальное слово мед+англ словаря) -> К ПРИМЕНЕНИЮ:")
+    print("   **%d форм**" % len(safe))
     for s in list(safe)[:15]:
         print("        %r -> %r" % (s, safe[s]))
 
     json.dump({"safe": safe, "filtered": filtered, "translit": translit, "exposure": exposure,
-               "n_auto": len(auto), "n_forms": len(forms)},
+               "not_dict": not_dict, "n_auto": len(auto), "n_forms": len(forms)},
               open(OUT, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     print()
     print("=" * 70)
-    print("ИТОГ по %d auto-формам (шаг 1 уже применил свои — тут только НОВЫЕ):" % len(forms))
-    print("  отсеяно: is_dangerous=%d + translit=%d + occ>1=%d = %d"
-          % (len(filtered), len(translit), len(exposure),
-             len(filtered) + len(translit) + len(exposure)))
-    print("  БЕЗОПАСНО к применению по форме (occ==1): %d форм" % len(safe))
+    print("ИТОГ по %d новым auto-формам:" % len(forms))
+    print("  отсеяно: is_dangerous=%d + translit=%d + occ>1=%d + не-в-словаре=%d = %d"
+          % (len(filtered), len(translit), len(exposure), len(not_dict),
+             len(filtered) + len(translit) + len(exposure) + len(not_dict)))
+    print("  К ПРИМЕНЕНИЮ (occ==1 + мед+англ словарь): **%d форм**" % len(safe))
+    print("  Отсеянные НЕ потеряны — остаются auto-предсказаниями в LS на ревью человеку.")
     print("  Кандидаты -> %s. НИЧЕГО НЕ ПРИМЕНЕНО." % os.path.relpath(OUT))
-    print("  occ>1 (%d форм) идут в per-occurrence проход (применять по локации кропа, не по форме)."
-          % len(exposure))
 
 
 if __name__ == "__main__":

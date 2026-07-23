@@ -1,0 +1,4714 @@
+{
+ "Ыекхепа": {
+  "corrected": "Neisseria",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "аШсат": {
+  "corrected": "albicans",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Вас1его1": {
+  "corrected": "Bacteroides",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Рзеийотопаз": {
+  "corrected": "Pseudomonas",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "гер1ососси": {
+  "corrected": "Streptococcus",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ру!оп": {
+  "corrected": "pylori",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "НеИсоЪасШ": {
+  "corrected": "Helicobacter",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "КкЫгеИа": {
+  "corrected": "Klebsiella",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "гер1ососсш": {
+  "corrected": "Streptococcus",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Мешепа": {
+  "corrected": "Neisseria",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ВасШоШез": {
+  "corrected": "Bacteroides",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "раШйит": {
+  "corrected": "pallidum",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ЛасЬотайз": {
+  "corrected": "trachomatis",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ЬнгрИогфчч": {
+  "corrected": "burgdorferi",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "рзШасг": {
+  "corrected": "psittaci",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Ьнгщ": {
+  "corrected": "burgdorferi",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Пуег": {
+  "corrected": "liver",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "апруеп": {
+  "corrected": "antigen",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "НВзАу": {
+  "corrected": "HBsAg",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Нераппз": {
+  "corrected": "Hepatitis",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Нерапйз": {
+  "corrected": "Hepatitis",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Нерагтз": {
+  "corrected": "Hepatitis",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Нерабйз": {
+  "corrected": "Hepatitis",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "НВзАд": {
+  "corrected": "HBsAg",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "паШга1": {
+  "corrected": "natural",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "1УШ]ог": {
+  "corrected": "Major",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Оа\\Узоп": {
+  "corrected": "Dawson",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Уа11а": {
+  "corrected": "Valla",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "РеаШгез": {
+  "corrected": "features",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Мос1е1": {
+  "corrected": "Model",
+  "entity_kind": null,
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.0,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "В18еазе": {
+  "corrected": "Disease",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ВюсЬеппса1": {
+  "corrected": "Biochemical",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "раПегНз": {
+  "corrected": "patients",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Ми11ег": {
+  "corrected": "Miller",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Мойе1": {
+  "corrected": "Model",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "а1.1шргоуеб": {
+  "corrected": "Improved",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ас1б": {
+  "corrected": "acid",
+  "entity_kind": null,
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.0,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "азутрФтабс": {
+  "corrected": "asymptomatic",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "зутр1от": {
+  "corrected": "symptom",
+  "entity_kind": null,
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.0,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ИзсЬег": {
+  "corrected": "Fischer",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "1дуег": {
+  "corrected": "Liver",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "1апззеп": {
+  "corrected": "Janssen",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Нерай>1": {
+  "corrected": "Hepatol",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "РгесИс": {
+  "corrected": "Predict",
+  "entity_kind": null,
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.0,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "асгс": {
+  "corrected": "acid",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Ройа": {
+  "corrected": "Porta",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "гашпа": {
+  "corrected": "trauma",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ОиМеИпе": {
+  "corrected": "Guideline",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "отеп": {
+  "corrected": "women",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "СиШеНпе": {
+  "corrected": "Guideline",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ОесетЬег2016": {
+  "corrected": "December",
+  "entity_kind": null,
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.0,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Ргеуетюп": {
+  "corrected": "Prevention",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ОиЮеНпе": {
+  "corrected": "Guideline",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "пеаг": {
+  "corrected": "near",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Тгеа1теп": {
+  "corrected": "Treatments",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ЗсЬпеЫег": {
+  "corrected": "Schneider",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ВеЯпШопз": {
+  "corrected": "Definitions",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ЬаЬог": {
+  "corrected": "Labor",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ис!у": {
+  "corrected": "Study",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "тГап": {
+  "corrected": "infant",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Реппа!ок": {
+  "corrected": "Perinatol",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "секз": {
+  "corrected": "cells",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "па!юпа1": {
+  "corrected": "national",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "акег": {
+  "corrected": "after",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "зескоп": {
+  "corrected": "section",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "киппд": {
+  "corrected": "during",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Мападтд": {
+  "corrected": "Managing",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "пиуог": {
+  "corrected": "major",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "1трНсакопз": {
+  "corrected": "implications",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Ве11": {
+  "corrected": "Bell",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "уоипс11пГес1": {
+  "corrected": "Infect",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "аззауз": {
+  "corrected": "assays",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "аисй": {
+  "corrected": "audit",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "РгеШсЙуе": {
+  "corrected": "Predictive",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Гтргоуе": {
+  "corrected": "Improve",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "оЬзГеГпс": {
+  "corrected": "“obstetric",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "зиррок": {
+  "corrected": "support",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ЕйШоп": {
+  "corrected": "Edition",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "сапй": {
+  "corrected": "Scand",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "зкоск": {
+  "corrected": "shock",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Етегдешпез": {
+  "corrected": "Emergencies",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "геУ1510п": {
+  "corrected": "revision",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "акгттз1:егек": {
+  "corrected": "administered",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "аЬзогрйоп": {
+  "corrected": "absorption",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Аикк": {
+  "corrected": "Audit",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "атопц": {
+  "corrected": "among",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "сокой": {
+  "corrected": "cohort",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "теппе": {
+  "corrected": "uterine",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Ро11о\\утд": {
+  "corrected": "Following",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Аззеззтд": {
+  "corrected": "Assessing",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "сгШса1": {
+  "corrected": "critical",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "сЬагде": {
+  "corrected": "charge",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Кеапе": {
+  "corrected": "Keane",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "МиШсИзспрНпагу": {
+  "corrected": "Multidisciplinary",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "бапзРизюпз": {
+  "corrected": "transfusions",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Маззгуе": {
+  "corrected": "Massive",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "теЛса1": {
+  "corrected": "medical",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "щигу": {
+  "corrected": "injury",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "сгШсаПу": {
+  "corrected": "critically",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "аийк": {
+  "corrected": "audit",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Нета1о1": {
+  "corrected": "Hematol",
+  "entity_kind": null,
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.0,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "оЬз!е!псз": {
+  "corrected": "obstetrics",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "афиуап": {
+  "corrected": "adjuvant",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "асгё": {
+  "corrected": "acid",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "МоНаШу": {
+  "corrected": "Mortality",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "сгЫса": {
+  "corrected": "critical",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Айуегзе": {
+  "corrected": "Adverse",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "оГоуег": {
+  "corrected": "over",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "НиЬег": {
+  "corrected": "Huber",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "гар!с1": {
+  "corrected": "rapid",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Уа!егз": {
+  "corrected": "Waters",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "сотрНсайпд": {
+  "corrected": "complicating",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "оЬзМпс": {
+  "corrected": "obstetric",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "иШуап": {
+  "corrected": "Sullivan",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ОЬз1:е1": {
+  "corrected": "Obstet",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "оуегае\\у": {
+  "corrected": "overview",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "оуепйе\\у": {
+  "corrected": "overview",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Сопзегуайуе": {
+  "corrected": "Conservative",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "сапск": {
+  "corrected": "Scand",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Коуе1": {
+  "corrected": "Novel",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "АррНсаГюп": {
+  "corrected": "Application",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "зГершзе": {
+  "corrected": "stepwise",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "1пГета1": {
+  "corrected": "Internal",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "аойа": {
+  "corrected": "aorta",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "есШог": {
+  "corrected": "editor",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Ргош": {
+  "corrected": "From",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "МесЬашса1": {
+  "corrected": "Mechanical",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "СгШсаПу": {
+  "corrected": "Critically",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Акикз": {
+  "corrected": "Adults",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ишшагу": {
+  "corrected": "Summary",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "РгорЬуксйс": {
+  "corrected": "Prophylactic",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "сЫЫЫйЬ": {
+  "corrected": "childbirth",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Ьерапп": {
+  "corrected": "heparin",
+  "entity_kind": null,
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.0,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "гетоуа1": {
+  "corrected": "removal",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "соип!пез": {
+  "corrected": "countries",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Ре!а1": {
+  "corrected": "Fetal",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "биппд": {
+  "corrected": "during",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "асШе": {
+  "corrected": "acute",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "т!егуепйопа1": {
+  "corrected": "interventional",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "оГГ1аЪе1": {
+  "corrected": "label",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Шегпабопа": {
+  "corrected": "International",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ЕазШп": {
+  "corrected": "Eastern",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "сгПепа": {
+  "corrected": "criteria",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "СгПепа": {
+  "corrected": "Criteria",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Слуу&ег": {
+  "corrected": "Gwyther",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Штоигз": {
+  "corrected": "tumours",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "геу!зед": {
+  "corrected": "revised",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "уешоп": {
+  "corrected": "version",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Метабола": {
+  "corrected": "International",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Гпёех": {
+  "corrected": "Index",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "1оо1": {
+  "corrected": "tool",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "аЬпбдес": {
+  "corrected": "abridged",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Сарпт": {
+  "corrected": "Caprini",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "учгиз": {
+  "corrected": "virus",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Мес11са1": {
+  "corrected": "Medical",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Мапиа1": {
+  "corrected": "Manual",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "СеШег": {
+  "corrected": "Center",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "На\\укег": {
+  "corrected": "Hawker",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ВобИу": {
+  "corrected": "Bodily",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "зеусге": {
+  "corrected": "severe",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ЗсЬгоебсг": {
+  "corrected": "Schroeder",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Амап": {
+  "corrected": "Asian",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Какона": {
+  "corrected": "National",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Сотргекетк'е": {
+  "corrected": "Comprehensive",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "КеПгогк": {
+  "corrected": "Network",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "йуег": {
+  "corrected": "liver",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "РоНа1": {
+  "corrected": "Portal",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Нурекепз10П": {
+  "corrected": "Hypertension",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "оезорЬадиз": {
+  "corrected": "oesophagus",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ГоЬпзоп": {
+  "corrected": "Johnson",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "РЫ1аке1рЫа": {
+  "corrected": "Philadelphia",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "з!аЫе": {
+  "corrected": "stable",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Нера1о12019": {
+  "corrected": "Hepatol",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "итоигз": {
+  "corrected": "tumours",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "МобШеб": {
+  "corrected": "Modified",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "уегз10п": {
+  "corrected": "version",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Мосййеё": {
+  "corrected": "Modified",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Рагйа1": {
+  "corrected": "Partial",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "гггиз": {
+  "corrected": "virus",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Агеа": {
+  "corrected": "Area",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Зеуеге": {
+  "corrected": "Severe",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ис1у": {
+  "corrected": "Study",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Роипбайоп": {
+  "corrected": "Foundation",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "8ос1е1у": {
+  "corrected": "Society",
+  "entity_kind": null,
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.0,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "1зеазе": {
+  "corrected": "Disease",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "РатПу": {
+  "corrected": "Family",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "асйуку": {
+  "corrected": "activity",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "соп!го11ез1": {
+  "corrected": "control",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ттипоёеЯ": {
+  "corrected": "immunodeficiency",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Нерайбз": {
+  "corrected": "Hepatitis",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Ратпагиз": {
+  "corrected": "Parvovirus",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Рагуоупиз": {
+  "corrected": "Parvovirus",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Кгаизе": {
+  "corrected": "Krause",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "асПуДу": {
+  "corrected": "activity",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "УаПёайоп": {
+  "corrected": "Validation",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Рег51$1еШ": {
+  "corrected": "Persistent",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "оЬасШт": {
+  "corrected": "Lactobacillus",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ухгиз": {
+  "corrected": "virus",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Пта1": {
+  "corrected": "trial",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "согез": {
+  "corrected": "Scores",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "АёиР": {
+  "corrected": "Adult",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ВеЙзезба": {
+  "corrected": "Bethesda",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ЛаззШсабоп": {
+  "corrected": "Classification",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Вейгезба": {
+  "corrected": "Bethesda",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "СкззШсайоп": {
+  "corrected": "Classification",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ВеЫезёа": {
+  "corrected": "Bethesda",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ВеШезёа": {
+  "corrected": "Bethesda",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ЛаззШсайоп": {
+  "corrected": "Classification",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "апбагб": {
+  "corrected": "Mandard",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Огдатгайоп": {
+  "corrected": "Organization",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "31а1из": {
+  "corrected": "Status",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "сЬешоШегареибс": {
+  "corrected": "chemotherapeutic",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Вобку": {
+  "corrected": "Bodily",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "1итоигз": {
+  "corrected": "tumours",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Ыитепс": {
+  "corrected": "Numeric",
+  "entity_kind": null,
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.0,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "егт1кеп": {
+  "corrected": "Intermittent",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Сопз1ап1": {
+  "corrected": "Constant",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "АйЬпбз": {
+  "corrected": "Arthritis",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "габпд": {
+  "corrected": "rating",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "зуз1е": {
+  "corrected": "system",
+  "entity_kind": null,
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.0,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Соой": {
+  "corrected": "Good",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "оттШ": {
+  "corrected": "Joint",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "СепЮгз": {
+  "corrected": "Centers",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "а$1Ьта": {
+  "corrected": "asthma",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Меуегз": {
+  "corrected": "Meyers",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "1пРесйоп": {
+  "corrected": "Infection",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Виск": {
+  "corrected": "Buck",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "РегШзз15": {
+  "corrected": "Pertussis",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Ребегзеп": {
+  "corrected": "Pedersen",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "оиЮотез": {
+  "corrected": "outcomes?",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "АйиЬз": {
+  "corrected": "Adults",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "геа1": {
+  "corrected": "real",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "8ап!оз": {
+  "corrected": "Santos",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "1п1егуепЬоп": {
+  "corrected": "Intervention",
+  "entity_kind": null,
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.0,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Райеп!з": {
+  "corrected": "Patients",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "из!п": {
+  "corrected": "Using",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ои!сотез": {
+  "corrected": "outcomes",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "81тр1е": {
+  "corrected": "simple",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "есЬп^^ие": {
+  "corrected": "technique",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "1шрас": {
+  "corrected": "Impact",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Аз!Ьша": {
+  "corrected": "Asthma",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "МесИсте": {
+  "corrected": "Medicine",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "На11": {
+  "corrected": "Hall",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Апа1у315": {
+  "corrected": "Analysis",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Ногуакг": {
+  "corrected": "Horvath",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "акикз": {
+  "corrected": "adults",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Макзап": {
+  "corrected": "Nathan",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Тезк": {
+  "corrected": "Test",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Апкгезу": {
+  "corrected": "Andrew",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "сопкок": {
+  "corrected": "control",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "АзСбта": {
+  "corrected": "Asthma",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "рек!а!пс": {
+  "corrected": "pediatric",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "сопПоПес": {
+  "corrected": "controlled",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "уегу": {
+  "corrected": "very",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "азйнпа": {
+  "corrected": "asthma",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Рапе1": {
+  "corrected": "Panel",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "диЫеНпез": {
+  "corrected": "guidelines",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "азЙгта": {
+  "corrected": "asthma",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ГасЮгз": {
+  "corrected": "factors",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "азОнпа": {
+  "corrected": "asthma",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "азШгпа": {
+  "corrected": "asthma",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "НидЬез": {
+  "corrected": "Hughes",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "сгЬепа": {
+  "corrected": "criteria",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "8уз!епнс": {
+  "corrected": "Systemic",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "УогЫ": {
+  "corrected": "World",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Магйп": {
+  "corrected": "Martin",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Ооос": {
+  "corrected": "Good",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "азЫта": {
+  "corrected": "asthma",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ЕзорЬадеа1": {
+  "corrected": "Esophageal",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "гапЯогшгес": {
+  "corrected": "randomized",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ОеЯшЯоп": {
+  "corrected": "Definition",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "РесНаСпсз": {
+  "corrected": "Pediatrics",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Те8": {
+  "corrected": "Test",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "1о11о\\уес1": {
+  "corrected": "followed",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Тев1": {
+  "corrected": "Test",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "КоЬег": {
+  "corrected": "Robert",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "уаНйаНоп": {
+  "corrected": "validation",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "циеМюппаше": {
+  "corrected": "questionnaire",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Кеврпч": {
+  "corrected": "Respir",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Иа1г1С8": {
+  "corrected": "Pediatrics",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "1пШайуе": {
+  "corrected": "Initiative",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ГпШайуе": {
+  "corrected": "Initiative",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "СгЬепа": {
+  "corrected": "Criteria",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ВеЙгезба": {
+  "corrected": "Bethesda",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "В1апсЫ": {
+  "corrected": "Bianchi",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Вебгезба": {
+  "corrected": "Bethesda",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "уа!ие": {
+  "corrected": "value",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "8еуа1": {
+  "corrected": "Segal",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "РгепсЬ": {
+  "corrected": "French",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Тшпог": {
+  "corrected": "Tumors",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ВосШу": {
+  "corrected": "Bodily",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Агйтйз": {
+  "corrected": "Arthritis",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Вораейз": {
+  "corrected": "Bogaerts",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Оапсеу": {
+  "corrected": "Dancey",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "АгЬиск": {
+  "corrected": "Arbuck",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "0\\уу{Ьег": {
+  "corrected": "Gwyther",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "МогЫ": {
+  "corrected": "World",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "8ециепйа1": {
+  "corrected": "Sequential",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "РаПиге": {
+  "corrected": "Failure",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "цшск": {
+  "corrected": "quick",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "РиЬтес": {
+  "corrected": "Pubmed",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "1аг§е": {
+  "corrected": "“large",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "81ои1": {
+  "corrected": "Stout",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "сгНепа": {
+  "corrected": "criteria",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "сиг.а": {
+  "corrected": "cure",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Океп": {
+  "corrected": "Oken",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Тогтеу": {
+  "corrected": "Tormey",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "сгИепа": {
+  "corrected": "criteria",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Еа$1ет": {
+  "corrected": "Eastern",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Ма1щпапсу": {
+  "corrected": "Malignancy",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "иррогй\\е": {
+  "corrected": "supportive",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Соос1": {
+  "corrected": "Good",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ЕазЮт": {
+  "corrected": "Eastern",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Хишоигз": {
+  "corrected": "tumours",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "итепс": {
+  "corrected": "Numeric",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "8ЬохТ": {
+  "corrected": "Short",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ВобПу": {
+  "corrected": "Bodily",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "АхТЬгШз": {
+  "corrected": "Arthritis",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "а1с18": {
+  "corrected": "aids",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "бгиез": {
+  "corrected": "drugs",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "йштог": {
+  "corrected": "tumor",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "спХепа": {
+  "corrected": "criteria",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Цшоп": {
+  "corrected": "Union",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "1ехе1": {
+  "corrected": "level",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ШгкЛет": {
+  "corrected": "tandem",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ругайе": {
+  "corrected": "grade",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Цщуегзйу": {
+  "corrected": "University",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Тшпогз": {
+  "corrected": "Tumors",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "8оН<1": {
+  "corrected": "Solid",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "У1МАТ": {
+  "corrected": "ViMAT",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "са1е": {
+  "corrected": "scale",
+  "entity_kind": null,
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.0,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "т^иепгае": {
+  "corrected": "influenzae",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ри1топа1е": {
+  "corrected": "pulmonale",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "1еуе1": {
+  "corrected": "level",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "УаПсШу": {
+  "corrected": "Validity",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "райеп18": {
+  "corrected": "patients",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "оЬзЛисйуе": {
+  "corrected": "obstructive",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Аидиз1": {
+  "corrected": "August",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "1'гот": {
+  "corrected": "from",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "уо1ите": {
+  "corrected": "volume",
+  "entity_kind": null,
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.0,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Сотппйее": {
+  "corrected": "Committee",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "тёисеё": {
+  "corrected": "induced",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Сотетт": {
+  "corrected": "Consensus",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "1а1из": {
+  "corrected": "Status",
+  "entity_kind": null,
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.0,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Тохшку": {
+  "corrected": "Toxicity",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "УаНбайоп": {
+  "corrected": "Validation",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Оепа1г": {
+  "corrected": "Geriatr",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Киз^ап": {
+  "corrected": "Russian",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Ребегабоп": {
+  "corrected": "Federation",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "тобек": {
+  "corrected": "model",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Кшзег": {
+  "corrected": "Kaiser",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Уе11аз": {
+  "corrected": "Vellas",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ргасбса11оо1": {
+  "corrected": "practical",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Мепййсабоп": {
+  "corrected": "identification",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "КеЬаЫ": {
+  "corrected": "Rehabil",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "МсНидЬ": {
+  "corrected": "McHugh",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "теп1а1": {
+  "corrected": "state",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "сНтмап": {
+  "corrected": "clinician",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Бергеззюп": {
+  "corrected": "Depression",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Вппк": {
+  "corrected": "Brink",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "уаЫайоп": {
+  "corrected": "validation",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Зрйгег": {
+  "corrected": "Spitzer",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Зиезйоппапе": {
+  "corrected": "Questionnaire",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ЗйкЗу": {
+  "corrected": "Study",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ргеНттагу": {
+  "corrected": "preliminary",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Вю1": {
+  "corrected": "Biol",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ОаИадЬег": {
+  "corrected": "Gallagher",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "БеуеЬртеп": {
+  "corrected": "Development",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "райепк": {
+  "corrected": "patient",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "МеЛюб": {
+  "corrected": "Method",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "КлсЬтопс": {
+  "corrected": "Richmond",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ШсЬтопй": {
+  "corrected": "Richmond",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "АсЬуШез": {
+  "corrected": "Activities",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ОаПу": {
+  "corrected": "Daily",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "оГёаИу": {
+  "corrected": "daily",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Рипсбопа1": {
+  "corrected": "Functional",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "еуаЬабоп": {
+  "corrected": "evaluation",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Зеуегйу": {
+  "corrected": "Severity",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "1пбех": {
+  "corrected": "Index",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "81еер": {
+  "corrected": "Sleep",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Могта": {
+  "corrected": "Normal",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Вазю": {
+  "corrected": "Basic",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "СПтса1": {
+  "corrected": "Clinical",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "8ес!юп": {
+  "corrected": "Section",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "УпдЬ1": {
+  "corrected": "Wright",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "райет": {
+  "corrected": "pattern",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "дшНеНпез": {
+  "corrected": "guidelines",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "01адпо515": {
+  "corrected": "Diagnosis",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "МеШоНз": {
+  "corrected": "Methods",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "дшНапсе": {
+  "corrected": "guidance",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Шкес": {
+  "corrected": "United",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "8шПу": {
+  "corrected": "Study",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "сЬапдез": {
+  "corrected": "changes",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "11.К1ет": {
+  "corrected": "Klein",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Ьагде": {
+  "corrected": "Large-",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Зарапезе": {
+  "corrected": "Japanese",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Нззие": {
+  "corrected": "tissue",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "УаНбабоп": {
+  "corrected": "Validation",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ргесНсиуе": {
+  "corrected": "predictive",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "БауМ": {
+  "corrected": "David",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ВасГепа": {
+  "corrected": "Bacterial",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Уна1": {
+  "corrected": "Viral",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "б^зеазе": {
+  "corrected": "disease",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "РесИаЦ": {
+  "corrected": "//Pediatr",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Кароог": {
+  "corrected": "Kapoor",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Еуапз": {
+  "corrected": "Evans",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "иаШу": {
+  "corrected": "Quality",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "йтсйоп//1": {
+  "corrected": "function",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Оата^е": {
+  "corrected": "Damage",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "теШоб": {
+  "corrected": "method",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Ьзйех": {
+  "corrected": "Index",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "1ошпа1": {
+  "corrected": "Journal",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "8соге": {
+  "corrected": "Score",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "теазше": {
+  "corrected": "measure",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "БГго1": {
+  "corrected": "Urol",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "8тИЬ": {
+  "corrected": "Smith",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Метайопа": {
+  "corrected": "International",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "1оита1": {
+  "corrected": "Journal",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "реМиззй": {
+  "corrected": "pertussis",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Со11е§е": {
+  "corrected": "College",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Б.рпеитот'ае": {
+  "corrected": "pneumoniae",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "СЬе$1": {
+  "corrected": "Chest",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ОеЛшЛоп": {
+  "corrected": "Definition",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "С1аз$1Лса": {
+  "corrected": "Classification",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ОеЛшйоп": {
+  "corrected": "Definition",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "АргП": {
+  "corrected": "April",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Мийу": {
+  "corrected": "Study",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Ске$1": {
+  "corrected": "Chest",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "опез": {
+  "corrected": "Jones",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Мезк": {
+  "corrected": "Mesh",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "шшшпойеЯаепсу": {
+  "corrected": "immunodeficiency",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Ке11": {
+  "corrected": "Kell",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "БиДу": {
+  "corrected": "Duffy",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ттипобеПшепсу": {
+  "corrected": "immunodeficiency",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ЗТЯОМОШз": {
+  "corrected": "STRONGkids",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "РгорютЪааепит": {
+  "corrected": "Propionibacterium",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Орегайуе": {
+  "corrected": "Operative",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "зиЬзр": {
+  "corrected": "subsp",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "1асИ": {
+  "corrected": "lactis",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "епШу": {
+  "corrected": "entity",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ВгасИеу": {
+  "corrected": "Bradley",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ирс!а!е": {
+  "corrected": "update",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Вхзеазез": {
+  "corrected": "Diseases",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "К.оуа1": {
+  "corrected": "Royal",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ОихНеНпез": {
+  "corrected": "Guidelines",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ОиЫеНпе": {
+  "corrected": "Guideline",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "РеЫс": {
+  "corrected": "Pelvic",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Иа^позхз": {
+  "corrected": "diagnosis",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "0!зеазез": {
+  "corrected": "Diseases",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "диМеПпез": {
+  "corrected": "guidelines",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ГпРесНопз": {
+  "corrected": "Infections",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Уотеп": {
+  "corrected": "women",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "РеМс": {
+  "corrected": "Pelvic",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "1гас1": {
+  "corrected": "tract",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ОЬз1е": {
+  "corrected": "Obstet",
+  "entity_kind": null,
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.0,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "РаеФаПчс": {
+  "corrected": "Paediatric",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Нопа1": {
+  "corrected": "National",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Аёикз": {
+  "corrected": "Adults",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Айлуау": {
+  "corrected": "Airway",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ОиМеПпез": {
+  "corrected": "Guidelines",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Анлуау": {
+  "corrected": "Airway",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ОиИеИпез": {
+  "corrected": "Guidelines",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Ъиг%с1ог": {
+  "corrected": "burgdorferi",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "51цтйсапсе": {
+  "corrected": "significance",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "саппн": {
+  "corrected": "carinii",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Оузйтсбоп": {
+  "corrected": "Dysfunction",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Оепзйу": {
+  "corrected": "Density",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "рго^геззюп": {
+  "corrected": "progression",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Асйуйу": {
+  "corrected": "Activity",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "р1Ьгоз18": {
+  "corrected": "Fibrosis-4",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Р1а1е1е1": {
+  "corrected": "Platelet",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Гпбех": {
+  "corrected": "Index",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "йЬгоз13": {
+  "corrected": "fibrosis",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "асНуку": {
+  "corrected": "activity",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Рго1ет": {
+  "corrected": "Protein",
+  "entity_kind": null,
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.0,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Оеуе1оршеп1": {
+  "corrected": "Development",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ргесйс": {
+  "corrected": "predict",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ЯЬгоз131п": {
+  "corrected": "fibrosis",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Сгозз": {
+  "corrected": "Gross",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "МеазигешеШ": {
+  "corrected": "Measurement",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "МеШса": {
+  "corrected": "Medical",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "5Ьог1": {
+  "corrected": "Short",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Ошсотез": {
+  "corrected": "Outcomes",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "РиНкег": {
+  "corrected": "Further",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ш!к": {
+  "corrected": "with",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Е1еуа": {
+  "corrected": "Elevated",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Атощ": {
+  "corrected": "Among",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Ке^Ыгу": {
+  "corrected": "Registry",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "тоёе": {
+  "corrected": "model",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ргесПсбоп": {
+  "corrected": "prediction",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "оита1": {
+  "corrected": "journal",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "5учто!к": {
+  "corrected": "Systolic",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Ыосх": {
+  "corrected": "blood",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Нозрйа": {
+  "corrected": "Hospital",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "езбта1:е": {
+  "corrected": "estimate",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Шкпоып": {
+  "corrected": "Unknown",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "райега": {
+  "corrected": "pattern",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "з^шсШге": {
+  "corrected": "structure",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "раПет": {
+  "corrected": "pattern",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "сНзеазез": {
+  "corrected": "diseases",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "тог^апН": {
+  "corrected": "morganii",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Вгоуга": {
+  "corrected": "Brown",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "аёикз": {
+  "corrected": "adults",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "СШиса1": {
+  "corrected": "Clinical",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Кезр1г": {
+  "corrected": "Respir",
+  "entity_kind": null,
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.0,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Оиезйоппане": {
+  "corrected": "Questionnaire",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Ватез": {
+  "corrected": "Barnes",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "МесКса": {
+  "corrected": "Medical",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "СоттШ": {
+  "corrected": "Committee",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "зуз^еш": {
+  "corrected": "system",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Ер$1ет": {
+  "corrected": "Epstein",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Рйкм": {
+  "corrected": "Pulmonary",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "тазз": {
+  "corrected": "mass",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "чгиз": {
+  "corrected": "virus",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "1атЪИа": {
+  "corrected": "lamblia",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "гттипоВефсгепсу": {
+  "corrected": "immunodeficiency",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "сгёепа": {
+  "corrected": "criteria",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ёезщп": {
+  "corrected": "design",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Кеёисеё": {
+  "corrected": "Reduced",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "1пЫЫюгз": {
+  "corrected": "inhibitors",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "тёисед": {
+  "corrected": "induced",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Ргеуепй": {
+  "corrected": "Prevents",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Рйазе": {
+  "corrected": "Phase",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "1трйсайопз": {
+  "corrected": "Implications",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Яапйопнгей": {
+  "corrected": "Randomized",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Тпа1": {
+  "corrected": "Trial",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Шзогйегз": {
+  "corrected": "disorders",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "РаПет": {
+  "corrected": "Pattern",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "зигуеу": {
+  "corrected": "survey",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "РзусЫайгс": {
+  "corrected": "Psychiatric",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Оооё": {
+  "corrected": "Good",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "1пёех": {
+  "corrected": "Index",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ёепзйу": {
+  "corrected": "density",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ВасЬтапп": {
+  "corrected": "Bachmann",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Аскйезсетз": {
+  "corrected": "Adolescents",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "РесИайгс": {
+  "corrected": "Pediatric",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ех1еп<1е": {
+  "corrected": "extended",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "1о1езсепсе": {
+  "corrected": "adolescence",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "1оп!цтбта": {
+  "corrected": "longitudinal",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "зтбу": {
+  "corrected": "study",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ге\\ле\\у": {
+  "corrected": "review",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Лопез": {
+  "corrected": "Jones",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "а!рЬа": {
+  "corrected": "alpha",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "р!из": {
+  "corrected": "plus",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ёоита": {
+  "corrected": "Journal",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "йпйоп": {
+  "corrected": "Nutrition",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ёоигпа1": {
+  "corrected": "Journal",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "еДес1": {
+  "corrected": "effect",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "хИго": {
+  "corrected": "vitro",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ейес1": {
+  "corrected": "effect",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "усор!аш": {
+  "corrected": "Mycoplasma",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "8Ьог": {
+  "corrected": "Short",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Гогш": {
+  "corrected": "Form",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Оиезйогтапе": {
+  "corrected": "Questionnaire",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Рогш": {
+  "corrected": "Form",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "УаНбаПоп": {
+  "corrected": "Validation",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "КеЕуогк": {
+  "corrected": "Network",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ОеуеЬргпеп": {
+  "corrected": "Development",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Ра'т": {
+  "corrected": "Pain",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "РпеитосувНвргомеси": {
+  "corrected": "Pneumocystis",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ЕасЬотайз": {
+  "corrected": "trachomatis",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "1урез": {
+  "corrected": "types",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "РаИеп": {
+  "corrected": "Patient",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ргеШсбуе": {
+  "corrected": "predictive",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ОрЬЙ1а1то1": {
+  "corrected": "Ophthalmol",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Шзоп": {
+  "corrected": "Nelson",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ёатауе": {
+  "corrected": "damage",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "роз!епог": {
+  "corrected": "posterior",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Найопа1": {
+  "corrected": "National",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "11рс1а1е": {
+  "corrected": "Update",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "шапа^ешеп": {
+  "corrected": "management",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "апа1уз18": {
+  "corrected": "analysis,’",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ЗиШуап": {
+  "corrected": "Sullivan",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "зепез": {
+  "corrected": "series",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Осск": {
+  "corrected": "Dick",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "егеае": {
+  "corrected": "treat",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "регзресе1уе,”.1оита1": {
+  "corrected": "perspective,’",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "депейс": {
+  "corrected": "genetic",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ОрМт1то1": {
+  "corrected": "Ophthalmol",
+  "entity_kind": null,
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.0,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Сйагасеепзйсз": {
+  "corrected": "Characteristics",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "АррНсакопз": {
+  "corrected": "Applications",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Кап^е": {
+  "corrected": "Range",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Ргее": {
+  "corrected": "free",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "01оЬа1": {
+  "corrected": "Global",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "сгШсаНу": {
+  "corrected": "critically",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "геГгас1:огу": {
+  "corrected": "refractory",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "асбуе": {
+  "corrected": "active",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "ОпЬор": {
+  "corrected": "Orthop",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ },
+ "Зерз18": {
+  "corrected": "Sepsis",
+  "entity_kind": "term",
+  "provenance": "step2_vlm_ocr",
+  "confidence": 0.9,
+  "source": "step2_auto",
+  "note": "gate:auto+dict occ==1"
+ }
+}
