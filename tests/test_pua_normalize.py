@@ -49,8 +49,12 @@ def test_pua_fix_noop_on_clean():
 @pytest.mark.skipif(not (os.path.isfile(TESS) and os.path.isfile(KR153)),
                     reason="нет Tesseract/КР153_2.pdf — интеграция требует OCR")
 def test_engine_pua_pass_provenance():
-    """Перепарс КР153_2 (E12C/E46F — E-block вне Symbol): движок оставляет символ И пишет
-    needs_review-провенанс pua_normalize (не дропает молча). I30: тест исполняет путь."""
+    """Перепарс КР153_2 (E12C/E46F — E-block вне Symbol): символ НЕ ДРОПАЕТСЯ МОЛЧА.
+
+    С задачи 2 (2026-07-28) у кодпоинта вне таблицы Symbol два законных исхода, и оба
+    с провенансом: решён ПО СЕМЕЙСТВУ ШРИФТА (`rule=font:<семейство>`, decision=auto —
+    КР153_2 рисует E12C/E46F шрифтом OpenSymbol, это `●`/`■`) либо остался в тексте
+    как needs_review. Запрещён ровно третий исход — исчезнуть без записи."""
     os.environ["TESSERACT_CMD"] = TESS
     os.environ["TESSDATA_PREFIX"] = TESSDATA
     os.environ["CR_PUA_NORMALIZE"] = "1"
@@ -66,9 +70,15 @@ def test_engine_pua_pass_provenance():
         mp.undo()
     pua = [c for c in res.latin_recovery if c.get("source") == "pua_normalize"]
     assert pua, "нет pua_normalize провенанса — PUA-проход не исполнился"
-    unresolved = [c for c in pua if c.get("decision") == "needs_review"]
-    assert any(c["source_text"] == "U+E12C" for c in unresolved), (
-        "U+E12C (вне Symbol) должен быть needs_review, а не дропнут молча")
+    e12c = [c for c in pua if c["source_text"] == "U+E12C"]
+    assert e12c, "U+E12C (вне Symbol) исчез без провенанса — дропнут молча"
+    for c in e12c:
+        if c["decision"] == "auto":
+            assert c["rule"].startswith("font:"), (
+                "auto-разрешение вне таблицы Symbol обязано быть по шрифту: %s" % c)
+            assert c["resolved_text"] == "●", c        # OpenSymbol: маркер-круг
+        else:
+            assert c["decision"] == "needs_review" and c["resolved_text"] is None, c
     for c in pua:
         if c.get("decision") == "auto":
             assert c.get("resolved_text") and len(c["resolved_text"]) == 1

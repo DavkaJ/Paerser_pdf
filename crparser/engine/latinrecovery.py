@@ -872,30 +872,31 @@ class LatinRecoverer:
         if _pua_enabled():
             self._pua_normalize_all(sections, tables, excluded, metadata)
 
-    def _pua_normalize_all(self, sections, tables, excluded, metadata) -> None:
-        """Заменить PUA-глифы (U+E000..U+F8FF) на Unicode по таблице Adobe Symbol во ВСЕХ
-        текстовых полях. Провенанс АГРЕГИРОВАННЫЙ (одна запись на кодпоинт): source=pua_normalize,
-        decision=auto для покрытых, needs_review для непокрытых (символ остаётся в тексте)."""
+    def _pua_walk_all(self, sections, tables, excluded, metadata, fix):
+        """Пройти ВСЕ текстовые поля обучаемой зоны + excluded/metadata и применить
+        `fix(str) -> (новая_строка, Counter покрытых, Counter непокрытых)`.
+        Возвращает агрегированные (cov, unc)."""
         from collections import Counter
         cov, unc = Counter(), Counter()
+
+        def conv(v):
+            nv, c, u = fix(v)
+            cov.update(c); unc.update(u)
+            return nv
 
         def fix_attr(obj, attr):
             v = getattr(obj, attr, None)
             if isinstance(v, str) and v:
-                nv, c, u = _pua_fix(v)
-                if c or u:
-                    cov.update(c); unc.update(u)
-                    if nv != v:
-                        setattr(obj, attr, nv)
+                nv = conv(v)
+                if nv != v:
+                    setattr(obj, attr, nv)
 
         def fix_dictkey(dct, key):
             v = dct.get(key)
             if isinstance(v, str) and v:
-                nv, c, u = _pua_fix(v)
-                if c or u:
-                    cov.update(c); unc.update(u)
-                    if nv != v:
-                        dct[key] = nv
+                nv = conv(v)
+                if nv != v:
+                    dct[key] = nv
 
         def walk_json(o):
             """Рекурсивно чинить строки в dict/list И в объектах-элементах регионов.
@@ -913,9 +914,8 @@ class LatinRecoverer:
             elif isinstance(o, list):
                 for i, v in enumerate(o):
                     if isinstance(v, str):
-                        nv, c, u = _pua_fix(v)
-                        if c or u:
-                            cov.update(c); unc.update(u)
+                        if v:
+                            nv = conv(v)
                             if nv != v:
                                 o[i] = nv
                     else:
@@ -932,6 +932,99 @@ class LatinRecoverer:
         walk_json(excluded)
         if isinstance(metadata, dict):
             fix_dictkey(metadata, "title")
+        return cov, unc
+
+    def _font_family_of(self, xref: int) -> str:
+        """СЕМЕЙСТВО шрифта по его xref. Имя берём из ВСТРОЕННОГО файла: subset-имена
+        вида `CIDFont+F10` семейства не несут, а внутри лежит настоящее `Wingdings`
+        (замер: 6 документов корпуса рисуют `✓` именно такими безымянными сабсетами)."""
+        if not hasattr(self, "_fam_cache"):
+            self._fam_cache: Dict[int, str] = {}
+        if xref in self._fam_cache:
+            return self._fam_cache[xref]
+        from crparser.engine.pua_symbol import font_family
+        name = ""
+        try:
+            import fitz  # noqa
+            buf = self._ensure_doc().extract_font(xref)[3]
+            if buf:
+                name = fitz.Font(fontbuffer=buf).name or ""
+        except Exception:  # noqa: BLE001
+            name = ""
+        fam = font_family(name)
+        self._fam_cache[xref] = fam
+        return fam
+
+    def _pua_font_remap(self, cps: set):
+        """Кодпоинт -> (семейство, символ, notdef?) для PUA вне таблицы Symbol,
+        которые ОДНОЗНАЧНО разрешаются по шрифту документа.
+
+        ПОЧЕМУ ПО ШРИФТУ, А НЕ ПО КОДПОИНТУ: один и тот же U+F0EA — это `⬇` в
+        Wingdings (КР954_1, таблица лабораторных сдвигов) и `★` в Wingdings 2
+        (КР661_2, маркер сноски). Кодпоинтный ремап превратил бы звезду в стрелку.
+
+        ГЕЙТ НЕОДНОЗНАЧНОСТИ: если ВНУТРИ ОДНОГО документа кодпоинт нарисован
+        РАЗНЫМИ семействами (КР660_2 держит оба случая U+F0EA), обоснования нет ->
+        кодпоинт не трогаем, он остаётся `needs_review`."""
+        from crparser.engine.pua_symbol import font_family, font_pua_char
+        fams: Dict[int, set] = {}
+        gids: Dict[int, set] = {}
+        try:
+            doc = self._ensure_doc()
+            for pno in range(len(doc)):
+                page = doc[pno]
+                pf: Dict[str, list] = {}
+                for f in page.get_fonts(full=True):
+                    pf.setdefault(f[3].split("+")[-1], []).append(f[0])
+                for span in page.get_texttrace():
+                    hit = [c for c in span["chars"] if c[0] in cps]
+                    if not hit:
+                        continue
+                    fam = {self._font_family_of(x)
+                           for x in pf.get(span["font"].split("+")[-1], [])}
+                    fam.discard("")
+                    if not fam:                       # шрифт не извлёкся -> имя из спана
+                        fam = {font_family(span["font"])}
+                    for c in hit:
+                        fams.setdefault(c[0], set()).update(fam)
+                        gids.setdefault(c[0], set()).add(c[1])
+        except Exception:  # noqa: BLE001
+            return {}
+        out = {}
+        for cp, fs in fams.items():
+            if len(fs) != 1:
+                continue                              # два семейства -> не обосновано
+            fam = next(iter(fs))
+            ch = font_pua_char(fam, cp)
+            if ch:
+                out[cp] = (fam, ch, gids.get(cp) == {0})
+        return out
+
+    def _pua_normalize_all(self, sections, tables, excluded, metadata) -> None:
+        """Заменить PUA-глифы (U+E000..U+F8FF) на Unicode: сперва по таблице Adobe
+        Symbol, затем — остаток — по СЕМЕЙСТВУ ШРИФТА, которым глиф нарисован.
+        Провенанс АГРЕГИРОВАННЫЙ (одна запись на кодпоинт): source=pua_normalize,
+        decision=auto для разрешённых, needs_review для остальных (символ ОСТАЁТСЯ
+        в тексте — молча не дропаем)."""
+        from collections import Counter
+        cov, unc = self._pua_walk_all(sections, tables, excluded, metadata, _pua_fix)
+        # второй проход: PUA вне таблицы Symbol -> по шрифту (Wingdings/OpenSymbol/…)
+        fcov: Counter = Counter()
+        remap = self._pua_font_remap(set(unc)) if unc else {}
+        if remap:
+            def fix_font(s):
+                if not any(ord(c) in remap for c in s):
+                    return s, Counter(), Counter()
+                out = []
+                for ch in s:
+                    r = remap.get(ord(ch))
+                    if r is None:
+                        out.append(ch)
+                    else:
+                        out.append(r[1]); fcov[ord(ch)] += 1
+                return "".join(out), Counter(), Counter()
+            self._pua_walk_all(sections, tables, excluded, metadata, fix_font)
+            unc = Counter({o: n for o, n in unc.items() if o not in fcov})
         # провенанс: одна запись на кодпоинт
         from crparser.engine.pua_symbol import symbol_char
         for o, n in sorted(cov.items()):
@@ -940,6 +1033,18 @@ class LatinRecoverer:
                    "entity_kind": "symbol", "is_critical": False, "decision": "auto",
                    "why_suspect": ["pua_glyph"], "source": "pua_normalize",
                    "applied": True, "occurrences": n}
+            self.prov.append(rec)
+        for o, n in sorted(fcov.items()):
+            fam, ch, notdef = remap[o]
+            # `notdef_box`: в содержимом PDF стоит glyph id 0 (.notdef), чей контур
+            # нарисован пустой рамкой. Символа-источника нет — отображаем НАРИСОВАННОЕ,
+            # и помечаем это отдельным правилом, чтобы решение было видно в аудите.
+            rec = {"source_text": "U+%04X" % o, "resolved_text": ch,
+                   "method": "pua_normalize",
+                   "rule": "font:%s%s" % (fam, "+notdef_box" if notdef else ""),
+                   "confidence": 1.0, "entity_kind": "symbol", "is_critical": False,
+                   "decision": "auto", "why_suspect": ["pua_glyph", "outside_symbol_table"],
+                   "source": "pua_normalize", "applied": True, "occurrences": n}
             self.prov.append(rec)
         for o, n in sorted(unc.items()):
             rec = {"source_text": "U+%04X" % o, "resolved_text": None,

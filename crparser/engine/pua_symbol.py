@@ -52,3 +52,72 @@ def symbol_char(codepoint: int):
     if 0xF000 <= codepoint <= 0xF0FF:
         return SYMBOL.get(codepoint - 0xF000)
     return None
+
+
+# ======================= PUA ВНЕ ТАБЛИЦЫ SYMBOL: ПО СЕМЕЙСТВУ ШРИФТА =========
+# Остаток после Adobe Symbol — 1 579 глифов в 47 док., 8 кодпоинтов. Разрешить их
+# кодпоинтом НЕЛЬЗЯ: один и тот же U+F0EA — это `⬇` в Wingdings (КР954_1, таблица
+# лабораторных сдвигов) и `★` в Wingdings 2 (КР661_2, маркер сноски). Ключ —
+# СЕМЕЙСТВО ШРИФТА, которым глиф нарисован.
+#
+# ПРИНЦИП ОДИН НА ВСЕ КОДПОИНТЫ: кодпоинт отображается в тот символ Unicode,
+# который ИЗОБРАЖАЕТ НАРИСОВАННЫЙ КОНТУР. Каждая строка ниже получена рендером
+# глифа из реального PDF (см. `_corpus/_pua_font_remap.md`), а не догадкой по имени.
+#
+# ОГОВОРКА про Symbol 0x7F/0x86: в содержимом PDF там ссылка на glyph id 0 —
+# .notdef встроенного SymbolMT, чей контур нарисован ПУСТЫМ ПРЯМОУГОЛЬНИКОМ. То
+# есть исходный символ в источнике не определён, но на странице ДЕТЕРМИНИРОВАННО
+# видна пустая рамка, и стоит она в ячейках рейтинга анкет (HAQ, Oswestry).
+# Отображение `☐` воспроизводит нарисованное, а не «восстанавливает» неизвестный
+# символ — провенанс помечен отдельным правилом `notdef_box`, чтобы решение было
+# видно в аудите и обратимо.
+FONT_PUA = {
+    # Wingdings: 0xE9/0xEA — толстые стрелки (лабораторные сдвиги `⬆MCV`),
+    # 0xFC — «птичка», в корпусе служит маркером списка (контур — именно галка).
+    "wingdings": {0xF0E9: "⬆", 0xF0EA: "⬇", 0xF0FC: "✓"},
+    # Wingdings 2 — ДРУГОЙ набор глифов: 0xEA здесь звезда-сноска.
+    "wingdings 2": {0xF0EA: "★"},
+    # OpenSymbol (LibreOffice): маркеры списка — круг и квадрат.
+    "opensymbol": {0xE12C: "●", 0xE46F: "■"},
+    # Symbol/SymbolMT: 0x7F/0x86 — пустая рамка (.notdef, см. оговорку выше);
+    # 0xBE — `arrowhorizex`, ГОРИЗОНТАЛЬНАЯ ЧЕРТА (кусок длинной стрелки). Своего
+    # Unicode у неё нет (Adobe кладёт её в собственную PUA U+F8E7), а в тексте она
+    # стоит маркером перечисления — тире и по форме, и по роли.
+    "symbol": {0xF07F: "☐", 0xF086: "☐", 0xF0BE: "—"},
+}
+
+# Стилевые слова, не относящиеся к семейству.
+_STYLE_WORDS = frozenset({
+    "regular", "bold", "italic", "oblique", "bolditalic", "book", "medium",
+    "light", "semibold", "condensed", "normal"})
+
+
+def font_family(name: str) -> str:
+    """Имя шрифта -> нормализованное СЕМЕЙСТВО (ключ `FONT_PUA`).
+
+    `ABCDEF+Wingdings-Regular` -> `wingdings`; `Wingdings 2 Regular` ->
+    `wingdings 2` (цифра — часть семейства, наборы глифов разные!);
+    `SymbolMT` -> `symbol`; `CIDFont+F10` -> `cidfont` (не в таблице -> без правила).
+    """
+    import re
+    # subset-префикс по спецификации PDF — РОВНО шесть заглавных букв и `+`
+    # (`AAAAAM+SymbolMT`). `CIDFont+F10` под неё не подходит и остаётся целиком.
+    n = re.sub(r"^[A-Z]{6}\+", "", name or "")
+    n = re.sub(r"[-_,+]+", " ", n).strip().lower()
+    n = re.sub(r"\s+", " ", n)
+    words = [w for w in n.split(" ") if w and w not in _STYLE_WORDS]
+    if not words:
+        return ""
+    head = words[0]
+    if head.endswith("psmt"):
+        head = head[:-4]
+    elif head.endswith("mt"):
+        head = head[:-2]
+    if len(words) > 1 and words[1].isdigit():
+        head = head + " " + words[1]
+    return head
+
+
+def font_pua_char(family: str, codepoint: int):
+    """Символ по (СЕМЕЙСТВО, кодпоинт) или None, если правила нет."""
+    return (FONT_PUA.get(family) or {}).get(codepoint)
