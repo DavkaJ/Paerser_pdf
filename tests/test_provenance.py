@@ -40,14 +40,17 @@ def _strip_table(t):
 
 def strip_new_fields(doc):
     """Убрать поля 08 (section_id/page/bbox/span_uids, claimed_span_uids/source,
-    excluded.span_uids), блок provenance и новые provenance-warnings."""
+    excluded.span_uids), блок provenance, новые provenance-warnings и более поздние
+    аддитивные счётчики (stats.corruption.control_chars)."""
+    stats = json.loads(json.dumps(doc["stats"], ensure_ascii=False))
+    (stats.get("corruption") or {}).pop("control_chars", None)
     return {
         "metadata": doc["metadata"],
         "sections": [_strip_section(s) for s in doc["sections"]],
         "tables": [_strip_table(t) for t in doc["tables"]],
         "excluded": {b: [{"title": i["title"], "text": i["text"]} for i in items]
                      for b, items in doc["excluded"].items()},
-        "stats": doc["stats"],
+        "stats": stats,
         "warnings": [w for w in doc["warnings"]
                      if not w.startswith("provenance:")],
     }

@@ -29,7 +29,8 @@ from crparser.engine.segmenter import Segmenter
 from crparser.engine.stats import StatsCalculator
 from crparser.engine.tables import TableExtractor
 from crparser.engine.textnorm import (
-    glyph_suspect_count, pseudo_ascii_counts, pseudo_ascii_glyph_tokens)
+    control_char_count, glyph_suspect_count, pseudo_ascii_counts,
+    pseudo_ascii_glyph_tokens)
 from crparser.profiles.base import DocumentProfile
 
 
@@ -159,6 +160,7 @@ class DocumentParser:
             "glyph_tokens": norm_stats.get("glyph", 0),
             "glyph_regions": glyph_regions,
             "pseudo_ascii_tokens": pseudo_ascii,
+            "control_chars": norm_stats.get("control", 0),
         }
         if stats["coverage_percent"] < 50:
             warnings_list.append(
@@ -284,11 +286,13 @@ class DocumentParser:
     @staticmethod
     def _recount_corruption(pages) -> dict:
         """Счётчики порчи на ВОССТАНОВЛЕННОМ полным OCR тексте (он чистый)."""
-        glyph = sig = pseudo = 0
+        glyph = sig = pseudo = control = 0
         for page in pages:
             for line in page.lines:
                 glyph += glyph_suspect_count(line.text)
                 s_here, p_here = pseudo_ascii_counts(line.text)
                 sig += s_here
                 pseudo += p_here
-        return {"spacing": 0, "doubling": 0, "glyph": glyph, "sig": sig, "pseudo": pseudo}
+                control += control_char_count(line.text)
+        return {"spacing": 0, "doubling": 0, "glyph": glyph, "sig": sig,
+                "pseudo": pseudo, "control": control}

@@ -21,8 +21,8 @@ import fitz  # PyMuPDF
 from crparser.engine.models import (
     BBox, Line, Page, PageIR, make_page_ir, make_source_span)
 from crparser.engine.textnorm import (
-    glyph_suspect_count, looks_glyph_corrupted, normalize_line,
-    pseudo_ascii_counts)
+    control_char_count, glyph_suspect_count, looks_glyph_corrupted,
+    normalize_line, pseudo_ascii_counts, strip_format_chars)
 
 def _pdf_sha256(path: str):
     """sha256 исходного PDF — часть content-addressed ключа OCR-кэша. None при сбое."""
@@ -56,10 +56,15 @@ def _is_bold_span(span: Dict) -> bool:
 
 
 def _clean_line(text: str) -> str:
-    """Схлопнуть пробелы, убрать мягкие переносы и мусорные символы."""
+    """Схлопнуть пробелы, убрать мягкие переносы, форматные и мусорные символы.
+
+    Управляющие C0/C1 здесь НЕ трогаем: у части документов битый cmap отдаёт код
+    глифа вместо буквы («Registry» -> «R\\x07gistr\\x1a»), и удаление склеило бы
+    соседние токены, спрятав порчу. Их считает read() и флагует валидатор."""
     text = text.replace(_NBSP, " ").replace(_SOFT_HYPHEN, "")
     for ch in _TRASH_CHARS:
         text = text.replace(ch, "")
+    text, _ = strip_format_chars(text)
     text = re.sub(r"[ \t]+", " ", text)
     return text.strip()
 
@@ -133,7 +138,9 @@ class PdfReader:
             "spacing": 0, "doubling": 0, "glyph": 0,
             # «обратная» глифовая порча (кириллица->ASCII): накапливаем сырые
             # счётчики по документу, решение — по совокупной доле в parser.
-            "pseudo": 0, "sig": 0}
+            "pseudo": 0, "sig": 0,
+            # управляющие C0/C1 вместо букв (битый cmap отдаёт код глифа)
+            "control": 0}
         #: диагностика OCR-пути (для логов); в вывод документа НЕ попадает, чтобы
         #: отсутствие/сбой Tesseract не меняли JSON — файл парсится как без OCR
         self.ocr_warnings: List[str] = []
@@ -186,6 +193,7 @@ class PdfReader:
                     sig_here, pseudo_here = pseudo_ascii_counts(text)
                     self.norm_stats["sig"] += sig_here
                     self.norm_stats["pseudo"] += pseudo_here
+                    self.norm_stats["control"] += control_char_count(text)
 
                     # нормализация порчи (доменно-нейтрально): разрядку/удвоение
                     # чиним, глифовую подмену — НЕ трогаем (только считаем), чтобы

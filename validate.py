@@ -56,7 +56,8 @@ from crparser.engine.parser import DocumentParser
 from crparser.engine.jsonio import JsonWriter
 from crparser.engine.pdf_reader import PdfReader
 from crparser.engine.toc import norm, titles_match, parse_entries, toc_bounds, TocIndex
-from crparser.engine.textnorm import section_sign_counts, section_sign_glyph_tokens
+from crparser.engine.textnorm import (
+    control_char_count, section_sign_counts, section_sign_glyph_tokens)
 from crparser.profiles import create_profile
 
 # Порог покрытия: ниже COV_FAIL — потеря текста (FAIL); ниже COV_WARN — заметка.
@@ -799,7 +800,7 @@ def validate_doc(name: str, doc: dict, toc: Optional[Toc]) -> Report:
                    f"в разделы не попало содержимое (sections_found={sec_found}, "
                    f"included_chars={included_chars}, total_chars={total_chars}) — "
                    f"вывод пуст, требуется ручная проверка")
-        _corruption_review(rep, stats, all_text)   # порча могла сопутствовать
+        _corruption_review(rep, stats, all_text, doc.get("tables") or [])   # порча могла сопутствовать
         return rep
 
     # ---- тотальная «обратная» глифовая порча (кириллица->ASCII) -> REVIEW ----
@@ -809,7 +810,7 @@ def validate_doc(name: str, doc: dict, toc: Optional[Toc]) -> Report:
     # дефект. Файл уходит на OCR: REVIEW, не FAIL (аналог SKIPPED_SCAN, но текст
     # есть). Порог pseudo_ascii_tokens>0 срабатывает только на тотальной порче.
     if int((stats.get("corruption", {}) or {}).get("pseudo_ascii_tokens", 0)) > 0:
-        _corruption_review(rep, stats, all_text)
+        _corruption_review(rep, stats, all_text, doc.get("tables") or [])
         return rep
 
     nodes = [s for s, _ in walk(sections)]
@@ -837,7 +838,7 @@ def validate_doc(name: str, doc: dict, toc: Optional[Toc]) -> Report:
     # Разрядка/удвоение парсер уже починил (счётчики в stats), глифовую подмену
     # только обнаружил (на OCR). Если порчи выше порога — файл НЕ должен молча
     # проходить как PASS: поднимаем REVIEW с разбивкой по типам.
-    _corruption_review(rep, stats, all_text)
+    _corruption_review(rep, stats, all_text, doc.get("tables") or [])
 
     # ---- структурные гейты (промпт 04): COLLAPSE / CANONICAL_RECALL / OCR_REQUIRED
     # / RESIDUAL_PIN / TABLES_SUSPECT. Ловят «структура развалилась» там, где честный
@@ -1012,6 +1013,11 @@ def validate_doc(name: str, doc: dict, toc: Optional[Toc]) -> Report:
 _COR_SPACING = 5
 _COR_DOUBLING = 3
 _COR_GLYPH_TOK = 4
+# Управляющие C0/C1 вместо букв (битый cmap отдаёт код глифа: «Chlamydia» ->
+# «Hhl\x12m\x1adi\x12»). Замер по корпусу 701: ровно один документ поражён
+# (КР153_2 — 10 855 символов), у остальных 14 — 1..10 штук, и это форматные
+# остатки, которые теперь снимает strip_format_chars. Порог 20 даёт >500x запас.
+_COR_CONTROL = 20
 
 
 def _all_text(doc: dict) -> str:
@@ -1030,7 +1036,8 @@ def _all_text(doc: dict) -> str:
     return " ".join(parts)
 
 
-def _corruption_review(rep: "Report", stats: dict, all_text: str = "") -> None:
+def _corruption_review(rep: "Report", stats: dict, all_text: str = "",
+                       tables: Optional[List[dict]] = None) -> None:
     cor = stats.get("corruption", {}) or {}
     sp = int(cor.get("spacing_fixed", 0))
     db = int(cor.get("doubling_fixed", 0))
@@ -1044,8 +1051,13 @@ def _corruption_review(rep: "Report", stats: dict, all_text: str = "") -> None:
     # (включая references). Единичные легит-§ (фамилии/сноски) порог отсекает.
     sig, ss_raw = section_sign_counts(all_text)
     ss = section_sign_glyph_tokens(sig, ss_raw)
+    # управляющие C0/C1 вместо букв. Считаем по ВЫВОДУ (а не по счётчику парсера):
+    # так гейт работает и при перевалидации готовых JSON, и ловит порчу из любого
+    # канала — включая текст ячеек таблиц, который мимо pdf_reader не проходит.
+    cc = control_char_count(all_text) + sum(
+        control_char_count(t.get("raw_text") or "") for t in (tables or []))
     rep.corruption = {"fixable_spacing": sp, "fixable_doubling": db,
-                      "needs_ocr": gt + gr + pa + ss}
+                      "needs_ocr": gt + gr + pa + ss, "control_chars": cc}
     if sp >= _COR_SPACING:
         rep.review("CORRUPTION",
                    f"fixable_spacing: разрядка текста, склеено {sp} серий")
@@ -1063,6 +1075,10 @@ def _corruption_review(rep: "Report", stats: dict, all_text: str = "") -> None:
                    f"needs_ocr: кирилло-латинская глиф-порча с впаянным «§» "
                    f"({ss} токенов из {sig} значимых, "
                    f"{ss / sig * 1000:.1f} на 1000) — на OCR")
+    if cc >= _COR_CONTROL:
+        rep.review("CORRUPTION",
+                   f"control_chars: {cc} управляющих символов вместо букв "
+                   f"(битый cmap отдаёт код глифа) — текст нечитаем, на OCR")
 
 
 def _num_key(num: str):

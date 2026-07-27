@@ -131,7 +131,8 @@
             "doubling_fixed": {"type": "integer"},
             "glyph_tokens": {"type": "integer"},
             "glyph_regions": {"type": "integer"},
-            "pseudo_ascii_tokens": {"type": "integer"}
+            "pseudo_ascii_tokens": {"type": "integer"},
+            "control_chars": {"type": "integer"}
           }
         }
       }
