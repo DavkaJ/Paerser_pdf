@@ -834,7 +834,12 @@ class LatinRecoverer:
                         dct[key] = nv
 
         def walk_json(o):
-            """Рекурсивно чинить все строки в dict/list (excluded: references/toc/other/…)."""
+            """Рекурсивно чинить строки в dict/list И в объектах-элементах регионов.
+
+            excluded — это {kind: [ExcludedItem, …]}, а ExcludedItem с промпта 08 —
+            ДАТАКЛАСС (dict-совместимый только на чтение). Обход, умеющий лишь
+            dict/list, молча проваливался на нём: приложения (они входят в обучающий
+            контракт) уезжали с сырыми PUA-глифами — 4 078 маркеров списка U+F0B7."""
             if isinstance(o, dict):
                 for k, v in list(o.items()):
                     if isinstance(v, str):
@@ -851,6 +856,10 @@ class LatinRecoverer:
                                 o[i] = nv
                     else:
                         walk_json(v)
+            elif hasattr(o, "__dataclass_fields__"):
+                for name in o.__dataclass_fields__:
+                    if isinstance(getattr(o, name, None), str):
+                        fix_attr(o, name)
 
         for sec in _walk(sections):
             fix_attr(sec, "title"); fix_attr(sec, "text")

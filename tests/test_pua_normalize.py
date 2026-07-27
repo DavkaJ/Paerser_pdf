@@ -72,3 +72,28 @@ def test_engine_pua_pass_provenance():
     for c in pua:
         if c.get("decision") == "auto":
             assert c.get("resolved_text") and len(c["resolved_text"]) == 1
+
+
+def test_pua_reaches_excluded_dataclass_items():
+    """PUA чинится и в регионах-исключениях (ExcludedItem — ДАТАКЛАСС, не dict).
+
+    Обход, умеющий только dict/list, молча проваливался на нём, и приложения (они
+    входят в обучающий контракт) уезжали с сырыми маркерами списка U+F0B7: замер по
+    корпусу — 4 078 штук в .excluded.appendices после штатного прогона против 0 у
+    патч-скрипта, работавшего по сериализованному JSON. I30: тест исполняет путь."""
+    from crparser.engine.latinrecovery import LatinRecoverer
+    from crparser.engine.models import ExcludedItem
+
+    rec = LatinRecoverer.__new__(LatinRecoverer)      # без открытия PDF
+    rec.prov = []
+    excluded = {"appendices": [ExcludedItem(title="Приложение ",
+                                            text=" пункт  5")],
+                "other": [{"title": "", "text": " dict-элемент"}]}
+    rec._pua_normalize_all([], [], excluded, {})
+
+    item = excluded["appendices"][0]
+    assert item.text == "• пункт ≤ 5", item.text
+    assert item.title == "Приложение •", item.title
+    assert excluded["other"][0]["text"] == "• dict-элемент"
+    assert any(c["source_text"] == "U+F0B7" and c["decision"] == "auto"
+               for c in rec.prov), rec.prov
