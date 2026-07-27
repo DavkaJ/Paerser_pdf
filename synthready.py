@@ -67,9 +67,7 @@ SYNTH_CONTROL_MAX = 20
 # объём и даёт модели дубли — флаг, не карантин.
 SYNTH_OVERCOUNT_FLAG = 1.02
 
-# Таблица короче этого — почти наверняка вырезана одна шапка, тело потеряно.
-# Порог общий с валидатором (TABLE_STUB_MAX_CHARS).
-SYNTH_TABLE_STUB_CHARS = 200
+# Огрызок таблицы — ПО УЛИКЕ ДВИЖКА, а не по длине raw_text. См. `table_is_stub`.
 
 # Минимальный объём текста, ниже которого документ бессмысленен как источник.
 SYNTH_MIN_TOKENS = 500
@@ -91,6 +89,34 @@ _LAT = re.compile(r"[A-Za-z]")
 # Цифра на конце («Т2», «тип1») легитимна и НЕ ловится — нужна буква с обеих сторон.
 _DIGIT_IN_CYR = re.compile(r"^[А-Яа-яЁё0-9]*[А-Яа-яЁё][0-9]{1,3}"
                            r"[А-Яа-яЁё][А-Яа-яЁё0-9]*$")
+
+
+def table_is_stub(t: dict) -> bool:
+    """Огрызок таблицы — ПО УЛИКЕ ДВИЖКА, а не по длине `raw_text`.
+
+    ЗАМЕР 2026-07-28 по корпусу (11 597 таблиц, `outout_latin_v2`) — прежний критерий
+    «raw_text < 200 символов» одновременно ЛОЖНО ФЛАГАЛ и ПРОПУСКАЛ:
+
+      * флагал 1 016 таблиц в 379 док., из них у **991 нет ни одной улики порчи**.
+        Это ПОЛНЫЕ маленькие таблицы: стадирование (`T N M Стадия / Tis 0 0 0 / …`),
+        шкалы (Глазго: 8 строк), дозировки по возрасту. Плотная числовая таблица на
+        8 строк укладывается в 200 символов — длина не признак обрезки. Ручная сверка
+        60 огрызков с источником: у ВСЕХ raw_text содержит ВЕСЬ текст своего bbox
+        (`вне_raw = 0`), то есть извлечение внутри bbox ничего не теряет;
+      * ПРОПУСКАЛ 841 таблицу, которую сам движок пометил `low_confidence`
+        (детекция «small», спасённая только подписью сверху) — они длиннее 200.
+
+    Улика движка, наоборот, проверяема: `low_confidence` ставит `TableExtractor`,
+    когда сетка не прошла порог 2x2/4 непустых ячеек; `row_count <= 1` — прямая
+    шапка без тела (в текущем корпусе таких 0: движок их уже не выпускает).
+
+    Итог замера: 1 016 -> 866 таблиц (379 -> 239 документов), из них ни одной
+    ложной по длине; общее число таблиц не меняется.
+    """
+    if t.get("low_confidence"):
+        return True
+    rc = t.get("row_count")
+    return rc is not None and rc <= 1
 
 
 def suspicious_token(tok: str) -> bool:
@@ -180,8 +206,7 @@ def measure(doc: dict) -> dict:
         "needs_review_spans": sum(1 for c in corrections
                                   if c.get("decision") == "needs_review"),
         "tables_total": len(tables),
-        "tables_stub": sum(1 for t in tables
-                           if len(t.get("raw_text") or "") < SYNTH_TABLE_STUB_CHARS),
+        "tables_stub": sum(1 for t in tables if table_is_stub(t)),
         "sections": sum(1 for _ in walk_sections(doc.get("sections") or [])),
     }
 
@@ -241,8 +266,7 @@ def cut_document(doc: dict, tier: str, flags: List[str], m: dict) -> dict:
         "sections": [cut_section(s) for s in (doc.get("sections") or [])],
         "tables": [{"page": t.get("page"), "number": t.get("number"),
                     "caption": t.get("caption"), "raw_text": t.get("raw_text"),
-                    "low_confidence": bool(t.get("low_confidence"))
-                    or len(t.get("raw_text") or "") < SYNTH_TABLE_STUB_CHARS}
+                    "low_confidence": table_is_stub(t)}
                    for t in (doc.get("tables") or [])],
         "appendices": [{"title": i.get("title"), "text": i.get("text")}
                        for i in ((doc.get("excluded") or {}).get("appendices") or [])],

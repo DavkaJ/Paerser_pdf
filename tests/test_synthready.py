@@ -92,10 +92,29 @@ def test_validator_fail_with_full_text_still_shippable():
 
 
 def test_table_stub_flagged():
+    """Огрызок — по УЛИКЕ ДВИЖКА: детекция, спасённая подписью (`low_confidence`),
+    или шапка без тела (`row_count<=1`)."""
+    for evidence in ({"low_confidence": True, "row_count": 4},
+                     {"low_confidence": False, "row_count": 1}):
+        doc = _doc(tables=[dict({"page": 1, "number": "1", "caption": "Таблица 1",
+                                 "raw_text": "шапка"}, **evidence)])
+        tier, flags = _tier(doc, "PASS")
+        assert tier == "B" and any(f.startswith("table_stubs") for f in flags), evidence
+
+
+def test_short_but_complete_table_not_flagged():
+    """РЕГРЕСС, ради которого критерий и менялся: ПОЛНАЯ маленькая таблица не огрызок.
+
+    Замер 2026-07-28 по корпусу: критерий «raw_text<200 символов» флагал 1 016 таблиц,
+    у 991 из них не было НИ ОДНОЙ улики порчи — плотная числовая таблица на 8 строк
+    (стадирование TNM, шкала Глазго) укладывается в 200 символов по построению."""
     doc = _doc(tables=[{"page": 1, "number": "1", "caption": "Таблица 1",
-                        "raw_text": "шапка"}])
+                        "raw_text": "T\tN\tM\tСтадия\nTis\t0\t0\t0\nT1a\t0\t0\tIA\n"
+                                    "T1b\t0\t0\tIB\nT2\t0\t0\tIIA",
+                        "low_confidence": False, "row_count": 5, "cell_count": 20}])
     tier, flags = _tier(doc, "PASS")
-    assert tier == "B" and any(f.startswith("table_stubs") for f in flags)
+    assert not any(f.startswith("table_stubs") for f in flags), flags
+    assert tier == "A", (tier, flags)
 
 
 # ---- контракт выгрузки ------------------------------------------------------

@@ -82,11 +82,19 @@ COLLAPSE_DOMINANCE = 0.60       # доля текста крупнейшей с�
 COLLAPSE_HEADING_TAIL = 200     # >стольких символов после встроенного заголовка =
 #                                 несобранный раздел внутри text (ловит КР401_2).
 CANONICAL_RECALL_MIN = 5        # из 7 канонических глав; <5 -> потеряны главы, 0 -> FAIL.
-TABLE_STUB_MAX_CHARS = 200      # raw_text короче -> подозрение на огрызок-шапку. Замер:
-#                                 1152 из 11364 таблиц <200 симв, медиана корпуса 672.
-TABLE_DENSITY_MIN = 0.002       # симв/pt^2 при <3 таблицах в документе. Замер: у
-#                                 low-text таблиц p10=0.0016, p25=0.0023 -> 0.002 между.
-TABLE_MIN_FOR_PCT = 3           # >= стольких таблиц -> порог = 10-й перцентиль ДОКУМЕНТА.
+# TABLE_STUB_NOTE (замер 2026-07-28, 11 597 таблиц корпуса): прежние пороги гейта
+# были ПО ДЛИНЕ raw_text (<200 симв.) и плотности. Замер их опроверг — критерий
+# одновременно ложно флагал и пропускал:
+#   * «короче 200» давало 1 016 таблиц в 379 док., у 991 из них НЕТ НИ ОДНОЙ улики
+#     порчи: это полные маленькие таблицы (стадирование `T N M Стадия`, шкала Глазго,
+#     дозировки) — плотная числовая таблица на 8 строк укладывается в 200 символов.
+#     Сверка 60 огрызков с источником: raw_text содержит ВЕСЬ текст своего bbox,
+#     то есть внутри bbox извлечение не теряет ничего;
+#   * и ПРОПУСКАЛО 841 таблицу с реальной уликой — движок пометил их low_confidence
+#     (детекция «small», спасённая только подписью сверху), но они длиннее 200 симв.
+# Поэтому гейт смотрит на улику ДВИЖКА: `low_confidence` или `row_count<=1`.
+# Итог: 1 016 -> 866 таблиц (379 -> 239 документов). Пороги длины/плотности удалены
+# как опровергнутые — держать неиспользуемый порог хуже, чем не иметь его (I8).
 
 # --- coverage_v2 гейты (промпт 10): span-union, а не бухгалтерия символов. Пороги
 # откалиброваны по КОРПУСУ (722, замер `_corpus/measure_cov_v2.py`), triage, не
@@ -598,25 +606,22 @@ def _residual_pin_gate(rep: "Report", doc: dict) -> None:
                  "триажа — НЕ REVIEW)" % mixed)
 
 
+def _table_is_stub(t: dict) -> bool:
+    """Огрызок таблицы — ПО УЛИКЕ ДВИЖКА (см. замер у константы TABLE_STUB_NOTE)."""
+    if t.get("low_confidence"):
+        return True
+    rc = t.get("row_count")
+    return rc is not None and rc <= 1
+
+
 def _tables_suspect_gate(rep: "Report", doc: dict, nodes: List[dict]) -> None:
-    """ГЕЙТ 5: TABLE_STUB (warning, по плотности) + TABLES_MISSING (REVIEW)."""
+    """ГЕЙТ 5: TABLE_STUB (warning, по улике движка) + TABLES_MISSING (REVIEW)."""
     tables = doc.get("tables", []) or []
-    dens = []
-    for t in tables:
-        x0, y0, x1, y1 = (t.get("bbox") or [0, 0, 0, 0])[:4]
-        area = max((x1 - x0) * (y1 - y0), 1.0)
-        dens.append(len(t.get("raw_text") or "") / area)
-    p10 = None
-    if len(tables) >= TABLE_MIN_FOR_PCT and dens:
-        sd = sorted(dens)
-        p10 = sd[min(len(sd) - 1, int(len(sd) * 0.10))]
-    stubs = sum(1 for t, dv in zip(tables, dens)
-                if len(t.get("raw_text") or "") < TABLE_STUB_MAX_CHARS
-                and dv < (p10 if p10 is not None else TABLE_DENSITY_MIN))
+    stubs = sum(1 for t in tables if _table_is_stub(t))
     if stubs:
         rep.warn("TABLE_STUB",
-                 "%d таблиц: raw_text<%d и низкая плотность (вырезана шапка, тело "
-                 "потеряно) — проверить извлечение" % (stubs, TABLE_STUB_MAX_CHARS))
+                 "%d таблиц с уликой обрезки (low_confidence детекции или "
+                 "row_count<=1) — проверить извлечение" % stubs)
     mentioned = set()
     for s in nodes:
         for m in _RE_TABLE_REF.finditer(s.get("text") or ""):
