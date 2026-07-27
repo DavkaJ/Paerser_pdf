@@ -77,6 +77,11 @@ def build_arg_parser() -> argparse.ArgumentParser:
                     default=True,
                     help="компактный выход: без provenance-полей и блока provenance "
                          "(совпадает с прежней формой JSON)")
+    ap.add_argument("--latin-recovery", dest="latin_recovery", action="store_true",
+                    default=False,
+                    help="восстановление битой латиницы (проверенный человеком "
+                         "оверлей, step2, PUA-нормализация); каждая правка попадает "
+                         "в блок latin_recovery с решением auto/needs_review")
     return ap
 
 
@@ -104,7 +109,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         print(str(exc), file=sys.stderr)
         return 2
 
-    parser = DocumentParser(profile)
+    parser = DocumentParser(profile, latin_recovery=args.latin_recovery)
     writer = JsonWriter(include_provenance=args.provenance)
 
     ok, failed = 0, 0

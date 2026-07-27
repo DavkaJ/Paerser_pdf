@@ -209,3 +209,29 @@ def test_verified_overlay_provenance_in_map(kr10_5_recovered):
         assert st in ver and ver[st]["corrected"] == rt, (
             "human_verified правка вне карты: %s -> %s" % (st, rt))
         assert c.get("applied") is True and c.get("decision") == "auto"
+
+
+# ---- канал должен быть достижим из ПРОДУКТОВЫХ точек входа -------------------
+
+def test_batch_report_wires_latin_recovery(tmp_path):
+    """batch_report._init(latin_recovery=True) реально включает канал в воркере.
+
+    До этого флага ни один продуктовый раннер не передавал latin_recovery=True:
+    batch_report/cli парсили без восстановления, а чистый корпус собирался
+    скриптами из _corpus/ — то есть отгружаемое было невоспроизводимо штатной
+    командой. Тест исполняет путь инициализации воркера, а не читает документацию."""
+    import glob as _glob
+    import batch_report as B
+    reg = _glob.glob(os.path.join(ROOT, "*.xlsx"))[0]
+    B._init(reg, {}, str(tmp_path), latin_recovery=True, latin_queue_dir=None)
+    assert B._PARSER._latin_recovery is True
+    B._init(reg, {}, str(tmp_path))
+    assert B._PARSER._latin_recovery is False
+
+
+def test_cli_exposes_latin_recovery_flag():
+    """У run.py есть --latin-recovery и по умолчанию он ВЫКЛЮЧЕН (форма JSON прежняя)."""
+    from crparser.interface.cli import build_arg_parser
+    ap = build_arg_parser()
+    assert ap.parse_args(["x.pdf"]).latin_recovery is False
+    assert ap.parse_args(["x.pdf", "--latin-recovery"]).latin_recovery is True

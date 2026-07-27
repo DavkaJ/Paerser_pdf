@@ -74,12 +74,14 @@ def _sha256_file(path):
 # --------------------------------------------------------------------------- #
 # Воркер                                                                       #
 # --------------------------------------------------------------------------- #
-def _init(registry, classmap, staging_dir):
+def _init(registry, classmap, staging_dir, latin_recovery=False, latin_queue_dir=None):
     global _PARSER, _WRITER, _CLASS, _STAGING
     from crparser.engine.parser import DocumentParser
     from crparser.engine.jsonio import JsonWriter
     from crparser.profiles import create_profile
-    _PARSER = DocumentParser(create_profile("cr", registry))
+    _PARSER = DocumentParser(create_profile("cr", registry),
+                             latin_recovery=latin_recovery,
+                             latin_queue_dir=latin_queue_dir)
     _WRITER = JsonWriter()
     _CLASS = classmap
     _STAGING = staging_dir
@@ -88,11 +90,18 @@ def _init(registry, classmap, staging_dir):
 def _mk(base, cls, rep, doc, input_sha, output_sha, t0,
         crash=False, write_failed=False, timeout=False):
     st = (doc or {}).get("stats", {})
+    block = (doc or {}).get("latin_recovery") or {}
+    corr = block.get("corrections", []) or []
     return {
         "file": base, "cls": cls, "status": rep.status,
         "coverage": st.get("coverage_percent", 0.0),
         "sections": st.get("sections_found", 0),
         "tables": st.get("tables_found", 0),
+        "latin": {"corrections": len(corr),
+                  "auto": sum(1 for c in corr if c.get("decision") == "auto"),
+                  "needs_review": sum(1 for c in corr
+                                      if c.get("decision") == "needs_review"),
+                  "unresolved_critical": len(block.get("unresolved_critical") or [])},
         "fails": rep.fails, "fail_kinds": sorted({f.split(":", 1)[0] for f in rep.fails}),
         "warns": rep.warns, "warn_kinds": sorted({w.split(":", 1)[0] for w in rep.warns}),
         "reviews": rep.reviews, "corruption": rep.corruption, "skipped": rep.skipped,
@@ -160,12 +169,14 @@ def _ocr_status():
 # --------------------------------------------------------------------------- #
 # Пул с двумя проходами и per-doc timeout                                     #
 # --------------------------------------------------------------------------- #
-def _run_pool(bases, workers, registry, classmap, staging_dir, timeout):
+def _run_pool(bases, workers, registry, classmap, staging_dir, timeout,
+              latin_recovery=False, latin_queue_dir=None):
     results = {}
     if not bases:
         return results
     with ProcessPoolExecutor(max_workers=max(1, workers), initializer=_init,
-                             initargs=(registry, classmap, staging_dir)) as ex:
+                             initargs=(registry, classmap, staging_dir,
+                                       latin_recovery, latin_queue_dir)) as ex:
         futures = {ex.submit(work, b): b for b in bases}
         done = 0
         for fut, b in futures.items():
@@ -286,6 +297,14 @@ def main() -> int:
                          "release.py такой прогон в релиз не пускает)")
     ap.add_argument("--allow-not-pass", action="store_true",
                     help="локальная отладка: exit 1 -> 0 (на код 2 не влияет)")
+    ap.add_argument("--latin-recovery", dest="latin_recovery", action="store_true",
+                    default=False,
+                    help="включить восстановление битой латиницы (движковый канал: "
+                         "проверенный человеком оверлей, step2, PUA-нормализация). "
+                         "Записывается в манифест прогона")
+    ap.add_argument("--latin-queue-dir", default=None,
+                    help="куда складывать очередь верификации и кропы "
+                         "(по умолчанию не собирается)")
     args = ap.parse_args()
 
     os.makedirs(os.path.dirname(REPORT) or ".", exist_ok=True)
@@ -333,12 +352,17 @@ def main() -> int:
     scans = [b for b in bases if classmap.get(b) == "SKIPPED_SCAN"]
     rest = [b for b in bases if classmap.get(b) != "SKIPPED_SCAN"]
     results = {}
-    results.update(_run_pool(rest, args.workers, registry, classmap, staging_dir, args.timeout))
+    if args.latin_recovery:
+        print("латинское восстановление: ВКЛ%s"
+              % (" (очередь -> %s)" % args.latin_queue_dir if args.latin_queue_dir else ""))
+    results.update(_run_pool(rest, args.workers, registry, classmap, staging_dir,
+                             args.timeout, args.latin_recovery, args.latin_queue_dir))
     if scans:
         print("OCR-очередь (полный OCR): %d документов, %d воркеров"
               % (len(scans), args.ocr_workers))
         results.update(_run_pool(scans, args.ocr_workers, registry, classmap,
-                                 staging_dir, args.timeout))
+                                 staging_dir, args.timeout,
+                                 args.latin_recovery, args.latin_queue_dir))
     print("прогон завершён за %.0fs" % (time.time() - t0))
 
     # --- run_integrity ---
@@ -413,6 +437,9 @@ def _write_manifests(run_dir, run_id, expected, results, code, ocr_info,
         "run_integrity_ok": run_integrity_ok, "integrity_failures": integrity_failures,
         "quality_gate_ok": quality_gate_ok, "published": published,
         "require_ocr": args.require_ocr,
+        # текст корпуса зависит от канала восстановления латиницы — прогон обязан
+        # заявлять его явно, иначе «воспроизводимый» манифест описывает не тот текст
+        "latin_recovery": getattr(args, "latin_recovery", False),
         "counts": {"pass": counts.get("PASS", 0), "review": counts.get("REVIEW", 0),
                    "fail": counts.get("FAIL", 0), "skip": counts.get("SKIP", 0),
                    "crash": n_crash, "write_failed": sum(
