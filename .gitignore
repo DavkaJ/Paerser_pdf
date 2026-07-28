@@ -4,9 +4,53 @@ out/
 out*/
 *.zip
 
+# пакетные данные OCR-пинов: общую базу коммитим, шарды-кэш документов — нет
+!crparser/data/
+!crparser/data/ocr_pins.json
+crparser/data/pins/
+# рабочий дисковый кэш сырого OCR (TSV) — не для репозитория
+crparser/data/ocr_cache/
+# кэш разбора оглавления по содержимому PDF (временно, до единого DocumentView)
+crparser/data/toc_cache/
+
+# run-scoped staging транзакционного батча (промпт 05)
+_runs/
+# карантин и обучающий экспорт (промпт 06) — не для репозитория
+quarantine/
+candidate_release/
+candidate_synthetic/
+release/
+
 # временные/отладочные скрипты (имена с ведущим подчёркиванием) и бэкапы
 _*.py
+# …но НЕ пакетные __init__.py — иначе клон = сломанный пакет (комментарий НА ОТДЕЛЬНОЙ
+# строке: gitignore НЕ поддерживает inline-комментарии, «# …» стал бы частью паттерна)
+!__init__.py
 .bak/
+
+# локальное описание проекта (рабочие заметки, не для репозитория)
+ОПИСАНИЕ_ПРОЕКТА.md
+
+# ночной прогон latin recovery (13b): артефакты на диске для утренней проверки, не в git
+_corpus/batch_latin.log
+_corpus/batch_latin_full.log
+_corpus/report_latin.json
+_corpus/verify_queue/crops/
+_corpus/verify_queue/tasks.json
+
+# СЕКРЕТЫ. Токен LightLLM-роутера и любые ключи — НИКОГДА в git.
+# Проверено 2026-07-16: .env СУЩЕСТВОВАЛ и НЕ попадал ни под одно правило
+# (`git check-ignore -v .env` -> пусто, код 1), т.е. один `git add -A` унёс бы токен в
+# историю. В истории его нет (`git log --all -- .env` пуст) — успели. Коммит секрета не
+# откатывается: ключ считается скомпрометированным с момента пуша, и чистка истории не
+# отменяет того, что его уже видели. Комментарий — на ОТДЕЛЬНОЙ строке (inline gitignore
+# не поддерживает, см. правило !__init__.py выше).
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+secrets.json
 
 # python
 __pycache__/
@@ -14,3 +58,63 @@ __pycache__/
 *.pyo
 .venv/
 venv/
+_corpus/verify_queue/crops_min/
+_corpus/verify_queue/tasks_min.json
+_corpus/verify_queue/tasks_gene_triage.jsonl
+_corpus/verify_queue/_noise.jsonl
+_corpus/vlm_pilot_result.json
+_corpus/vlm_pilot_run.log
+_corpus/batch_latin_full.log
+_corpus/verify_queue/_minimize.log
+
+# ПРОИЗВОДНЫЕ артефакты прогонов и замеров.
+# Правило: в репозиторий идёт то, из чего корпус СОБИРАЕТСЯ (код, входы, карты правок,
+# ручная разметка) и чем он ОБЪЯСНЯЕТСЯ (отчёты .md). Всё, что пересчитывается прогоном,
+# в git не кладём — иначе репозиторий растёт на десятки МБ за сессию.
+# Замер на 2026-07-28: 101 json + 23 лога = 40 МБ производного против 0.4 МБ исходного.
+_corpus/report*.json
+_corpus/screen_report*.json
+_corpus/screen_outout_baseline.json
+_corpus/screen_flags.jsonl
+_corpus/corruption_scan*.json
+_corpus/_*.json
+_corpus/_*.txt
+_corpus/_*.log
+_corpus/*.log
+_corpus/_logs/
+# …но НЕ аудиты авто-правок: это доказательство, что применённый к тексту набор
+# сверен с источником. Их пересчитать нельзя — прогон, который они описывают, прошёл.
+!_corpus/_overlay_audit.json
+!_corpus/_step2_apply_audit.json
+!_corpus/_pua_scan.json
+!_corpus/_pua_classify.json
+!_corpus/_affected_docs.json
+!_corpus/_affected_docs_step2.json
+!_corpus/screen_report_pre_b3_2026-07-20.json
+_corpus/content_start_triage.txt
+_corpus/detector_recall.log
+# промежуточные срезы очереди верификации: пересобираются из прогона.
+# Ручная разметка и карты правок (_verified_corrections, _resolved_*, _ls_annotations,
+# _step2_auto_apply, tasks_min_v4) — ОТСЛЕЖИВАЮТСЯ, они невосполнимы.
+_corpus/verify_queue/ls_all_tasks.json
+_corpus/verify_queue/ls_export.json
+_corpus/verify_queue/tasks_min_ls.json
+_corpus/verify_queue/tasks_min_v2.json
+_corpus/verify_queue/tasks_min_v3.json
+_corpus/verify_queue/active_input.json
+_corpus/verify_queue/_url_noise.jsonl
+_corpus/verify_queue/_whitelist.jsonl
+_corpus/verify_queue/whitelist_forms.json
+# сырые шарды объёмного LLM-прохода: входы и ответы модели по батчам. Сведённый
+# результат лежит в _v4_predictions.jsonl и mix_result_*.json — они отслеживаются.
+_corpus/verify_queue/llm_batches/batch_*.json
+_corpus/verify_queue/llm_batches/pred_*.json
+# зонды и контрольные замеры отдельных пилотов
+_corpus/fontrepair_probe*.txt
+_corpus/smoke.txt
+_corpus/vlm_control_*.json
+report_meta.json
+_stage2_results.json
+
+# состояние стороннего инструмента
+.refact/

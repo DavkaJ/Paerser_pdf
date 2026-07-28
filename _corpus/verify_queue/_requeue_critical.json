@@ -1,0 +1,23 @@
+[
+ {
+  "source_text": "СО2АВО2",
+  "suggested": "C02AB02",
+  "entity_kind": "atc",
+  "note": "crop: метилдопа (АТХ CO2ABO1-CO2ABO2). Valid ATC=C02AB02 (digit 0). BOTH human & LLM left invalid letter-O form",
+  "provenance": "crop_arbitrated_needs_human"
+ },
+ {
+  "source_text": "СО2АВО1",
+  "suggested": "C02AB01",
+  "entity_kind": "atc",
+  "note": "crop: метилдопа CO2ABO1. Valid ATC=C02AB01 (digit 0). BOTH human & LLM left invalid letter-O form",
+  "provenance": "crop_arbitrated_needs_human"
+ },
+ {
+  "source_text": "СО8САО2",
+  "suggested": "C08CA02",
+  "entity_kind": "atc",
+  "note": "crop: фелодипин (АТХ CO8CAO2). Valid ATC=C08CA02 (digit 0). BOTH human & LLM left invalid letter-O form",
+  "provenance": "crop_arbitrated_needs_human"
+ }
+]

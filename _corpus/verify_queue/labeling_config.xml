@@ -1,0 +1,50 @@
+<View>
+  <Header value="Проверка восстановления латиницы (медицинский текст)"/>
+  <Style>
+    .lsf-main-content { max-width: 100% !important; }
+    .lsf-main-view__annotation { max-width: 100% !important; }
+    .lsf-object { max-width: 100% !important; }
+  </Style>
+
+  <View style="padding:8px 12px; margin-bottom:6px; background: rgba(128,128,128,0.10); border-radius:6px;">
+    <Text name="doc" value="Документ: $doc  •  стр. $page  •  тип: $entity_kind  •  критичность: $is_critical"/>
+    <Text name="source_text" value="Исходный текст (native): $source_text"/>
+    <Text name="resolved_text" value="Предложено системой: $resolved_text"/>
+    <Text name="candidates" value="Кандидаты: $candidates"/>
+    <Text name="why" value="Почему спорно: $why_uncertain  ($method, conf=$confidence)"/>
+  </View>
+
+  <Header value="Слово (≈600 DPI) — колёсиком мыши можно приблизить" size="4"/>
+  <Image name="crop" value="$crop_word" zoom="true" zoomControl="true" width="100%"/>
+
+  <Header value="Строка (контекст)" size="4"/>
+  <Image name="crop_line" value="$crop_line" zoom="true" zoomControl="true" width="100%"/>
+
+  <Header value="Страница (bbox подсвечен красным)" size="4"/>
+  <Image name="crop_page" value="$crop_page" zoom="true" zoomControl="true" maxWidth="55%"/>
+
+  <Header value="Решение" size="4"/>
+  <Choices name="decision" toName="crop" choice="single" showInLine="true" required="true">
+    <Choice value="принять" hint="Предложенная системой замена верна"/>
+    <Choice value="ошибка" hint="Неверно — ввести правильный вариант ниже"/>
+  </Choices>
+
+  <View visibleWhen="choice-selected" whenTagName="decision" whenChoiceValue="ошибка">
+    <Header value="Правильный вариант" size="5"/>
+    <TextArea name="corrected_text" toName="crop" rows="1" maxSubmissions="1"
+              placeholder="Введите правильную форму"/>
+  </View>
+
+  <Header value="Тип сущности (можно уточнить)" size="5"/>
+  <Choices name="entity_kind_fix" toName="crop" choice="single" showInLine="true" required="false">
+    <Choice value="icd" hint="Код МКБ"/>
+    <Choice value="atc" hint="Код ATC (препарат)"/>
+    <Choice value="tnm" hint="TNM-классификация"/>
+    <Choice value="stage" hint="Стадия"/>
+    <Choice value="gene" hint="Ген / белок"/>
+    <Choice value="drug" hint="Лекарственное средство"/>
+    <Choice value="dose" hint="Доза / дозировка"/>
+    <Choice value="term" hint="Латинский термин / общая лексика"/>
+    <Choice value="not_entity" hint="Не сущность (URL, шум, число)"/>
+  </Choices>
+</View>

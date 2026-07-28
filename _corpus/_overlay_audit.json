@@ -1,0 +1,1797 @@
+{
+ "results": [
+  {
+   "doc": "КР1005_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 2,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "JO1XХ": 1,
+    "Herpes\tС\n\tsimplex virus": 1
+   },
+   "secs": 36.6
+  },
+  {
+   "doc": "КР1007_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 1,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "Ьйрз": 1
+   },
+   "secs": 19.2
+  },
+  {
+   "doc": "КР1019_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 3,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "Нераййз": 3
+   },
+   "secs": 96.6
+  },
+  {
+   "doc": "КР1024_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 3,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "РO2": 2,
+    "Н2О": 1
+   },
+   "secs": 26.6
+  },
+  {
+   "doc": "КР1028_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 1,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "aeruginosa, В. cepacia comрlex": 1
+   },
+   "secs": 37.9
+  },
+  {
+   "doc": "КР1033_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 31,
+   "source_leaks": [],
+   "n_diff_zones": 19,
+   "clean": true,
+   "forms": {
+    "оГ": 9,
+    "Hepatitis В": 1,
+    "1А1НС": 1,
+    "РКАХ": 1,
+    "СНп": 1,
+    "уапсез": 1,
+    "8ирр1": 1,
+    "гезропзе": 8,
+    "01зеазе": 1,
+    "сПшса1": 1,
+    "ОеуеЬртеп": 1,
+    "СагЬопе": 2,
+    "Шзеазе": 1,
+    "еу1с1епсе": 1,
+    "рпшагу": 1
+   },
+   "secs": 155.6
+  },
+  {
+   "doc": "КР109_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 4,
+   "source_leaks": [],
+   "n_diff_zones": 4,
+   "clean": true,
+   "forms": {
+    "801РВ01": 3,
+    "801АА": 1
+   },
+   "secs": 83.6
+  },
+  {
+   "doc": "КР10_5",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 2,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "ВАР1": 2
+   },
+   "secs": 30.0
+  },
+  {
+   "doc": "КР115_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 5,
+   "source_leaks": [],
+   "n_diff_zones": 3,
+   "clean": true,
+   "forms": {
+    "Hepatitis В": 1,
+    "НЬзАд": 1,
+    "Ншпап": 1,
+    "ЕТ1Ш8": 2
+   },
+   "secs": 101.5
+  },
+  {
+   "doc": "КР119_3",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 126,
+   "source_leaks": [],
+   "n_diff_zones": 4,
+   "clean": true,
+   "forms": {
+    "оГ": 112,
+    "Мес1": 1,
+    "гезропзе": 1,
+    "тГесйоп": 1,
+    "зишшагу": 1,
+    "зеуегйу": 1,
+    "йозе": 1,
+    "гапёогшгеё": 2,
+    "рпшагу": 1,
+    "сопзегуайуе": 2,
+    "райеп!з": 1,
+    "бейшепсу": 1,
+    "Рпшагу": 1
+   },
+   "secs": 75.6
+  },
+  {
+   "doc": "КР11_3",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 21,
+   "source_leaks": [],
+   "n_diff_zones": 10,
+   "clean": true,
+   "forms": {
+    "Т4Ь": 1,
+    "М1а": 1,
+    "М1Ь": 1,
+    "Т1Ь": 1,
+    "1МКТ": 1,
+    "1Ш88СО": 1,
+    "ЕКА8": 2,
+    "1итог": 2,
+    "Аззау": 2,
+    "СагЬопе": 1,
+    "Тохюйу": 1,
+    "гезропзе": 3,
+    "оГ": 3,
+    "сПшса1": 1
+   },
+   "secs": 123.1
+  },
+  {
+   "doc": "КР12_3",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 3,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "М1а": 1,
+    "М1с": 2
+   },
+   "secs": 28.7
+  },
+  {
+   "doc": "КР14_3",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 3,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "Зсоге": 2,
+    "АС55": 1
+   },
+   "secs": 53.8
+  },
+  {
+   "doc": "КР153_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 1,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "VО2": 1
+   },
+   "secs": 205.7
+  },
+  {
+   "doc": "КР15_3",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 3,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "уегзюп": 2,
+    "оГ": 1
+   },
+   "secs": 35.4
+  },
+  {
+   "doc": "КР177_5",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 12,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "8са1е": 6,
+    "оГ": 2,
+    "МсОШ": 2,
+    "Огабе": 1,
+    "8ирр1": 1
+   },
+   "secs": 43.9
+  },
+  {
+   "doc": "КР193_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 7,
+   "source_leaks": [],
+   "n_diff_zones": 3,
+   "clean": true,
+   "forms": {
+    "Ю4ААЗЗ": 1,
+    "Б04ААЗЗ": 1,
+    "Hepatitis В": 1,
+    "раШбит": 1,
+    "Ь04АВ02": 2,
+    "Т04ААЗЗ": 1
+   },
+   "secs": 136.5
+  },
+  {
+   "doc": "КР1_4",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 15,
+   "source_leaks": [],
+   "n_diff_zones": 5,
+   "clean": true,
+   "forms": {
+    "Т1Ь": 1,
+    "Hepatitis В": 1,
+    "1МКТ": 1,
+    "сйзеазе": 1,
+    "Уо1.22": 1,
+    "оГ": 5,
+    "уапсез": 1,
+    "СНп": 1,
+    "гезропзе": 2,
+    "зоНб": 1
+   },
+   "secs": 62.9
+  },
+  {
+   "doc": "КР234_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 1,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "Hepatitis В": 1
+   },
+   "secs": 71.0
+  },
+  {
+   "doc": "КР260_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 4,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "МЕОЫЫЕ": 1,
+    "оГ": 3
+   },
+   "secs": 49.8
+  },
+  {
+   "doc": "КР267_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 9,
+   "source_leaks": [],
+   "n_diff_zones": 6,
+   "clean": true,
+   "forms": {
+    "Hepatitis В": 1,
+    "оГ": 3,
+    "Нераййз": 3,
+    "асбуйу": 1,
+    "Зсоге": 1
+   },
+   "secs": 72.8
+  },
+  {
+   "doc": "КР26_4",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 5,
+   "source_leaks": [],
+   "n_diff_zones": 3,
+   "clean": true,
+   "forms": {
+    "JO1XХ": 2,
+    "Herpes\tС\n\tsimplex virus": 3
+   },
+   "secs": 30.8
+  },
+  {
+   "doc": "КР297_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 9,
+   "source_leaks": [],
+   "n_diff_zones": 3,
+   "clean": true,
+   "forms": {
+    "рМ1а": 1,
+    "М1а": 1,
+    "М1с": 1,
+    "1МКТ": 1,
+    "8са1е": 1,
+    "Тохюку": 1,
+    "гезропзе": 1,
+    "оГ": 1,
+    "СНп": 1
+   },
+   "secs": 70.4
+  },
+  {
+   "doc": "КР30_5",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 6,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "N2а": 2,
+    "М1а": 1,
+    "М1с": 1,
+    "М1с1": 1,
+    "М1с2": 1
+   },
+   "secs": 13.1
+  },
+  {
+   "doc": "КР325_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 6,
+   "source_leaks": [],
+   "n_diff_zones": 6,
+   "clean": true,
+   "forms": {
+    "301СЯ": 1,
+    "ШРА8А": 1,
+    "МРА8А": 2,
+    "оГ": 2
+   },
+   "secs": 44.5
+  },
+  {
+   "doc": "КР329_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 4,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "Т1Ь": 1,
+    "Т4Ь": 1,
+    "КЕС15Т": 1,
+    "Ьир://огс1с1.ог": 1
+   },
+   "secs": 56.0
+  },
+  {
+   "doc": "КР330_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 38,
+   "source_leaks": [],
+   "n_diff_zones": 10,
+   "clean": true,
+   "forms": {
+    "оГ": 10,
+    "1Ш88СО": 6,
+    "51апс1аП5": 1,
+    "К.1188СО": 1,
+    "Е8РЕЫ": 1,
+    "Тохюйу": 1,
+    "гезропзе": 2,
+    "СНп": 1,
+    "Штогз": 1,
+    "зоНб": 1,
+    "уегзюп": 1,
+    "8са1е": 6,
+    "МсОШ": 2,
+    "Огабе": 1,
+    "8ирр1": 1,
+    "1итог": 1,
+    "гедгеззюп": 1
+   },
+   "secs": 43.3
+  },
+  {
+   "doc": "КР332_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 3,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "Т1Ь": 1,
+    "Ьир://огс1с1.ог": 2
+   },
+   "secs": 39.0
+  },
+  {
+   "doc": "КР359_3",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 47,
+   "source_leaks": [],
+   "n_diff_zones": 5,
+   "clean": true,
+   "forms": {
+    "оГ": 27,
+    "АО5": 1,
+    "Шзеазе": 1,
+    "8ирр1": 1,
+    "аси!е": 1,
+    "Райеп": 1,
+    "сНзеазе": 2,
+    "йозе": 1,
+    "Кезрн": 1,
+    "ОеуеЬртеп": 1,
+    "тГесйоп": 2,
+    "гедгеззюп": 1,
+    "Кезрп": 1,
+    "СНп": 2,
+    "Мес1": 1,
+    "сЬготс": 1,
+    "МЕОЫЫЕ": 1,
+    "ЮЙ8": 1
+   },
+   "secs": 222.8
+  },
+  {
+   "doc": "КР360_3",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 0,
+   "source_leaks": [],
+   "n_diff_zones": 0,
+   "clean": true,
+   "forms": {},
+   "secs": 4.7
+  },
+  {
+   "doc": "КР372_3",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 2,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "aeruginosa, В. cepacia comрlex": 2
+   },
+   "secs": 48.4
+  },
+  {
+   "doc": "КР382_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 1,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "CHА2DS2": 1
+   },
+   "secs": 34.5
+  },
+  {
+   "doc": "КР396_4",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 15,
+   "source_leaks": [],
+   "n_diff_zones": 7,
+   "clean": true,
+   "forms": {
+    "М1а": 2,
+    "Т4Ь": 1,
+    "Р01РОХ1Ш": 1,
+    "ЕКА8": 1,
+    "ЯА8": 1,
+    "Штогз": 1,
+    "оГ": 4,
+    "гедгеззюп": 1,
+    "8са1е": 1,
+    "Тохюйу": 1,
+    "гезропзе": 1
+   },
+   "secs": 100.2
+  },
+  {
+   "doc": "КР450_3",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 19,
+   "source_leaks": [],
+   "n_diff_zones": 6,
+   "clean": true,
+   "forms": {
+    "ЕКА8": 1,
+    "СагЬопе": 1,
+    "гезропзе": 3,
+    "оГ": 3,
+    "8са1е": 5,
+    "МсОШ": 2,
+    "Огабе": 1,
+    "8ирр1": 1,
+    "уегзюп": 1,
+    "ЯЕС18Т": 1
+   },
+   "secs": 65.7
+  },
+  {
+   "doc": "КР467_3",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 9,
+   "source_leaks": [],
+   "n_diff_zones": 5,
+   "clean": true,
+   "forms": {
+    "1Ш88СО": 2,
+    "К.1188СО": 1,
+    "ШЛ88СО": 1,
+    "1Ш8БСО": 1,
+    "81ейепз": 1,
+    "Т4Ь": 1,
+    "Е8РЕЫ": 1,
+    "гезропзе": 1
+   },
+   "secs": 227.0
+  },
+  {
+   "doc": "КР46_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 2,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "Hepatitis В": 1,
+    "Нераййз": 1
+   },
+   "secs": 57.1
+  },
+  {
+   "doc": "КР476_3",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 4,
+   "source_leaks": [],
+   "n_diff_zones": 3,
+   "clean": true,
+   "forms": {
+    "81ейепз": 1,
+    "Ьйрз": 1,
+    "СагЬопе": 1,
+    "СНп": 1
+   },
+   "secs": 97.0
+  },
+  {
+   "doc": "КР477_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 6,
+   "source_leaks": [],
+   "n_diff_zones": 4,
+   "clean": true,
+   "forms": {
+    "JO1XХ": 2,
+    "Herpes\tС\n\tsimplex virus": 4
+   },
+   "secs": 49.5
+  },
+  {
+   "doc": "КР479_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 5,
+   "source_leaks": [],
+   "n_diff_zones": 5,
+   "clean": true,
+   "forms": {
+    "JO1XХ": 3,
+    "Herpes\tС\n\tsimplex virus": 2
+   },
+   "secs": 35.7
+  },
+  {
+   "doc": "КР495_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 4,
+   "source_leaks": [],
+   "n_diff_zones": 3,
+   "clean": true,
+   "forms": {
+    "Т2в": 2,
+    "T2в": 2
+   },
+   "secs": 9.4
+  },
+  {
+   "doc": "КР502_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 31,
+   "source_leaks": [],
+   "n_diff_zones": 11,
+   "clean": true,
+   "forms": {
+    "М1а": 2,
+    "1МКТ": 1,
+    "оГ": 5,
+    "1Ш88СО": 2,
+    "81ейепз": 1,
+    "Е8РЕЫ": 1,
+    "Тохюку": 1,
+    "гезропзе": 2,
+    "СНп": 1,
+    "зоНб": 2,
+    "Штогз": 1,
+    "уегзюп": 1,
+    "8са1е": 6,
+    "МсОШ": 2,
+    "Огабе": 1,
+    "8ирр1": 1,
+    "Уо1.1": 1
+   },
+   "secs": 84.0
+  },
+  {
+   "doc": "КР51_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 1,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "51апс1аП5": 1
+   },
+   "secs": 87.3
+  },
+  {
+   "doc": "КР524_3",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 1,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "Ьйрз": 1
+   },
+   "secs": 65.1
+  },
+  {
+   "doc": "КР526_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 11,
+   "source_leaks": [],
+   "n_diff_zones": 5,
+   "clean": true,
+   "forms": {
+    "бейшепсу": 1,
+    "1Ш88СО": 1,
+    "Ьйрз": 1,
+    "Аззау": 2,
+    "Тохюку": 1,
+    "гезропзе": 3,
+    "8са1е": 1,
+    "уегзюп": 1
+   },
+   "secs": 103.4
+  },
+  {
+   "doc": "КР532_5",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 5,
+   "source_leaks": [],
+   "n_diff_zones": 3,
+   "clean": true,
+   "forms": {
+    "Т1Ь": 1,
+    "М1а": 3,
+    "51апс1аП5": 1
+   },
+   "secs": 74.0
+  },
+  {
+   "doc": "КР547_3",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 1,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "СА19.9": 1
+   },
+   "secs": 21.5
+  },
+  {
+   "doc": "КР554_4",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 2,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "М1a": 1,
+    "М1b": 1
+   },
+   "secs": 13.5
+  },
+  {
+   "doc": "КР555_3",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 2,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "N1а": 1,
+    "N1с": 1
+   },
+   "secs": 9.7
+  },
+  {
+   "doc": "КР584_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 2,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "М1а": 1,
+    "М1b": 1
+   },
+   "secs": 10.0
+  },
+  {
+   "doc": "КР588_3",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 1,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "Н2О": 1
+   },
+   "secs": 108.6
+  },
+  {
+   "doc": "КР603_3",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 10,
+   "source_leaks": [],
+   "n_diff_zones": 4,
+   "clean": true,
+   "forms": {
+    "аегщтоза": 2,
+    "оГ": 3,
+    "зеуегйу": 1,
+    "Уо1.54": 1,
+    "сЬготс": 1,
+    "Кезрп": 1,
+    "сйзеазе": 1
+   },
+   "secs": 119.9
+  },
+  {
+   "doc": "КР606_3",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 5,
+   "source_leaks": [],
+   "n_diff_zones": 5,
+   "clean": true,
+   "forms": {
+    "JO1XХ": 2,
+    "Herpes\tС\n\tsimplex virus": 3
+   },
+   "secs": 61.0
+  },
+  {
+   "doc": "КР610_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 5,
+   "source_leaks": [],
+   "n_diff_zones": 3,
+   "clean": true,
+   "forms": {
+    "7ЧЕС": 2,
+    "8са1е": 1,
+    "гезропзе": 1,
+    "СНп": 1
+   },
+   "secs": 114.1
+  },
+  {
+   "doc": "КР613_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 27,
+   "source_leaks": [],
+   "n_diff_zones": 12,
+   "clean": true,
+   "forms": {
+    "РКАХ": 1,
+    "оГ": 12,
+    "8са1е": 9,
+    "Райеп": 2,
+    "уегзюп": 1,
+    "Рпшагу": 1,
+    "зеуегйу": 1
+   },
+   "secs": 137.7
+  },
+  {
+   "doc": "КР628_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 11,
+   "source_leaks": [],
+   "n_diff_zones": 3,
+   "clean": true,
+   "forms": {
+    "801ЕС": 1,
+    "оГ": 9,
+    "8са1е": 1
+   },
+   "secs": 66.4
+  },
+  {
+   "doc": "КР629_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 20,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "801АЕ": 1,
+    "801АА": 2,
+    "оГ": 14,
+    "аси!е": 1,
+    "райеп!з": 1,
+    "МесНса1": 1
+   },
+   "secs": 26.2
+  },
+  {
+   "doc": "КР631_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 9,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "оГ": 5,
+    "Ггош": 1,
+    "8са1е": 3
+   },
+   "secs": 83.2
+  },
+  {
+   "doc": "КР651_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 2,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "Зсоге": 1,
+    "Ьйрз": 1
+   },
+   "secs": 79.4
+  },
+  {
+   "doc": "КР655_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 7,
+   "source_leaks": [],
+   "n_diff_zones": 5,
+   "clean": true,
+   "forms": {
+    "оГ": 4,
+    "МЕОЫЫЕ": 1,
+    "еу1с1епсе": 1,
+    "8ирр1": 1
+   },
+   "secs": 47.6
+  },
+  {
+   "doc": "КР677_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 0,
+   "source_leaks": [],
+   "n_diff_zones": 0,
+   "clean": true,
+   "forms": {},
+   "secs": 41.4
+  },
+  {
+   "doc": "КР685_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 2,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "Hepatitis В": 1,
+    "Нераййз": 1
+   },
+   "secs": 55.1
+  },
+  {
+   "doc": "КР68_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 5,
+   "source_leaks": [],
+   "n_diff_zones": 4,
+   "clean": true,
+   "forms": {
+    "511ТЗ": 1,
+    "8МАКСВ1": 1,
+    "8ЮРЕЬ": 1,
+    "810РЕЬ": 2
+   },
+   "secs": 140.1
+  },
+  {
+   "doc": "КР719_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 11,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "аегщтоза": 1,
+    "оГ": 3,
+    "сПшса1": 1,
+    "аси!е": 2,
+    "ууотеп": 2,
+    "зишшагу": 1,
+    "гЦТ11Ш1с!еПпе": 1
+   },
+   "secs": 38.9
+  },
+  {
+   "doc": "КР736_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 10,
+   "source_leaks": [],
+   "n_diff_zones": 4,
+   "clean": true,
+   "forms": {
+    "оГ": 3,
+    "МесНса1": 1,
+    "8са1е": 4,
+    "зеуегйу": 1,
+    "Уо1.54": 1
+   },
+   "secs": 70.4
+  },
+  {
+   "doc": "КР743_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 2,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "рО2": 2
+   },
+   "secs": 9.4
+  },
+  {
+   "doc": "КР748_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 9,
+   "source_leaks": [],
+   "n_diff_zones": 5,
+   "clean": true,
+   "forms": {
+    "Нераййз": 2,
+    "асбуйу": 2,
+    "оГ": 3,
+    "8ирр1": 1,
+    "райеп!з": 1
+   },
+   "secs": 118.2
+  },
+  {
+   "doc": "КР74_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 3,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "N1а": 3
+   },
+   "secs": 7.7
+  },
+  {
+   "doc": "КР752_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 4,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "оГ": 2,
+    "сйзеазе": 2
+   },
+   "secs": 109.8
+  },
+  {
+   "doc": "КР758_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 2,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "JO1XХ": 2
+   },
+   "secs": 27.0
+  },
+  {
+   "doc": "КР75_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 1,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "N2с": 1
+   },
+   "secs": 4.8
+  },
+  {
+   "doc": "КР763_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 4,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "ВАР1": 2,
+    "Т1Ь": 1,
+    "ТН1М": 1
+   },
+   "secs": 79.8
+  },
+  {
+   "doc": "КР764_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 1,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "оГ": 1
+   },
+   "secs": 16.0
+  },
+  {
+   "doc": "КР783_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 7,
+   "source_leaks": [],
+   "n_diff_zones": 5,
+   "clean": true,
+   "forms": {
+    "Ншпап": 1,
+    "Кезрп": 1,
+    "Кезрн": 2,
+    "сЬготс": 2,
+    "МесНса1": 1
+   },
+   "secs": 46.9
+  },
+  {
+   "doc": "КР795_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 3,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "НЬзАд": 1,
+    "раШбит": 1,
+    "оГ": 1
+   },
+   "secs": 127.1
+  },
+  {
+   "doc": "КР796_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 2,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "Hepatitis В": 1,
+    "оГ": 1
+   },
+   "secs": 48.3
+  },
+  {
+   "doc": "КР797_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 90,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "оГ": 80,
+    "гапёогшгеё": 2,
+    "Ггош": 2,
+    "ууотеп": 1,
+    "зеуегйу": 2,
+    "Ьйрз": 2,
+    "йозе": 1
+   },
+   "secs": 54.9
+  },
+  {
+   "doc": "КР79_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 0,
+   "source_leaks": [],
+   "n_diff_zones": 0,
+   "clean": true,
+   "forms": {},
+   "secs": 30.5
+  },
+  {
+   "doc": "КР805_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 1,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "оГ": 1
+   },
+   "secs": 35.4
+  },
+  {
+   "doc": "КР872_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 10,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "Н2О": 9,
+    "смН2О": 1
+   },
+   "secs": 5.1
+  },
+  {
+   "doc": "КР873_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 2,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "Н2O": 1,
+    "рО2": 1
+   },
+   "secs": 5.8
+  },
+  {
+   "doc": "КР874_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 10,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "Н2О": 7,
+    "смН2О": 3
+   },
+   "secs": 6.8
+  },
+  {
+   "doc": "КР879_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 10,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "Н2О": 9,
+    "смН2О": 1
+   },
+   "secs": 6.5
+  },
+  {
+   "doc": "КР880_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 10,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "Н2О": 9,
+    "смН2О": 1
+   },
+   "secs": 7.9
+  },
+  {
+   "doc": "КР889_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 3,
+   "source_leaks": [],
+   "n_diff_zones": 3,
+   "clean": true,
+   "forms": {
+    "МО4": 3
+   },
+   "secs": 13.4
+  },
+  {
+   "doc": "КР8_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 2,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "О04ВБ": 1,
+    "С04ЕЮ": 1
+   },
+   "secs": 57.7
+  },
+  {
+   "doc": "КР900_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 2,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "Hepatitis В": 2
+   },
+   "secs": 14.6
+  },
+  {
+   "doc": "КР910_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 2,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "А8КМ": 1,
+    "Е8НКЕ": 1
+   },
+   "secs": 56.0
+  },
+  {
+   "doc": "КР912_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 6,
+   "source_leaks": [],
+   "n_diff_zones": 3,
+   "clean": true,
+   "forms": {
+    "Н2О": 3,
+    "рО2": 3
+   },
+   "secs": 12.4
+  },
+  {
+   "doc": "КР926_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 10,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "Н2О": 9,
+    "смН2О": 1
+   },
+   "secs": 8.7
+  },
+  {
+   "doc": "КР931_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 0,
+   "source_leaks": [],
+   "n_diff_zones": 0,
+   "clean": true,
+   "forms": {},
+   "secs": 43.7
+  },
+  {
+   "doc": "КР942_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 1,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "Herpes\tС\n\tsimplex virus": 1
+   },
+   "secs": 21.4
+  },
+  {
+   "doc": "КР945_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 1,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "РО2": 1
+   },
+   "secs": 26.5
+  },
+  {
+   "doc": "КР957_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 1,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "раШбит": 1
+   },
+   "secs": 148.2
+  },
+  {
+   "doc": "КР967_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 1,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "Hepatitis В": 1
+   },
+   "secs": 42.5
+  },
+  {
+   "doc": "КР969_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 1,
+   "source_leaks": [],
+   "n_diff_zones": 1,
+   "clean": true,
+   "forms": {
+    "801РА": 1
+   },
+   "secs": 61.6
+  },
+  {
+   "doc": "КР96_2",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 6,
+   "source_leaks": [],
+   "n_diff_zones": 4,
+   "clean": true,
+   "forms": {
+    "8са1е": 4,
+    "оГ": 2
+   },
+   "secs": 101.9
+  },
+  {
+   "doc": "КР997_1",
+   "struct_mismatch": null,
+   "unexplained": [],
+   "prov_bad": [],
+   "applied": 24,
+   "source_leaks": [],
+   "n_diff_zones": 2,
+   "clean": true,
+   "forms": {
+    "аегщтоза": 1,
+    "Рпшагу": 2,
+    "сопзегуайуе": 1,
+    "рпшагу": 1,
+    "оГ": 13,
+    "сЬготс": 1,
+    "сНзеазе": 2,
+    "01зеазе": 1,
+    "гезропзе": 1,
+    "аси!е": 1
+   },
+   "secs": 47.7
+  }
+ ],
+ "i1": [
+  [
+   "КР802_1",
+   true,
+   true
+  ],
+  [
+   "КР845_1",
+   true,
+   true
+  ],
+  [
+   "КР901_1",
+   true,
+   true
+  ],
+  [
+   "КР1000_1",
+   true,
+   true
+  ],
+  [
+   "КР66_4",
+   true,
+   true
+  ],
+  [
+   "КР876_1",
+   true,
+   true
+  ]
+ ],
+ "not_applied": [
+  "Ш-1У",
+  "Н-Ш",
+  "Herpes С simplex virus"
+ ],
+ "per_prov": {
+  "reverified_crop_arbitrated": 12,
+  "ls_verified_full": 245,
+  "human_verified_5a": 505,
+  "reverified_homoglyph_norm": 59,
+  "reverified_human_verified+homoglyph_norm": 33
+ },
+ "per_form_occ": {
+  "JO1XХ": 12,
+  "Herpes\tС\n\tsimplex virus": 14,
+  "Ьйрз": 7,
+  "Нераййз": 10,
+  "РO2": 2,
+  "Н2О": 48,
+  "aeruginosa, В. cepacia comрlex": 3,
+  "оГ": 347,
+  "Hepatitis В": 12,
+  "1А1НС": 1,
+  "РКАХ": 2,
+  "СНп": 9,
+  "уапсез": 2,
+  "8ирр1": 8,
+  "гезропзе": 29,
+  "01зеазе": 2,
+  "сПшса1": 3,
+  "ОеуеЬртеп": 2,
+  "СагЬопе": 5,
+  "Шзеазе": 2,
+  "еу1с1епсе": 2,
+  "рпшагу": 3,
+  "801РВ01": 3,
+  "801АА": 3,
+  "ВАР1": 4,
+  "НЬзАд": 2,
+  "Ншпап": 2,
+  "ЕТ1Ш8": 2,
+  "Мес1": 2,
+  "тГесйоп": 3,
+  "зишшагу": 2,
+  "зеуегйу": 6,
+  "йозе": 3,
+  "гапёогшгеё": 4,
+  "сопзегуайуе": 3,
+  "райеп!з": 3,
+  "бейшепсу": 2,
+  "Рпшагу": 4,
+  "Т4Ь": 4,
+  "М1а": 12,
+  "М1Ь": 1,
+  "Т1Ь": 6,
+  "1МКТ": 4,
+  "1Ш88СО": 12,
+  "ЕКА8": 4,
+  "1итог": 3,
+  "Аззау": 4,
+  "Тохюйу": 3,
+  "М1с": 4,
+  "Зсоге": 4,
+  "АС55": 1,
+  "VО2": 1,
+  "уегзюп": 7,
+  "8са1е": 48,
+  "МсОШ": 8,
+  "Огабе": 4,
+  "Ю4ААЗЗ": 1,
+  "Б04ААЗЗ": 1,
+  "раШбит": 3,
+  "Ь04АВ02": 2,
+  "Т04ААЗЗ": 1,
+  "сйзеазе": 4,
+  "Уо1.22": 1,
+  "зоНб": 4,
+  "МЕОЫЫЕ": 3,
+  "асбуйу": 3,
+  "рМ1а": 1,
+  "Тохюку": 3,
+  "N2а": 2,
+  "М1с1": 1,
+  "М1с2": 1,
+  "301СЯ": 1,
+  "ШРА8А": 1,
+  "МРА8А": 2,
+  "КЕС15Т": 1,
+  "Ьир://огс1с1.ог": 3,
+  "51апс1аП5": 3,
+  "К.1188СО": 2,
+  "Е8РЕЫ": 3,
+  "Штогз": 3,
+  "гедгеззюп": 3,
+  "АО5": 1,
+  "аси!е": 5,
+  "Райеп": 3,
+  "сНзеазе": 4,
+  "Кезрн": 3,
+  "Кезрп": 3,
+  "сЬготс": 5,
+  "ЮЙ8": 1,
+  "CHА2DS2": 1,
+  "Р01РОХ1Ш": 1,
+  "ЯА8": 1,
+  "ЯЕС18Т": 1,
+  "ШЛ88СО": 1,
+  "1Ш8БСО": 1,
+  "81ейепз": 3,
+  "Т2в": 2,
+  "T2в": 2,
+  "Уо1.1": 1,
+  "СА19.9": 1,
+  "М1a": 1,
+  "М1b": 2,
+  "N1а": 4,
+  "N1с": 1,
+  "аегщтоза": 4,
+  "Уо1.54": 2,
+  "7ЧЕС": 2,
+  "801ЕС": 1,
+  "801АЕ": 1,
+  "МесНса1": 3,
+  "Ггош": 3,
+  "511ТЗ": 1,
+  "8МАКСВ1": 1,
+  "8ЮРЕЬ": 1,
+  "810РЕЬ": 2,
+  "ууотеп": 3,
+  "гЦТ11Ш1с!еПпе": 1,
+  "рО2": 6,
+  "N2с": 1,
+  "ТН1М": 1,
+  "смН2О": 7,
+  "Н2O": 1,
+  "МО4": 3,
+  "О04ВБ": 1,
+  "С04ЕЮ": 1,
+  "А8КМ": 1,
+  "Е8НКЕ": 1,
+  "РО2": 1,
+  "801РА": 1
+ },
+ "total": 854
+}

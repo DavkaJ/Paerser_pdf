@@ -10,13 +10,31 @@
 
 from __future__ import annotations
 
+import hashlib
+import os
 import re
 from collections import Counter
 from typing import Dict, List
 
 import fitz  # PyMuPDF
 
-from crparser.engine.models import BBox, Line, Page
+from crparser.engine.models import (
+    BBox, Line, Page, PageIR, make_page_ir, make_source_span)
+from crparser.engine.textnorm import (
+    control_char_count, glyph_suspect_count, looks_glyph_corrupted,
+    normalize_line, pseudo_ascii_counts, strip_format_chars)
+
+def _pdf_sha256(path: str):
+    """sha256 исходного PDF — часть content-addressed ключа OCR-кэша. None при сбое."""
+    try:
+        h = hashlib.sha256()
+        with open(path, "rb") as fh:
+            for chunk in iter(lambda: fh.read(1 << 20), b""):
+                h.update(chunk)
+        return h.hexdigest()
+    except Exception:  # noqa: BLE001
+        return None
+
 
 # Бит 4 (16) в span["flags"] PyMuPDF — признак жирного начертания.
 _FLAG_BOLD = 1 << 4
@@ -38,10 +56,15 @@ def _is_bold_span(span: Dict) -> bool:
 
 
 def _clean_line(text: str) -> str:
-    """Схлопнуть пробелы, убрать мягкие переносы и мусорные символы."""
+    """Схлопнуть пробелы, убрать мягкие переносы, форматные и мусорные символы.
+
+    Управляющие C0/C1 здесь НЕ трогаем: у части документов битый cmap отдаёт код
+    глифа вместо буквы («Registry» -> «R\\x07gistr\\x1a»), и удаление склеило бы
+    соседние токены, спрятав порчу. Их считает read() и флагует валидатор."""
     text = text.replace(_NBSP, " ").replace(_SOFT_HYPHEN, "")
     for ch in _TRASH_CHARS:
         text = text.replace(ch, "")
+    text, _ = strip_format_chars(text)
     text = re.sub(r"[ \t]+", " ", text)
     return text.strip()
 
@@ -51,6 +74,48 @@ def _norm_bbox(bbox) -> BBox:
         return (0.0, 0.0, 0.0, 0.0)
     x0, y0, x1, y1 = bbox
     return (float(x0), float(y0), float(x1), float(y1))
+
+
+def _line_candidates(ln: Line):
+    """Кандидаты и выбранный канал одной строки (промпт 08).
+
+    Гибрид-OCR правит Line.text ПО МЕСТУ, а text_raw хранит нативный текст: если
+    строка отмечена source="ocr" и её native отличается — это ОДИН span с ДВУМЯ
+    кандидатами (native=битый слой, ocr=восстановление). Выбор канала здесь НЕ
+    меняется — только фиксируется (границы промпта 08)."""
+    if ln.source == "ocr" and ln.text_raw and ln.text_raw != ln.text:
+        conf = {"ocr": ln.confidence} if ln.confidence is not None else {}
+        return {"native": ln.text_raw, "ocr": ln.text}, conf, "ocr"
+    if ln.source != "native":
+        conf = {ln.source: ln.confidence} if ln.confidence is not None else {}
+        return {ln.source: ln.text}, conf, ln.source
+    return {"native": ln.text}, {}, "native"
+
+
+def build_page_ir(pages: List[Page]) -> List[PageIR]:
+    """Собрать PageIR ПО ФИНАЛЬНЫМ страницам (после гибрид-/полного-OCR).
+
+    Вызывается из parser ПОСЛЕ выбора итогового набора страниц (полный OCR заменяет
+    pages целиком, поэтому строить IR в read() нельзя). Каждая Line -> один
+    SourceSpan; каналы считаются по ВЫБРАННОМУ каналу строки."""
+    page_irs: List[PageIR] = []
+    for page in pages:
+        spans = []
+        channel_counts: Dict[str, int] = {}
+        for ln in page.lines:
+            cand, conf, sel = _line_candidates(ln)
+            spans.append(make_source_span(
+                ln.span_uid, page.number, ln.bbox, cand, conf, sel))
+            channel_counts[sel] = channel_counts.get(sel, 0) + 1
+        if channel_counts:
+            # основной канал — самый частый (при равенстве — лексикографически)
+            primary = max(channel_counts.items(), key=lambda kv: (kv[1], kv[0]))[0]
+        else:
+            primary = "native"
+        aux = sorted(c for c in channel_counts if c != primary)
+        page_irs.append(make_page_ir(
+            page.number, spans, primary, aux, {"channel_counts": dict(channel_counts)}))
+    return page_irs
 
 
 class PdfReader:
@@ -68,10 +133,26 @@ class PdfReader:
     def __init__(self, path: str) -> None:
         self._path = path
         self._doc = fitz.open(path)
+        #: счётчики починенной/обнаруженной порчи текста (для валидатора)
+        self.norm_stats: Dict[str, int] = {
+            "spacing": 0, "doubling": 0, "glyph": 0,
+            # «обратная» глифовая порча (кириллица->ASCII): накапливаем сырые
+            # счётчики по документу, решение — по совокупной доле в parser.
+            "pseudo": 0, "sig": 0,
+            # управляющие C0/C1 вместо букв (битый cmap отдаёт код глифа)
+            "control": 0}
+        #: диагностика OCR-пути (для логов); в вывод документа НЕ попадает, чтобы
+        #: отсутствие/сбой Tesseract не меняли JSON — файл парсится как без OCR
+        self.ocr_warnings: List[str] = []
 
     @property
     def page_count(self) -> int:
         return self._doc.page_count
+
+    @property
+    def doc(self):
+        """Открытый fitz-документ (для полного OCR до close())."""
+        return self._doc
 
     def first_page_text(self) -> str:
         """Сырой текст первой страницы (для fallback-метаданных по титулу)."""
@@ -104,6 +185,28 @@ class PdfReader:
                     text = _clean_line("".join(parts))
                     if not text:
                         continue
+                    raw_text = text          # ДО нормализации (provenance: text_raw)
+
+                    # «обратная» глифовая порча (кириллица->ASCII) — считаем по
+                    # СЫРОМУ тексту строки (до нормализации), доля агрегируется
+                    # по документу; решение принимает parser (плотностной порог).
+                    sig_here, pseudo_here = pseudo_ascii_counts(text)
+                    self.norm_stats["sig"] += sig_here
+                    self.norm_stats["pseudo"] += pseudo_here
+                    self.norm_stats["control"] += control_char_count(text)
+
+                    # нормализация порчи (доменно-нейтрально): разрядку/удвоение
+                    # чиним, глифовую подмену — НЕ трогаем (только считаем), чтобы
+                    # не искажать регион, который всё равно уйдёт на OCR.
+                    glyph_here = glyph_suspect_count(text)
+                    if glyph_here:
+                        self.norm_stats["glyph"] += glyph_here
+                    elif looks_glyph_corrupted(text):
+                        pass  # смешение скриптов без «плохих» биграмм — не чиним
+                    else:
+                        text, nsp, ndb = normalize_line(text)
+                        self.norm_stats["spacing"] += nsp
+                        self.norm_stats["doubling"] += ndb
 
                     lines.append(Line(
                         page=index + 1,
@@ -111,6 +214,8 @@ class PdfReader:
                         bbox=_norm_bbox(raw_line.get("bbox")),
                         size=max(sizes) if sizes else 0.0,
                         bold=any(bolds),
+                        text_raw=raw_text,      # provenance (промпт 08)
+                        source="native",
                     ))
 
             # разрыв базовых линий к предыдущей строке (для детекции «пустых строк»,
@@ -125,7 +230,54 @@ class PdfReader:
                 lines=lines,
                 text="\n".join(ln.text for ln in lines),
             ))
+
+        # ГИБРИД-OCR восстановление битого латинского слоя (изолировано в ocr.py).
+        # Вызывается, ПОКА self._doc открыт, после сборки всех строк. Гейт —
+        # плотностной §-порог по документу; для ЧИСТЫХ файлов (нет «§») работа
+        # ноль: не рендерим, не зовём Tesseract, вывод байт-в-байт прежний.
+        self._maybe_hybrid_ocr(pages)
         return pages
+
+    def _maybe_hybrid_ocr(self, pages: List[Page]) -> None:
+        """Если документ — кандидат на кирилло-латинскую §-порчу И доступен
+        Tesseract, восстановить битые латинские токены по месту (Line.text).
+        Любой сбой OCR не роняет чтение: пишем предупреждение, оставляем как есть."""
+        full = "\n".join(page.text for page in pages)
+        # локальный импорт: OCR-зависимости не грузятся для чистых файлов/при отказе
+        from crparser.engine.ocr import OcrRecoverer, is_hybrid_candidate
+        from crparser.engine import ocr_pins
+        base = ocr_pins.load_base()
+        if not is_hybrid_candidate(full, base):
+            return
+        try:
+            recoverer = OcrRecoverer()
+            if not recoverer.available():
+                return          # OCR не настроен — тихо, вывод как без OCR
+            doc_id = os.path.splitext(os.path.basename(self._path))[0]
+            fixed, new_map = recoverer.hybrid_recover(
+                self._doc, pages, base, doc_id=doc_id,
+                pdf_sha=_pdf_sha256(self._path))
+            if fixed:
+                self.norm_stats["ocr_hybrid_lines"] = fixed
+                self._recount_corruption(pages)
+            if new_map:
+                ocr_pins.write_shard(doc_id, new_map)
+        except Exception as exc:  # noqa: BLE001
+            self.ocr_warnings.append(f"гибрид-OCR не выполнен ({exc!r})")
+
+    def _recount_corruption(self, pages: List[Page]) -> None:
+        """Пересчитать глифовые счётчики порчи на ВОССТАНОВЛЕННОМ тексте, чтобы
+        stats/валидатор видели чистый результат (а не исходные битые токены)."""
+        glyph = sig = pseudo = 0
+        for page in pages:
+            for line in page.lines:
+                glyph += glyph_suspect_count(line.text)
+                s_here, p_here = pseudo_ascii_counts(line.text)
+                sig += s_here
+                pseudo += p_here
+        self.norm_stats["glyph"] = glyph
+        self.norm_stats["sig"] = sig
+        self.norm_stats["pseudo"] = pseudo
 
     @staticmethod
     def body_size(pages: List[Page]) -> float:

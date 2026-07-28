@@ -1,0 +1,507 @@
+{
+ "ВАР1": {
+  "corrected": "BAP1",
+  "entity_kind": "gene",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "ЕТ1Ш8": {
+  "corrected": "ETDRS",
+  "entity_kind": "gene",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "Ь04АВ02": {
+  "corrected": "L04AB02",
+  "entity_kind": "gene",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "МРА8А": {
+  "corrected": "RIPASA",
+  "entity_kind": "gene",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "1Ш88СО": {
+  "corrected": "RUSSCO",
+  "entity_kind": "gene",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "7ЧЕС": {
+  "corrected": "NEC",
+  "entity_kind": "gene",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "810РЕЬ": {
+  "corrected": "SIOPEL-3",
+  "entity_kind": "gene",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "1А1НС": {
+  "corrected": "IAIHG",
+  "entity_kind": "gene",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "АС55": {
+  "corrected": "ACSS",
+  "entity_kind": "gene",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "Ю4ААЗЗ": {
+  "corrected": "L04AA33",
+  "entity_kind": "gene",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "Б04ААЗЗ": {
+  "corrected": "L04AA33",
+  "entity_kind": "gene",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "Т04ААЗЗ": {
+  "corrected": "L04AA33",
+  "entity_kind": "gene",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "301СЯ": {
+  "corrected": "J01CR",
+  "entity_kind": "gene",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "ШРА8А": {
+  "corrected": "RIPASA",
+  "entity_kind": "gene",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "КЕС15Т": {
+  "corrected": "RECIST",
+  "entity_kind": "gene",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "ЮЙ8": {
+  "corrected": "Kids",
+  "entity_kind": "gene",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "CHА2DS2": {
+  "corrected": "CHA2DS2-VASc",
+  "entity_kind": "gene",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "Р01РОХ1Ш": {
+  "corrected": "FOLFOXIRI",
+  "entity_kind": "gene",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "ЯА8": {
+  "corrected": "RAS",
+  "entity_kind": "gene",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "ЯЕС18Т": {
+  "corrected": "RECIST",
+  "entity_kind": "gene",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "К.1188СО": {
+  "corrected": "RUSSCO",
+  "entity_kind": "gene",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "ШЛ88СО": {
+  "corrected": "RUSSCO",
+  "entity_kind": "gene",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "1Ш8БСО": {
+  "corrected": "RUSSCO",
+  "entity_kind": "gene",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "СА19.9": {
+  "corrected": "CA19.9",
+  "entity_kind": "gene",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "8МАКСВ1": {
+  "corrected": "SMARCB1",
+  "entity_kind": "gene",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "8ЮРЕЬ": {
+  "corrected": "SIOPEL-3",
+  "entity_kind": "gene",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "ТН1М": {
+  "corrected": "THIM",
+  "entity_kind": "gene",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "О04ВБ": {
+  "corrected": "G04BD",
+  "entity_kind": "gene",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "С04ЕЮ": {
+  "corrected": "G04BD",
+  "entity_kind": "gene",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "А8КМ": {
+  "corrected": "ASRM",
+  "entity_kind": "gene",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "Е8НКЕ": {
+  "corrected": "ESHRE",
+  "entity_kind": "gene",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "М1а": {
+  "corrected": "M1a",
+  "entity_kind": "tnm",
+  "provenance": "reverified_human_verified+homoglyph_norm",
+  "confidence": 0.9,
+  "note": "apply_homoglyph_normalize"
+ },
+ "М1с": {
+  "corrected": "M1c",
+  "entity_kind": "tnm",
+  "provenance": "reverified_human_verified+homoglyph_norm",
+  "confidence": 0.9,
+  "note": "apply_homoglyph_normalize"
+ },
+ "JO1XХ": {
+  "corrected": "J01XX",
+  "entity_kind": "atc",
+  "provenance": "reverified_crop_arbitrated",
+  "confidence": 0.95,
+  "note": "apply_human_crop",
+  "conflict": "J01XХ"
+ },
+ "рО2": {
+  "corrected": "pO2",
+  "entity_kind": "term",
+  "provenance": "reverified_homoglyph_norm",
+  "confidence": 0.85,
+  "note": "reclassify_physio_term"
+ },
+ "Н2О": {
+  "corrected": "H2O",
+  "entity_kind": "term",
+  "provenance": "reverified_homoglyph_norm",
+  "confidence": 0.85,
+  "note": "reclassify_physio_term"
+ },
+ "М1b": {
+  "corrected": "M1b",
+  "entity_kind": "tnm",
+  "provenance": "reverified_human_verified+homoglyph_norm",
+  "confidence": 0.9,
+  "note": "apply_homoglyph_normalize"
+ },
+ "N1а": {
+  "corrected": "N1a",
+  "entity_kind": "tnm",
+  "provenance": "reverified_human_verified+homoglyph_norm",
+  "confidence": 0.9,
+  "note": "apply_homoglyph_normalize"
+ },
+ "РO2": {
+  "corrected": "pO2",
+  "entity_kind": "term",
+  "provenance": "reverified_homoglyph_norm",
+  "confidence": 0.85,
+  "note": "reclassify_physio_term"
+ },
+ "801АА": {
+  "corrected": "S01AA",
+  "entity_kind": "atc",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "801РВ01": {
+  "corrected": "S01FB01",
+  "entity_kind": "atc",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "М1Ь": {
+  "corrected": "M1b",
+  "entity_kind": "tnm",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "Т4Ь": {
+  "corrected": "T4b",
+  "entity_kind": "tnm",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "Т1Ь": {
+  "corrected": "T1b",
+  "entity_kind": "tnm",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "VО2": {
+  "corrected": "VO2",
+  "entity_kind": "term",
+  "provenance": "reverified_homoglyph_norm",
+  "confidence": 0.85,
+  "note": "reclassify_physio_term"
+ },
+ "рМ1а": {
+  "corrected": "pN1a",
+  "entity_kind": "tnm",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "N2а": {
+  "corrected": "N2a",
+  "entity_kind": "tnm",
+  "provenance": "reverified_human_verified+homoglyph_norm",
+  "confidence": 0.9,
+  "note": "apply_homoglyph_normalize"
+ },
+ "М1с1": {
+  "corrected": "M1c1",
+  "entity_kind": "tnm",
+  "provenance": "reverified_human_verified+homoglyph_norm",
+  "confidence": 0.9,
+  "note": "apply_homoglyph_normalize"
+ },
+ "М1с2": {
+  "corrected": "M1c2",
+  "entity_kind": "tnm",
+  "provenance": "reverified_human_verified+homoglyph_norm",
+  "confidence": 0.9,
+  "note": "apply_homoglyph_normalize"
+ },
+ "АО5": {
+  "corrected": "A05",
+  "entity_kind": "icd",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "T2в": {
+  "corrected": "T2b",
+  "entity_kind": "tnm",
+  "provenance": "reverified_human_verified+homoglyph_norm",
+  "confidence": 0.9,
+  "note": "apply_homoglyph_normalize"
+ },
+ "Т2в": {
+  "corrected": "T2b",
+  "entity_kind": "tnm",
+  "provenance": "reverified_human_verified+homoglyph_norm",
+  "confidence": 0.9,
+  "note": "apply_homoglyph_normalize"
+ },
+ "М1a": {
+  "corrected": "M1a",
+  "entity_kind": "tnm",
+  "provenance": "reverified_human_verified+homoglyph_norm",
+  "confidence": 0.9,
+  "note": "apply_homoglyph_normalize"
+ },
+ "N1с": {
+  "corrected": "N1c",
+  "entity_kind": "tnm",
+  "provenance": "reverified_human_verified+homoglyph_norm",
+  "confidence": 0.9,
+  "note": "apply_homoglyph_normalize"
+ },
+ "801ЕС": {
+  "corrected": "S01EC",
+  "entity_kind": "atc",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "801АЕ": {
+  "corrected": "S01AE",
+  "entity_kind": "atc",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "511ТЗ": {
+  "corrected": "5HT3",
+  "entity_kind": "atc",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "N2с": {
+  "corrected": "N2c",
+  "entity_kind": "tnm",
+  "provenance": "reverified_human_verified+homoglyph_norm",
+  "confidence": 0.9,
+  "note": "apply_homoglyph_normalize"
+ },
+ "Н2O": {
+  "corrected": "H2O",
+  "entity_kind": "term",
+  "provenance": "reverified_homoglyph_norm",
+  "confidence": 0.85,
+  "note": "reclassify_physio_term"
+ },
+ "РО2": {
+  "corrected": "pO2",
+  "entity_kind": "term",
+  "provenance": "reverified_homoglyph_norm",
+  "confidence": 0.85,
+  "note": "reclassify_physio_term"
+ },
+ "801РА": {
+  "corrected": "S01FA",
+  "entity_kind": "atc",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "Herpes С simplex virus": {
+  "corrected": "Herpes simplex virus",
+  "entity_kind": "term",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "СНп": {
+  "corrected": "Clin",
+  "entity_kind": "term",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "8са1е": {
+  "corrected": "Scale",
+  "entity_kind": null,
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "МсОШ": {
+  "corrected": "McGill",
+  "entity_kind": "term",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "уегзюп": {
+  "corrected": "version",
+  "entity_kind": "term",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "Ьйрз": {
+  "corrected": "https",
+  "entity_kind": null,
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "оГ": {
+  "corrected": "of",
+  "entity_kind": "term",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "гЦТ11Ш1с!еПпе": {
+  "corrected": "rUTIguideline",
+  "entity_kind": "gene",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "Уо1.54": {
+  "corrected": "Vol.54",
+  "entity_kind": "icd",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "Уо1.22": {
+  "corrected": "Vol. 224",
+  "entity_kind": "icd",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ },
+ "Уо1.1": {
+  "corrected": "Vol. 15",
+  "entity_kind": "icd",
+  "provenance": "human_verified_5a",
+  "confidence": 0.95,
+  "note": "ls_export"
+ }
+}
