@@ -1,0 +1,562 @@
+[
+ {
+  "task_id": "lt_00000",
+  "predicted": "BAP1",
+  "action": "fix",
+  "confidence": 0.95,
+  "reason": "gene decode with candidate; context BAP1-TPDS"
+ },
+ {
+  "task_id": "lt_00001",
+  "predicted": "ETDRS",
+  "action": "fix",
+  "confidence": 0.9,
+  "reason": "garbled reconstruction; context confirms ETDRS grading"
+ },
+ {
+  "task_id": "lt_00002",
+  "predicted": "L04AB02",
+  "action": "fix",
+  "confidence": 0.85,
+  "reason": "Ь→L non-twin; infliximab ATC L04AB02"
+ },
+ {
+  "task_id": "lt_00003",
+  "predicted": "RIPASA",
+  "action": "fix",
+  "confidence": 0.7,
+  "reason": "garbled reconstruction; RIPASA appendicitis score"
+ },
+ {
+  "task_id": "lt_00004",
+  "predicted": "RUSSCO",
+  "action": "fix",
+  "confidence": 0.95,
+  "reason": "garbled 1Ш88СО; context RUSSCO recommendations"
+ },
+ {
+  "task_id": "lt_00005",
+  "predicted": "NEC",
+  "action": "fix",
+  "confidence": 0.75,
+  "reason": "7Ч→N reconstruction; context НЭК (NEC)"
+ },
+ {
+  "task_id": "lt_00006",
+  "predicted": "SIOPEL-3",
+  "action": "fix",
+  "confidence": 0.7,
+  "reason": "8→S reconstruction; candidate suffix SIOPEL-3"
+ },
+ {
+  "task_id": "lt_00007",
+  "predicted": "IAIHG",
+  "action": "fix",
+  "confidence": 0.75,
+  "reason": "reconstruction; Intl Autoimmune Hepatitis Group"
+ },
+ {
+  "task_id": "lt_00008",
+  "predicted": "ACSS",
+  "action": "fix",
+  "confidence": 0.5,
+  "reason": "5→S reconstruction; gene candidate ACSS"
+ },
+ {
+  "task_id": "lt_00009",
+  "predicted": "L04AA33",
+  "action": "fix",
+  "confidence": 0.7,
+  "reason": "Ю→L0 reconstruction; vedolizumab ATC per context"
+ },
+ {
+  "task_id": "lt_00010",
+  "predicted": "L04AA33",
+  "action": "fix",
+  "confidence": 0.8,
+  "reason": "Б→L reconstruction; vedolizumab ATC L04AA33"
+ },
+ {
+  "task_id": "lt_00011",
+  "predicted": "L04AA33",
+  "action": "fix",
+  "confidence": 0.6,
+  "reason": "T04AA33 invalid; must be vedolizumab L04AA33"
+ },
+ {
+  "task_id": "lt_00012",
+  "predicted": "J01CR",
+  "action": "fix",
+  "confidence": 0.85,
+  "reason": "3→J Я→R reconstruction; penicillin+BLI J01CR"
+ },
+ {
+  "task_id": "lt_00013",
+  "predicted": "RIPASA",
+  "action": "fix",
+  "confidence": 0.7,
+  "reason": "garbled reconstruction; RIPASA appendicitis score"
+ },
+ {
+  "task_id": "lt_00014",
+  "predicted": "RECIST",
+  "action": "fix",
+  "confidence": 0.95,
+  "reason": "1→I 5→S reconstruction; context RECIST"
+ },
+ {
+  "task_id": "lt_00015",
+  "predicted": "Kids",
+  "action": "fix",
+  "confidence": 0.35,
+  "reason": "garbled; candidate Kids, no context"
+ },
+ {
+  "task_id": "lt_00016",
+  "predicted": "CHA2DS2-VASc",
+  "action": "fix",
+  "confidence": 0.85,
+  "reason": "fix cyrillic А; recover -VASc suffix from context"
+ },
+ {
+  "task_id": "lt_00017",
+  "predicted": "FOLFOXIRI",
+  "action": "fix",
+  "confidence": 0.8,
+  "reason": "garbled reconstruction; chemo regimen, context confirms"
+ },
+ {
+  "task_id": "lt_00018",
+  "predicted": "RAS",
+  "action": "fix",
+  "confidence": 0.85,
+  "reason": "Я→R 8→S reconstruction; RAS gene"
+ },
+ {
+  "task_id": "lt_00019",
+  "predicted": "RECIST",
+  "action": "fix",
+  "confidence": 0.85,
+  "reason": "Я→R 1→I 8→S reconstruction; RECIST"
+ },
+ {
+  "task_id": "lt_00020",
+  "predicted": "RUSSCO",
+  "action": "fix",
+  "confidence": 0.8,
+  "reason": "garbled; context RUSSCO recommendations"
+ },
+ {
+  "task_id": "lt_00021",
+  "predicted": "RUSSCO",
+  "action": "fix",
+  "confidence": 0.8,
+  "reason": "garbled; context RUSSCO recommendations"
+ },
+ {
+  "task_id": "lt_00022",
+  "predicted": "RUSSCO",
+  "action": "fix",
+  "confidence": 0.85,
+  "reason": "garbled 1Ш8БСО; context RUSSCO URL"
+ },
+ {
+  "task_id": "lt_00023",
+  "predicted": "CA19.9",
+  "action": "fix",
+  "confidence": 0.85,
+  "reason": "tumor marker, not ATC/TNM; candidate CA19.9"
+ },
+ {
+  "task_id": "lt_00024",
+  "predicted": "SMARCB1",
+  "action": "fix",
+  "confidence": 0.85,
+  "reason": "8→S К→R reconstruction; gene SMARCB1"
+ },
+ {
+  "task_id": "lt_00025",
+  "predicted": "SIOPEL-3",
+  "action": "fix",
+  "confidence": 0.65,
+  "reason": "reconstruction; candidate suffix SIOPEL-3"
+ },
+ {
+  "task_id": "lt_00026",
+  "predicted": "guideline",
+  "action": "fix",
+  "confidence": 0.4,
+  "reason": "heavily garbled reconstruction; candidate guideline"
+ },
+ {
+  "task_id": "lt_00027",
+  "predicted": "THIM",
+  "action": "fix",
+  "confidence": 0.85,
+  "reason": "1→I reconstruction; clean THIM adjacent in context"
+ },
+ {
+  "task_id": "lt_00028",
+  "predicted": "G04BD",
+  "action": "fix",
+  "confidence": 0.75,
+  "reason": "О→G Б→D reconstruction; urinary incontinence G04BD"
+ },
+ {
+  "task_id": "lt_00029",
+  "predicted": "G04BD",
+  "action": "fix",
+  "confidence": 0.35,
+  "reason": "reconstruction; candidate G04BD, no context"
+ },
+ {
+  "task_id": "lt_00030",
+  "predicted": "ASRM",
+  "action": "fix",
+  "confidence": 0.9,
+  "reason": "8→S К→R reconstruction; ASRM/ESHRE"
+ },
+ {
+  "task_id": "lt_00031",
+  "predicted": "ESHRE",
+  "action": "fix",
+  "confidence": 0.9,
+  "reason": "8→S К→R reconstruction; ESHRE society"
+ },
+ {
+  "task_id": "lt_00032",
+  "predicted": "SOURCE_OK",
+  "action": "source_ok",
+  "confidence": 0.9,
+  "reason": "valid TNM M1a via exact-twin homoglyphs; no candidate"
+ },
+ {
+  "task_id": "lt_00033",
+  "predicted": "SOURCE_OK",
+  "action": "source_ok",
+  "confidence": 0.9,
+  "reason": "valid TNM M1c via exact-twin homoglyphs; no candidate"
+ },
+ {
+  "task_id": "lt_00034",
+  "predicted": "SOURCE_OK",
+  "action": "source_ok",
+  "confidence": 0.7,
+  "reason": "reads valid ATC J01XX via O→0, Х→X"
+ },
+ {
+  "task_id": "lt_00035",
+  "predicted": "SOURCE_OK",
+  "action": "source_ok",
+  "confidence": 0.9,
+  "reason": "valid pO2 via exact twins р→p О→O"
+ },
+ {
+  "task_id": "lt_00036",
+  "predicted": "SOURCE_OK",
+  "action": "source_ok",
+  "confidence": 0.9,
+  "reason": "valid H2O via exact twins Н→H О→O"
+ },
+ {
+  "task_id": "lt_00037",
+  "predicted": "SOURCE_OK",
+  "action": "source_ok",
+  "confidence": 0.9,
+  "reason": "valid TNM M1b; М→M twin, b latin"
+ },
+ {
+  "task_id": "lt_00038",
+  "predicted": "SOURCE_OK",
+  "action": "source_ok",
+  "confidence": 0.9,
+  "reason": "valid TNM N1a; а→a exact twin"
+ },
+ {
+  "task_id": "lt_00039",
+  "predicted": "Vol.54",
+  "action": "fix",
+  "confidence": 0.65,
+  "reason": "citation Vol.54; У→V 1→l reconstruction, not code"
+ },
+ {
+  "task_id": "lt_00040",
+  "predicted": "SOURCE_OK",
+  "action": "source_ok",
+  "confidence": 0.9,
+  "reason": "valid PO2 via exact twin Р→P; O latin"
+ },
+ {
+  "task_id": "lt_00041",
+  "predicted": "S01AA",
+  "action": "fix",
+  "confidence": 0.85,
+  "reason": "8→S reconstruction; ophthalmic antibiotics S01AA"
+ },
+ {
+  "task_id": "lt_00042",
+  "predicted": "S01FB01",
+  "action": "fix",
+  "confidence": 0.55,
+  "reason": "8→S Р→F reconstruction; phenylephrine S01FB01"
+ },
+ {
+  "task_id": "lt_00043",
+  "predicted": "SOURCE_OK",
+  "action": "source_ok",
+  "confidence": 0.75,
+  "reason": "valid TNM M1b; Ь reads as b"
+ },
+ {
+  "task_id": "lt_00044",
+  "predicted": "SOURCE_OK",
+  "action": "source_ok",
+  "confidence": 0.75,
+  "reason": "valid TNM T4b; Т→T twin, Ь reads b"
+ },
+ {
+  "task_id": "lt_00045",
+  "predicted": "SOURCE_OK",
+  "action": "source_ok",
+  "confidence": 0.75,
+  "reason": "valid TNM T1b; Т→T twin, Ь reads b"
+ },
+ {
+  "task_id": "lt_00046",
+  "predicted": "SOURCE_OK",
+  "action": "source_ok",
+  "confidence": 0.9,
+  "reason": "valid VO2; V latin, О→O exact twin"
+ },
+ {
+  "task_id": "lt_00047",
+  "predicted": "Vol.22",
+  "action": "fix",
+  "confidence": 0.65,
+  "reason": "citation Vol.22; У→V 1→l reconstruction, not code"
+ },
+ {
+  "task_id": "lt_00048",
+  "predicted": "SOURCE_OK",
+  "action": "source_ok",
+  "confidence": 0.5,
+  "reason": "reads valid pM1a via exact twins; М not homoglyph of N"
+ },
+ {
+  "task_id": "lt_00049",
+  "predicted": "SOURCE_OK",
+  "action": "source_ok",
+  "confidence": 0.9,
+  "reason": "valid TNM N2a; а→a exact twin"
+ },
+ {
+  "task_id": "lt_00050",
+  "predicted": "SOURCE_OK",
+  "action": "source_ok",
+  "confidence": 0.9,
+  "reason": "valid TNM M1c1; М→M с→c exact twins"
+ },
+ {
+  "task_id": "lt_00051",
+  "predicted": "SOURCE_OK",
+  "action": "source_ok",
+  "confidence": 0.9,
+  "reason": "valid TNM M1c2; М→M с→c exact twins"
+ },
+ {
+  "task_id": "lt_00052",
+  "predicted": "SOURCE_OK",
+  "action": "source_ok",
+  "confidence": 0.45,
+  "reason": "reads A05 via exact twins А→A О→0; ATC fragment"
+ },
+ {
+  "task_id": "lt_00053",
+  "predicted": "SOURCE_OK",
+  "action": "source_ok",
+  "confidence": 0.9,
+  "reason": "valid TNM T2b; в reads as b"
+ },
+ {
+  "task_id": "lt_00054",
+  "predicted": "SOURCE_OK",
+  "action": "source_ok",
+  "confidence": 0.9,
+  "reason": "valid TNM T2b; Т→T twin, в reads b"
+ },
+ {
+  "task_id": "lt_00055",
+  "predicted": "Vol.1",
+  "action": "fix",
+  "confidence": 0.6,
+  "reason": "citation Vol.1; У→V 1→l reconstruction, not code"
+ },
+ {
+  "task_id": "lt_00056",
+  "predicted": "SOURCE_OK",
+  "action": "source_ok",
+  "confidence": 0.9,
+  "reason": "valid TNM M1a; М→M twin, a latin"
+ },
+ {
+  "task_id": "lt_00057",
+  "predicted": "SOURCE_OK",
+  "action": "source_ok",
+  "confidence": 0.9,
+  "reason": "valid TNM N1c; с→c exact twin"
+ },
+ {
+  "task_id": "lt_00058",
+  "predicted": "S01EC",
+  "action": "fix",
+  "confidence": 0.85,
+  "reason": "8→S reconstruction; carbonic anhydrase inhibitors S01EC"
+ },
+ {
+  "task_id": "lt_00059",
+  "predicted": "S01AE",
+  "action": "fix",
+  "confidence": 0.85,
+  "reason": "8→S reconstruction; ophthalmic fluoroquinolones S01AE"
+ },
+ {
+  "task_id": "lt_00060",
+  "predicted": "SOURCE_OK",
+  "action": "source_ok",
+  "confidence": 0.9,
+  "reason": "valid ATC C02AB02 via exact twins; no candidate"
+ },
+ {
+  "task_id": "lt_00061",
+  "predicted": "SOURCE_OK",
+  "action": "source_ok",
+  "confidence": 0.9,
+  "reason": "valid ATC C02AB01 via exact twins; no candidate"
+ },
+ {
+  "task_id": "lt_00062",
+  "predicted": "SOURCE_OK",
+  "action": "source_ok",
+  "confidence": 0.9,
+  "reason": "valid ATC C08CA02 via exact twins; no candidate"
+ },
+ {
+  "task_id": "lt_00063",
+  "predicted": "SOURCE_OK",
+  "action": "source_ok",
+  "confidence": 0.55,
+  "reason": "ЛЕ = Russian sulodexide unit, keep"
+ },
+ {
+  "task_id": "lt_00064",
+  "predicted": "5HT3",
+  "action": "fix",
+  "confidence": 0.65,
+  "reason": "11→H З→3 reconstruction; serotonin 5HT3 receptor"
+ },
+ {
+  "task_id": "lt_00065",
+  "predicted": "SOURCE_OK",
+  "action": "source_ok",
+  "confidence": 0.85,
+  "reason": "кл = Russian 'клеток' (cells), keep"
+ },
+ {
+  "task_id": "lt_00066",
+  "predicted": "SOURCE_OK",
+  "action": "source_ok",
+  "confidence": 0.9,
+  "reason": "valid TNM N2c; с→c exact twin"
+ },
+ {
+  "task_id": "lt_00067",
+  "predicted": "SOURCE_OK",
+  "action": "source_ok",
+  "confidence": 0.9,
+  "reason": "valid H2O; Н→H twin, O latin"
+ },
+ {
+  "task_id": "lt_00068",
+  "predicted": "SOURCE_OK",
+  "action": "source_ok",
+  "confidence": 0.55,
+  "reason": "МО = Russian молекулярный ответ, keep"
+ },
+ {
+  "task_id": "lt_00069",
+  "predicted": "ILLEGIBLE",
+  "action": "illegible",
+  "confidence": 0.4,
+  "reason": "no context; '585нн' undecodable to a code"
+ },
+ {
+  "task_id": "lt_00070",
+  "predicted": "SOURCE_OK",
+  "action": "source_ok",
+  "confidence": 0.9,
+  "reason": "valid PO2 via exact twins Р→P О→O"
+ },
+ {
+  "task_id": "lt_00071",
+  "predicted": "S01FA",
+  "action": "fix",
+  "confidence": 0.55,
+  "reason": "8→S Р→F reconstruction; anticholinergic mydriatics S01FA"
+ },
+ {
+  "task_id": "lt_00073",
+  "predicted": "Herpes simplex virus",
+  "action": "fix",
+  "confidence": 0.9,
+  "reason": "drop stray cyrillic С; correct HSV name"
+ },
+ {
+  "task_id": "lt_00076",
+  "predicted": "Clin",
+  "action": "fix",
+  "confidence": 0.45,
+  "reason": "reconstruction; citation abbrev Clin, no context"
+ },
+ {
+  "task_id": "lt_00077",
+  "predicted": "Scale",
+  "action": "fix",
+  "confidence": 0.85,
+  "reason": "8→S 1→l reconstruction; word Scale"
+ },
+ {
+  "task_id": "lt_00078",
+  "predicted": "McGill",
+  "action": "fix",
+  "confidence": 0.6,
+  "reason": "О→G Ш→ill reconstruction; McGill questionnaire"
+ },
+ {
+  "task_id": "lt_00079",
+  "predicted": "version",
+  "action": "fix",
+  "confidence": 0.8,
+  "reason": "garbled reconstruction; ю→io = version"
+ },
+ {
+  "task_id": "lt_00080",
+  "predicted": "https",
+  "action": "fix",
+  "confidence": 0.8,
+  "reason": "garbled reconstruction; URL scheme https"
+ },
+ {
+  "task_id": "lt_00081",
+  "predicted": "SOURCE_OK",
+  "action": "source_ok",
+  "confidence": 0.9,
+  "reason": "ЦМВ = Russian cytomegalovirus abbrev, keep"
+ },
+ {
+  "task_id": "lt_00086",
+  "predicted": "of",
+  "action": "fix",
+  "confidence": 0.5,
+  "reason": "Г→f reconstruction; common word 'of', candidate"
+ }
+]
