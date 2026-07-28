@@ -34,4 +34,17 @@
     <TextArea name="corrected_text" toName="crop" rows="1" maxSubmissions="1"
               placeholder="Введите правильную форму"/>
   </View>
+
+  <Header value="Тип сущности (можно уточнить)" size="5"/>
+  <Choices name="entity_kind_fix" toName="crop" choice="single" showInLine="true" required="false">
+    <Choice value="icd" hint="Код МКБ"/>
+    <Choice value="atc" hint="Код ATC (препарат)"/>
+    <Choice value="tnm" hint="TNM-классификация"/>
+    <Choice value="stage" hint="Стадия"/>
+    <Choice value="gene" hint="Ген / белок"/>
+    <Choice value="drug" hint="Лекарственное средство"/>
+    <Choice value="dose" hint="Доза / дозировка"/>
+    <Choice value="term" hint="Латинский термин / общая лексика"/>
+    <Choice value="not_entity" hint="Не сущность (URL, шум, число)"/>
+  </Choices>
 </View>
