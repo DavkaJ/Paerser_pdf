@@ -105,6 +105,16 @@ _corpus/verify_queue/active_input.json
 _corpus/verify_queue/_url_noise.jsonl
 _corpus/verify_queue/_whitelist.jsonl
 _corpus/verify_queue/whitelist_forms.json
+# сырые шарды объёмного LLM-прохода: входы и ответы модели по батчам. Сведённый
+# результат лежит в _v4_predictions.jsonl и mix_result_*.json — они отслеживаются.
+_corpus/verify_queue/llm_batches/batch_*.json
+_corpus/verify_queue/llm_batches/pred_*.json
+# зонды и контрольные замеры отдельных пилотов
+_corpus/fontrepair_probe*.txt
+_corpus/smoke.txt
+_corpus/vlm_control_*.json
+report_meta.json
+_stage2_results.json
 
 # состояние стороннего инструмента
 .refact/
