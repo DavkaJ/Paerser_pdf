@@ -17,6 +17,7 @@
 from __future__ import annotations
 
 import re
+from collections import defaultdict
 from typing import Dict, List, Optional, TYPE_CHECKING
 
 from crparser.engine.models import (
@@ -28,13 +29,19 @@ from crparser.engine.models import (
     Page,
     Section,
 )
+from crparser.engine.toc import TocIndex, norm
 
 if TYPE_CHECKING:  # импорт только для типов — без рантайм-зависимости от профилей
     from crparser.profiles.base import DocumentProfile
 
 _RE_PAGE_NUMBER = re.compile(r"^\d{1,3}$")
-# лидеры оглавления: точки или подчёркивания («.....» / «_____»)
-_RE_LEADER = re.compile(r"\.{3,}|_{3,}")
+# лидеры оглавления: точки/подчёркивания/юникод-многоточие («.....» / «_____» / «…»)
+_RE_LEADER = re.compile(r"\.{3,}|_{3,}|…+|‥+|․{2,}")
+# Предел длины заголовка подраздела. Кандидат длиннее — это абзац прозы с номером
+# (нумерованный список «исходов»/«форм» в теле), а не раздел: отвергаем, если он не
+# подтверждён оглавлением. Канонические длинные названия КР короче (1.4 ≈ 188), а
+# фантомные абзацы заметно длиннее (≥230), поэтому 200 разделяет их без потерь.
+_MAX_SUB_TITLE = 200
 
 
 def _top_int(number: Optional[str]) -> int:
@@ -58,6 +65,11 @@ class Segmenter:
         self._spec: ExcludedSpec = profile.excluded_regions()
         self._warnings: List[str] = []
         self._blank_gap: float = 1e9  # порог «пустой строки», считается на segment()
+        self._toc: Optional[TocIndex] = None  # оглавление как арбитр заголовков (баг 4)
+        # включать ли главы с римским номером: только для документов с пунктирными
+        # подразделами (в файлах с одиночно-арабскими подразделами римские главы
+        # столкнулись бы номерами — там их целиком отключаем, поведение как раньше)
+        self._roman_ok: bool = True
 
     # ---- публичный вход --------------------------------------------------
 
@@ -73,7 +85,14 @@ class Segmenter:
         """
         self._warnings = warnings_list
 
+        # Оглавление как арбитр приёма заголовков (баг 4): строим индекс из сырых
+        # строк документа (тот же код, что и в валидаторе). None — если оглавление
+        # не распарсилось (тогда отсева фантомов по TOC нет, работаем как раньше).
+        self._toc = TocIndex.from_lines(
+            [ln.text for page in pages for ln in page.lines], self._spec.toc)
+
         lines = self._collect_lines(pages, subtraction_map)
+        self._roman_ok = self._roman_chapters_safe(lines)
         self._blank_gap = self._compute_blank_gap(lines)
         start = self._find_content_start(lines)
 
@@ -89,9 +108,48 @@ class Segmenter:
         self._split_front_matter(front_lines, excluded)
 
         sections = self._run_state_machine(split_body, excluded)
+        sections = self._drop_phantom_duplicates(sections)
         tree = self._build_hierarchy(sections)
 
         return {"sections": tree, "excluded": excluded}
+
+    def _drop_phantom_duplicates(self, sections: List[Section]) -> List[Section]:
+        """
+        Снять мнимый дубль номера: когда ОДИН узел с номером N.N подтверждён
+        оглавлением, а другой с тем же номером — нет (и его заголовка нигде в
+        оглавлении нет), второй — это одноимённый пункт-классификация из прозы
+        («2.1 Нечастая ГБН» при реальном «2.1 Жалобы»). Убираем его, а текст
+        (заголовок + тело) подклеиваем к предыдущему уцелевшему разделу, чтобы не
+        терять покрытие. Реальные коллизии источника целы: там оба заголовка есть
+        в оглавлении, оба confirmed — ни один не снимается. Без оглавления — no-op.
+        """
+        if self._toc is None:
+            return sections
+        groups: Dict[str, List[Section]] = defaultdict(list)
+        for s in sections:
+            if s.number:
+                groups[s.number].append(s)
+        drop: set = set()
+        for num, group in groups.items():
+            if len(group) < 2:
+                continue
+            confirmed = [s for s in group if self._toc.confirmed(num, s.title)]
+            if not confirmed:
+                continue
+            for s in group:
+                if s not in confirmed and not self._toc.title_anywhere(s.title):
+                    drop.add(id(s))
+        if not drop:
+            return sections
+        out: List[Section] = []
+        for s in sections:
+            if id(s) in drop:
+                if out:
+                    tail = (" " + s.title + " " + s.text).rstrip()
+                    out[-1].text = (out[-1].text + tail).strip()
+            else:
+                out.append(s)
+        return out
 
     # ---- подготовка строк ------------------------------------------------
 
@@ -277,9 +335,13 @@ class Segmenter:
         last_number: Optional[str] = None
         seen_references = False           # встречали ли «Список литературы»
         max_top = 0                       # наибольший НОМЕР раздела верхнего уровня
+        seen_numbers: Dict[str, str] = {}  # номер -> первый заголовок (детект дублей)
+        collided: set = set()             # номера, по которым уже выдан warning
+        confirmed_seen: set = set()       # номера, принятые как ПОДТВЕРЖДЁННЫЕ TOC
 
         # «висящий» номер (kind=NUMBER_ONLY) и накопитель открытого заголовка
         pending_number: Optional[Heading] = None
+        pending_idx: int = -1                # строка, где встретился висящий номер
         open_heading: Optional[Dict] = None  # {'heading': Heading, 'title_parts': [...], 'extra': int}
 
         def flush_open() -> None:
@@ -287,16 +349,35 @@ class Segmenter:
             if open_heading is None:
                 return
             heading: Heading = open_heading["heading"]
-            title = self._join_title(open_heading["title_parts"])
-            section = Section(
-                number=heading.number,
-                title=title or heading.title,
-                level=heading.level,
-                text="",
-            )
+            title = self._join_title(open_heading["title_parts"]) or heading.title
+            num = heading.number
+            if num:
+                norm_new = self._normalize(title).lower()
+                if num in seen_numbers:
+                    # НАСТОЯЩИЙ дубль: тот же номер И тот же/пустой заголовок —
+                    # гасим (фантомный повтор). Сравнение БЕЗ пунктуации: «ППИ.» и
+                    # «ППИ» — один раздел (различие только в OCR-точке), а не коллизия.
+                    if not norm_new or norm(title) == norm(seen_numbers[num]):
+                        open_heading = None
+                        return
+                    # КОЛЛИЗИЯ: один номер с РАЗНЫМИ заголовками — это дефект
+                    # источника (напр. опечатка нумерации). Сохраняем ОБА узла,
+                    # но фиксируем предупреждение (молча не сливаем).
+                    if num not in collided:
+                        collided.add(num)
+                        self._warnings.append(
+                            "коллизия номера %s в источнике: «%s» и «%s» — "
+                            "сохранены оба раздела" % (num, seen_numbers[num], title))
+                else:
+                    seen_numbers[num] = title
+            section = Section(number=num, title=title, level=heading.level, text="")
             sections.append(section)
             current = section
-            last_number = heading.number or last_number
+            last_number = num or last_number
+            # запоминаем номера, чьи разделы ПОДТВЕРЖДЕНЫ оглавлением — по ним потом
+            # отсеиваем мнимые дубли (баг 4)
+            if num and self._toc is not None and self._toc.confirmed(num, title):
+                confirmed_seen.add(num)
             open_heading = None
 
         def claim_top(h: Heading) -> None:
@@ -305,6 +386,45 @@ class Segmenter:
             nonlocal max_top
             if h.level == 1 and h.number:
                 max_top = max(max_top, _top_int(h.number))
+
+        def toc_reject(number: Optional[str], title: str, idx: int = -1) -> bool:
+            """
+            Кандидат-подзаголовок — это ложный пункт нумерованного списка из прозы,
+            а не раздел документа? (баги 4 и 6б). Работает только для подуровней.
+
+            Не отклоняем, если номер+заголовок ПОДТВЕРЖДЁН оглавлением (в т.ч.
+            легитимная коллизия источника — у номера несколько заголовков в TOC).
+            Иначе отклоняем по любому из признаков:
+              * длина заголовка > предела — это абзац прозы с номером, а не раздел
+                (фантомные «исходы»/«критерии» в КР16_4: 3.1/3.2/3.4/7.1);
+              * (есть оглавление) верхний компонент номера не равен текущему разделу
+                ИЛИ номер уже занят подтверждённым разделом (мнимый дубль) — баг 4;
+              * (НЕТ оглавления) предыдущая непустая строка кончилась двоеточием
+                (начался нумерованный список) ЛИБО номер уже встречался (локальный
+                сброс нумерации 1.1/1.2… в прозе) — баг 6б.
+            """
+            if not number or "." not in number:
+                return False
+            confirmed = self._toc is not None and self._toc.confirmed(number, title)
+            if confirmed:
+                return False
+            # (0) метка тела с номером («Рекомендуется…», «Комментарии:») — не раздел
+            if self._profile.title_is_body_label(title):
+                return True
+            # (1) длина — работает и с оглавлением, и без него
+            if len(title) > _MAX_SUB_TITLE:
+                return True
+            # (2) арбитраж по оглавлению
+            if self._toc is not None:
+                if _top_int(number) != max_top:
+                    return True
+                return number in confirmed_seen
+            # (3) оглавление недоступно — структурные эвристики отсева перечислений
+            if idx > 0:
+                prev = self._prev_nonblank(lines, idx)
+                if prev is not None and prev.rstrip().endswith(":"):
+                    return True
+            return number in seen_numbers
 
         i = 0
         n = len(lines)
@@ -342,13 +462,16 @@ class Segmenter:
             if pending_number is not None:
                 title, consumed = self._assemble_pending_title(lines, i, pending_number)
                 probe = line.clone(title) if title else line
-                if title and self._profile.can_attach_title(probe, pending_number, self._body):
+                if title and self._profile.can_attach_title(probe, pending_number, self._body) \
+                        and not toc_reject(pending_number.number, title, pending_idx) \
+                        and self._top_accept(pending_number.number, title, pending_number.level):
                     heading = Heading(
                         number=pending_number.number,
                         title=title,
                         level=pending_number.level,
                         kind=HeadingKind.NUMBERED,
                         visual=self._visual(line),
+                        canonical=self._profile.main_title_canonical(title, pending_number.number),
                         page=line.page,
                         bbox=line.bbox,
                     )
@@ -385,18 +508,29 @@ class Segmenter:
             # в части КР заголовки идут кеглем тела) ЛИБО больший номер, оформленный
             # как визуальный заголовок. Это отсекает фантомы-перекрёстные-ссылки
             # («…в разделе 6. Организация…» с пропуском 4–5), дубли и хвост ToC.
-            # Для подуровней (>=2) — обычная монотонность относительно last_number.
+            # Подуровни (>=2) принимаются без монотонности (см. ниже, баг 3).
             def order_ok(h: Heading) -> bool:
                 if h.level == 1:
                     top = _top_int(h.number)
                     if top == max_top + 1:
                         return True
                     return top > max_top and self._visual(line)
-                return self._profile.heading_order_valid(h.number, last_number)
+                # Подуровни (N.N, N.N.N…): принимаем ЛЮБОЙ корректно оформленный
+                # заголовок. НЕ отбрасываем по «номер меньше текущего» — номера
+                # законно откатываются на новой ветке (2.4.2.2.2 -> 2.4.3;
+                # 2.4.1.1 -> 2.4.2). Иерархию строит _build_hierarchy, разбирая сам
+                # пунктирный номер; реальные коллизии гасит/помечает flush_open.
+                # Это чинит каскадную потерю разделов (баг 3).
+                return True
 
             # --- 4. полноценный заголовок в одной строке ---
             if heading and heading.kind == HeadingKind.NUMBERED and heading.number:
-                if order_ok(heading):
+                # toc_reject: ложный пункт нумерованного списка из прозы (баг 4) —
+                # оставляем как тело текущего раздела; _top_accept: неканонический
+                # раздел верхнего уровня принимаем только при подтверждении TOC
+                if order_ok(heading) and not toc_reject(heading.number, heading.title, i) \
+                        and self._top_accept(heading.number, heading.title, heading.level,
+                                             heading.canonical):
                     flush_open()
                     open_heading = {"heading": heading, "title_parts": [heading.title],
                                     "extra": 0}
@@ -404,14 +538,20 @@ class Segmenter:
                     i += 1
                     continue
 
-            # --- 5. заголовок одним номером («4.») ---
+            # --- 5. заголовок одним номером («4.», «2.5.2») ---
+            # Строка целиком — номер раздела (NUMBER_ONLY уже это гарантирует), а
+            # заголовок придёт следующей строкой. Не требуем жирный/крупный шрифт:
+            # в части КР номера подразделов набраны кеглем тела (иначе терялись,
+            # напр. «2.5.2 Подтверждение диагноза…»). Реальный фильтр — can_attach_title
+            # на следующей итерации: если за номером не идёт правдоподобный заголовок,
+            # «висящий» номер забывается без потери текста.
             if heading and heading.kind == HeadingKind.NUMBER_ONLY and heading.number:
                 if order_ok(heading):
-                    if heading.level == 1 or self._visual(line):
-                        flush_open()
-                        pending_number = heading
-                        i += 1
-                        continue
+                    flush_open()
+                    pending_number = heading
+                    pending_idx = i
+                    i += 1
+                    continue
 
             # --- 6. именованный раздел (Критерии оценки качества и т.п.) ---
             if heading and heading.kind == HeadingKind.NAMED:
@@ -449,23 +589,117 @@ class Segmenter:
 
     @staticmethod
     def _build_hierarchy(flat: List[Section]) -> List[Section]:
+        """
+        Собрать дерево, определяя родителя РАЗБОРОМ пунктирного номера (баг 6).
+
+        Родитель узла N.N(.N…) — это номер без последнего компонента (7.1 -> 7;
+        2.4.2.2 -> 2.4.2). Ищем такой узел по ПОЛНОМУ индексу всех номеров, поэтому
+        родитель находится, даже если в потоке он идёт ПОЗЖЕ ребёнка (как §7 после
+        своего 7.1 в КР16_4). Если точного родителя нет — поднимаемся к ближайшему
+        существующему ПРЕДКУ (отбрасываем ещё компонент), а если и его нет — узел
+        становится корнем. К ЧУЖОМУ соседнему разделу (привязка «по последнему
+        открытому узлу») не цепляем НИКОГДА — это и был источник HIERARCHY_BROKEN.
+
+        Именованные / без-номерные разделы вешаем по уровню через стек.
+        При коллизии номера ребёнок берёт ближайшего по позиции одноимённого
+        родителя (предпочитая предшествующего) — так сохраняются реальные
+        коллизии источника (КР51_2 3.1.3 ×2 со своими подпунктами).
+        """
+        idx_of: Dict[int, int] = {id(s): k for k, s in enumerate(flat)}
+        by_number: Dict[str, List[Section]] = defaultdict(list)
+        for s in flat:
+            s.children = []          # обнулить ДО линковки: ребёнок может прийти к
+            if s.number:             # родителю РАНЬШЕ его собственной итерации (7.1
+                by_number[s.number].append(s)   # до §7) — сброс внутри цикла стёр бы его
+
+        def nearest(cands: List[Section], child_idx: int) -> Optional[Section]:
+            before = [c for c in cands if idx_of[id(c)] < child_idx]
+            if before:
+                return before[-1]            # ближайший предшествующий одноимённый
+            after = [c for c in cands if idx_of[id(c)] > child_idx]
+            return after[0] if after else None
+
         roots: List[Section] = []
         stack: List[Section] = []
-        for section in flat:
-            section.children = []
-            while stack and stack[-1].level >= section.level:
-                stack.pop()
-            if stack:
-                stack[-1].children.append(section)
+        for k, section in enumerate(flat):
+            parent: Optional[Section] = None
+            num = section.number
+            if num and "." in num:
+                parts = num.split(".")
+                for cut in range(len(parts) - 1, 0, -1):   # родитель -> предок -> ...
+                    cand = nearest(by_number.get(".".join(parts[:cut]), []), k)
+                    if cand is not None and cand is not section:
+                        parent = cand
+                        break
+                # родитель/предок не найден -> корень (НЕ чужой сосед)
+            else:
+                while stack and stack[-1].level >= section.level:
+                    stack.pop()
+                parent = stack[-1] if stack else None
+            if parent is not None:
+                parent.children.append(section)
             else:
                 roots.append(section)
+            while stack and stack[-1].level >= section.level:
+                stack.pop()
             stack.append(section)
         return roots
 
     # ---- тонкие обёртки над профилем -------------------------------------
 
     def _classify(self, line: Line) -> Optional[Heading]:
-        return self._profile.classify_heading(line, self._body)
+        h = self._profile.classify_heading(line, self._body)
+        # римские главы включены только для «безопасных» документов (пунктирные
+        # подразделы). Иначе игнорируем — строка станет прозой, как раньше.
+        if h is not None and getattr(h, "roman", False) and not self._roman_ok:
+            return None
+        return h
+
+    def _roman_chapters_safe(self, lines: List[Line]) -> bool:
+        """Можно ли включать главы с римским номером для ЭТОГО документа.
+
+        Опасность — файлы, где подразделы нумерованы ОДИНОЧНОЙ арабской цифрой
+        («1. Определение», «2. Этиология», перезапуск в каждой главе): там номер
+        римской главы (Краткая→1) столкнулся бы с номером подраздела «1». Признак:
+        сразу за римской главой идёт одиночно-арабский (без точки) под-заголовок.
+        Если хоть у одной римской главы так — отключаем римские главы целиком
+        (документ парсится как раньше, без регрессий). Если подразделы пунктирные
+        (N.M) — включаем.
+        """
+        cls = [self._profile.classify_heading(ln, self._body) for ln in lines]
+        romans = [i for i, h in enumerate(cls)
+                  if h is not None and getattr(h, "roman", False)]
+        if not romans:
+            return True
+        for i in romans:
+            for j in range(i + 1, min(i + 20, len(cls))):
+                h = cls[j]
+                if h is None or h.kind == HeadingKind.NAMED:
+                    continue
+                if getattr(h, "roman", False):
+                    break            # следующая римская глава — подраздела между нет
+                if h.number:
+                    if "." not in h.number:
+                        return False  # одиночно-арабский подраздел -> опасно
+                    break             # пунктирный подраздел -> для этой главы ок
+        return True
+
+    def _top_accept(self, number: Optional[str], title: str, level: int,
+                    canonical: Optional[bool] = None) -> bool:
+        """
+        Допустим ли раздел ВЕРХНЕГО уровня? Подуровни — всегда (их фильтрует
+        toc_reject). Level-1: канонический раздел шаблона (название+номер) — да;
+        иначе (нестандартное имя или сдвиг номера) — только если ПОДТВЕРЖДЁН
+        оглавлением. Для файлов без оглавления неканонический level-1 не
+        принимается (поведение как раньше — без регрессий).
+        """
+        if level != 1:
+            return True
+        if canonical is None:
+            canonical = self._profile.main_title_canonical(title, number)
+        if canonical:
+            return True
+        return self._toc is not None and self._toc.confirmed(number, title)
 
     def _assemble_pending_title(self, lines: List[Line], start: int,
                                 pending: Heading) -> "tuple[Optional[str], int]":
@@ -497,9 +731,18 @@ class Segmenter:
                 if not t:
                     j += 1
                     continue
-                if ln.gap_before >= self._blank_gap:
-                    break  # пустая строка — конец заголовка
+                # склеиваем ТОЛЬКО пословный прогон одной визуальной строки (нулевой
+                # разрыв базовых линий). На первом РЕАЛЬНОМ переводе строки выходим:
+                # дальнейшие строки-продолжения и границу с телом (список кодов МКБ
+                # после «Особенности кодирования…») доведёт основной _is_continuation.
+                if ln.gap_before >= self._blank_gap * 0.5:
+                    break
                 if self._spec.detect(t):
+                    break
+                # баг 2: тело (маркер списка, «Рекомендуется…», код услуги) или
+                # завершённое предложение в накопленном заголовке — обрываем склейку,
+                # даже если строка визуально жирная (тело рекомендаций часто жирное)
+                if self._profile.heading_breaks_before(ln, self._join_title(parts)):
                     break
                 hj = self._classify(ln)
                 if hj and hj.kind in (HeadingKind.NUMBERED, HeadingKind.NUMBER_ONLY):
@@ -551,6 +794,17 @@ class Segmenter:
         return line.size >= self._body * 1.35 or line.bold
 
     # ---- утилиты текста --------------------------------------------------
+
+    @staticmethod
+    def _prev_nonblank(lines: List[Line], idx: int) -> Optional[str]:
+        """Текст ближайшей непустой строки перед idx (для эвристик отсева списков)."""
+        j = idx - 1
+        while j >= 0:
+            t = lines[j].text.strip()
+            if t:
+                return t
+            j -= 1
+        return None
 
     @staticmethod
     def _join_title(parts: List[str]) -> str:
