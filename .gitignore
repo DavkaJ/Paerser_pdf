@@ -66,3 +66,45 @@ _corpus/vlm_pilot_result.json
 _corpus/vlm_pilot_run.log
 _corpus/batch_latin_full.log
 _corpus/verify_queue/_minimize.log
+
+# ПРОИЗВОДНЫЕ артефакты прогонов и замеров.
+# Правило: в репозиторий идёт то, из чего корпус СОБИРАЕТСЯ (код, входы, карты правок,
+# ручная разметка) и чем он ОБЪЯСНЯЕТСЯ (отчёты .md). Всё, что пересчитывается прогоном,
+# в git не кладём — иначе репозиторий растёт на десятки МБ за сессию.
+# Замер на 2026-07-28: 101 json + 23 лога = 40 МБ производного против 0.4 МБ исходного.
+_corpus/report*.json
+_corpus/screen_report*.json
+_corpus/screen_outout_baseline.json
+_corpus/screen_flags.jsonl
+_corpus/corruption_scan*.json
+_corpus/_*.json
+_corpus/_*.txt
+_corpus/_*.log
+_corpus/*.log
+_corpus/_logs/
+# …но НЕ аудиты авто-правок: это доказательство, что применённый к тексту набор
+# сверен с источником. Их пересчитать нельзя — прогон, который они описывают, прошёл.
+!_corpus/_overlay_audit.json
+!_corpus/_step2_apply_audit.json
+!_corpus/_pua_scan.json
+!_corpus/_pua_classify.json
+!_corpus/_affected_docs.json
+!_corpus/_affected_docs_step2.json
+!_corpus/screen_report_pre_b3_2026-07-20.json
+_corpus/content_start_triage.txt
+_corpus/detector_recall.log
+# промежуточные срезы очереди верификации: пересобираются из прогона.
+# Ручная разметка и карты правок (_verified_corrections, _resolved_*, _ls_annotations,
+# _step2_auto_apply, tasks_min_v4) — ОТСЛЕЖИВАЮТСЯ, они невосполнимы.
+_corpus/verify_queue/ls_all_tasks.json
+_corpus/verify_queue/ls_export.json
+_corpus/verify_queue/tasks_min_ls.json
+_corpus/verify_queue/tasks_min_v2.json
+_corpus/verify_queue/tasks_min_v3.json
+_corpus/verify_queue/active_input.json
+_corpus/verify_queue/_url_noise.jsonl
+_corpus/verify_queue/_whitelist.jsonl
+_corpus/verify_queue/whitelist_forms.json
+
+# состояние стороннего инструмента
+.refact/

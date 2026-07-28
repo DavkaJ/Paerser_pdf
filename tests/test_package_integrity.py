@@ -19,11 +19,14 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def _git_tracked():
-    out = subprocess.run(["git", "ls-files"], cwd=ROOT, capture_output=True,
-                         text=True, encoding="utf-8")
+    # quotepath=false — иначе кириллические имена приходят экранированными
+    # ("\320\241…"), и проверка «файл в git» на них молча не срабатывает.
+    # splitlines, а не split() — в именах бывают пробелы.
+    out = subprocess.run(["git", "-c", "core.quotepath=false", "ls-files"],
+                         cwd=ROOT, capture_output=True, text=True, encoding="utf-8")
     if out.returncode != 0:
         pytest.skip("git недоступен / не репозиторий")
-    return set(out.stdout.split())
+    return set(out.stdout.splitlines())
 
 
 def test_all_package_init_files_tracked():
@@ -38,6 +41,22 @@ def test_all_package_init_files_tracked():
     missing = [p for p in expected if p not in tracked]
     assert not missing, (
         "пакетные __init__.py вне git (клон не импортируется): %s" % missing)
+
+
+def test_pipeline_inputs_tracked():
+    """Входы, которые продуктовый код читает по фиксированному имени, обязаны быть в git.
+
+    `batch_report.py` открывает `scan_candidates.csv` безусловно (классификация корпуса)
+    и берёт реестр как `glob.glob("*.xlsx")[0]` (источник ВСЕХ метаданных). Пока файл
+    лежит только на рабочей машине, клон падает на первой строке батча — тот же класс,
+    что история с `__init__.py` выше."""
+    tracked = _git_tracked()
+    assert "scan_candidates.csv" in tracked, (
+        "scan_candidates.csv вне git — batch_report.py на клоне не запустится")
+    assert any(p.endswith(".xlsx") for p in tracked), (
+        "реестр КР (*.xlsx) вне git — метаданные брать неоткуда")
+    assert "_corpus/classify.py" in tracked, (
+        "classify.py вне git — scan_candidates.csv нечем пересобрать")
 
 
 def test_profile_factory_imports_and_registers_minimal():
